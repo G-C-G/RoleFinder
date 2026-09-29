@@ -33,10 +33,11 @@ Hinda (founder, creative director) plans **events from templates**. The system b
 |---|---|
 | **Home**: next move (one button), GCG right now (event journey + your part), your place (type, strengths, tasks and events done), next crew date, up for grabs | **Today**: active events, what needs attention, answers waiting, coverage gaps; **Needs you** (max five, one action each); her own next move; every event's journey |
 | **Events**: only their events → event page: goal, crew chat link, journey, your part (task cards), crew contributions, run sheet | **Events**: create from a template → event page: goal, journey, needs attention, suggest people, send offers; everything else folded (all tasks, add a task, guests and messages, debrief, more actions) |
-| **Me**: player card (shareable), finish your profile, title, likes and dislikes, **GCG trail**, about me and CV strengths folded | **Team**: People (cards, pings, paste-in), **Coverage** (wings as tiles with a dot per person; red means no one or only one), Titles |
+| **Crew**: who does what (titles and their holders), then everyone's About, expandable to whatever each person chose to share |
+| **Me**: player card (shareable), finish your profile, **who sees what**, title, likes and dislikes, **GCG trail**, about me and CV strengths folded | **Team**: People (cards, pings, paste-in), **Coverage** (wings as tiles with a dot per person; red means no one or only one), Titles |
 | | **Insights**: how fast things get done, on-time rates, where plans are unrealistic |
 
-Team members never see Team, Coverage, Titles, Insights or anyone else's profile.
+Team members never see Team, Coverage, Titles or Insights. They see other people only through the Crew tab, and only what each person chose to share.
 
 ## 5. Key behaviours
 
@@ -52,7 +53,9 @@ Team members never see Team, Coverage, Titles, Insights or anyone else's profile
 
 ## 6. Privacy
 
-Profiles are private: each person sees only their own; Hinda sees everyone's. People can share their own card as a PDF. Shared with the team: names, event tasks and their status, who finished what, titles. Hinda only: everyone's cards, motivations, card corrections, per-person timing data.
+**Sharing is each person's choice.** Every person's **About** (name, photo, type, strengths, title) is always visible to the crew, so newcomers can see who does what. Everything else is opt-in and off by default: jobs I'm up for, what I've done, what I bring, my proudest work, how I work best, my CV or link. People set this at the end of onboarding and can change it any time under Me, Who sees what. **Never shared, whatever the person chooses:** jobs they would rather not do, why they are here, and their card corrections. The crew sees a separate public card, so switching something off removes it from view.
+
+Also shared with the team: event tasks and their status, who finished what, titles. Hinda only: everyone's full answers, motivations, card corrections, per-person timing data. People can also share their own card as a PDF.
 
 ## 7. Technology and cost
 

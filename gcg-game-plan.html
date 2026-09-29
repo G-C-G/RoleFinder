@@ -492,6 +492,20 @@ body.has-nav{padding-bottom:104px}
 .avatar{border-radius:50%;object-fit:cover;border:3px solid var(--edge);background:var(--bg-2)}
 .avatar.big{width:140px;height:140px;display:grid;place-items:center;font-size:56px}
 .avatar.card{width:96px;height:96px;border-color:#F6B80F}
+.avatar.md{width:56px;height:56px;flex:none;display:grid;place-items:center;font-size:26px}
+.sharebox{display:grid;gap:8px}
+.shr{appearance:none;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;border:2.5px solid var(--edge);border-radius:14px;background:var(--card);padding:10px 12px;cursor:pointer;min-height:52px}
+.shr.locked{background:var(--gold-soft);cursor:default}
+.shr[aria-pressed="true"]{background:var(--green-soft)}
+.shr-e{font-size:22px}
+.shr-t{display:grid;gap:2px}
+.crewtitle{display:grid;gap:2px;border-top:1.5px solid var(--soft);padding:8px 0}
+.crewtitle:first-of-type{border-top:0}
+.crewcard{margin-top:12px;gap:10px}
+.crewhead{appearance:none;display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;padding:0;cursor:pointer}
+.crew-who{display:grid;gap:3px;flex:1;min-width:0}
+.crew-who b{font-family:var(--font-display);font-weight:600;font-size:18px}
+.crewsec{display:grid;gap:4px;border-top:1.5px solid var(--soft);padding-top:8px}
 .avatar.sm{width:32px;height:32px;border-width:2px;vertical-align:middle;margin-right:8px}
 .photobox{display:grid;justify-items:center;gap:12px;padding:8px 0}
 .photobox label.btn{cursor:pointer}
@@ -523,6 +537,7 @@ body.has-nav{padding-bottom:104px}
   <main id="view-flow"><div id="flow"></div></main>
   <section id="view-home" hidden><div id="homeBody"></div></section>
   <section id="view-mevents" hidden><div id="meventsBody"></div></section>
+  <section id="view-crew" hidden><div id="crewBody"></div></section>
   <section id="view-me" hidden><div id="profileBody"></div></section>
   <section id="view-today" hidden><div id="todayBody"></div></section>
 
@@ -890,6 +905,8 @@ function h(tag,attrs){
   }
   return e;
 }
+// Adding an empty section (null, false) to the page should add nothing, never the word "null".
+(function(){var o=Element.prototype.append;Element.prototype.append=function(){var a=[];(function f(xs){xs.forEach(function(c){if(Array.isArray(c))f(c);else if(c!=null&&c!==false)a.push(c);});})([].slice.call(arguments));return o.apply(this,a);};})();
 function $(id){return document.getElementById(id);}
 function clear(el){while(el.firstChild)el.removeChild(el.firstChild);}
 function say(el,text,kind){if(!el)return;el.textContent=text||"";if(kind)el.setAttribute("data-kind",kind);else el.removeAttribute("data-kind");}
@@ -974,11 +991,11 @@ var LEVELS=[
  {name:"You",screens:["like"]},
  {name:"Situations",screens:ASK.map(function(_,i){return "s"+i;})},
  {name:"Jobs",screens:["deck","all","profile"]},
- {name:"Your profile",screens:["done","bring","proud","photo","work","why"]}
+ {name:"Your profile",screens:["done","bring","proud","photo","work","why","share"]}
 ];
 // Onboarding is creating your profile: the card game (about 6 minutes), then your profile (about 4 minutes).
 // Progress is saved at every step, so people can stop and come back.
-var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","profile","done","bring","proud","photo","work","why"]);
+var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","profile","done","bring","proud","photo","work","why","share"]);
 var DECK_N=6;
 var S={name:"",cv:"",extra:"",levels:{},top:[],q:new Array(NQ+2).fill(0),story:newStory(),confirm:"",confirmNote:"",
   screen:"intro",tmp:null,deck:null,deckSig:"",deckAt:0,returnTo:"deck",openArea:"",
@@ -993,7 +1010,7 @@ function grouped(src){
 }
 function payload(){
   var g=grouped(S);
-  return {v:5,photo:cleanPhoto(S.photo),name:clean(S.name).slice(0,60),cv:clean(S.cv).slice(0,1500),extra:clean(S.extra).slice(0,600),
+  return {v:6,share:sanitizeShare(S.share),photo:cleanPhoto(S.photo),name:clean(S.name).slice(0,60),cv:clean(S.cv).slice(0,1500),extra:clean(S.extra).slice(0,600),
     top:g.top,good:g.good,curious:g.curious,no:g.no,q:normQ(S.q),story:sanitizeStory(S.story),
     confirm:CONFIRM[S.confirm]?S.confirm:"",confirmNote:clean(S.confirmNote).slice(0,300),
     updated:new Date().toISOString(),source:"app"};
@@ -1001,13 +1018,13 @@ function payload(){
 function saveDraft(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(function(){
-    lsSet(DRAFT_KEY,JSON.stringify({photo:S.photo,extraMode:!!S.extraMode,name:S.name,cv:S.cv,extra:S.extra,levels:S.levels,q:S.q,story:S.story,confirm:S.confirm,confirmNote:S.confirmNote,
+    lsSet(DRAFT_KEY,JSON.stringify({share:S.share,photo:S.photo,extraMode:!!S.extraMode,name:S.name,cv:S.cv,extra:S.extra,levels:S.levels,q:S.q,story:S.story,confirm:S.confirm,confirmNote:S.confirmNote,
       screen:S.screen,deck:S.deck,deckSig:S.deckSig,deckAt:S.deckAt,savedAt:new Date().toISOString()}));
   },250);
 }
 function loadDraft(){var raw=lsGet(DRAFT_KEY);if(!raw)return null;try{return JSON.parse(raw);}catch(e){return null;}}
 function applyRecord(d){
-  S.name=d.name||S.name;S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);
+  S.name=d.name||S.name;S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.share=sanitizeShare(d.share);
   S.levels={};S.top=sanitizeIds(d.top).slice(0,3);
   sanitizeIds(d.top).concat(sanitizeIds(d.good)).forEach(function(i){S.levels[i]="good";});
   sanitizeIds(d.curious).forEach(function(i){S.levels[i]="curious";});
@@ -1079,7 +1096,8 @@ function go(sc){
   try{window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 function next(){
-  if(S.screen==="why"&&!S.extraMode){finishOnboarding();return;}
+  if(S.screen==="share"){finishOnboarding();return;}
+  if(S.screen==="why"&&!S.extraMode){go("share");return;}
   var e=EXTRA.indexOf(S.screen);if(S.extraMode&&e>-1){var rest=EXTRA.slice(e+1).filter(extraMissing);if(rest.length)go(rest[0]);else finishExtra();return;}
   var i=PATH.indexOf(S.screen);if(i>-1&&i<PATH.length-1)go(PATH[i+1]);}
 function back(){
@@ -1171,7 +1189,7 @@ var BUILD={
     var steps=[["You","What kind of work pulls you in"],["Situations","7 quick ones: pick what is most and least like you"],["Jobs","Jobs that might suit you. Pick as many as you like"],["Your profile","What you've done, your CV and a photo if you like"]];
     card.append(h("ol",{class:"levels","aria-label":"The four levels"},steps.map(function(s,i){return h("li",null,h("span",{class:"n","aria-hidden":"true",text:String(i+1)}),h("div",null,h("b",{text:s[0]}),h("span",{text:s[1]})));})));
     card.append(h("div",{class:"prize"},h("b",{text:"🏆 At the end: your player card"}),
-      h("span",{text:"Your player card, your profile, and your own Game Plan: what to do next, your events and your place at GCG. It all goes to Hinda only; share your card yourself if you like."})));
+      h("span",{text:"Your player card, your profile, and your own Game Plan: what to do next, your events and your place at GCG. Hinda sees your answers. The crew sees your About, plus anything you choose to share."})));
     var inp=h("input",{type:"text",id:"name",autocomplete:"name",placeholder:"First name is fine",value:S.name});
     inp.addEventListener("input",function(){S.name=inp.value;saveDraft();});
     function start(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}next();}
@@ -1250,7 +1268,7 @@ var BUILD={
     return hd;
   },
   photo:function(card){
-    var hd=shell(card,"Your profile","Add a photo of yourself","Optional. It goes on your player card and profile, which only you and Hinda see.");
+    var hd=shell(card,"Your profile","Add a photo of yourself","Optional. It shows on your player card and in the crew list, as part of your About.");
     var st=h("p",{class:"status",role:"status","aria-live":"polite"});
     var prev=S.photo?h("img",{class:"avatar big",src:S.photo,alt:"Your photo"}):h("div",{class:"avatar big empty","aria-hidden":"true",text:"🙂"});
     var file=h("input",{type:"file",accept:"image/*",id:"photoIn",class:"sr"});
@@ -1340,11 +1358,17 @@ var BUILD={
     var hd=shell(card,"About you","Why are you here?","Pick up to 3.");
     card.append(multiGroup(WHY,function(){return S.story.why;},3,true,"two"),
       h("div",{class:"qgroup"},h("h3",{text:"Where do you see yourself at GCG in a few years?"}),singleGroup(FUTURE,function(){return S.story.future;},function(v){S.story.future=v;},true)));
-    navRow(card,"Save ✓",function(){
+    navRow(card,S.extraMode?"Save ✓":"Next →",function(){
       if(!S.story.why.length){warn("Pick at least one reason.");return;}
       if(!S.story.future){warn("Pick where you see yourself. Not sure yet is fine.");return;}
       next();
     },{big:true});
+    return hd;
+  },
+  share:function(card){
+    var hd=shell(card,"Your profile","What do you want the crew to see?","Your About is always visible, so newcomers can see who does what. The rest is your choice. You can change it any time under Me.");
+    card.append(shareToggles());
+    navRow(card,"Save and open my Game Plan ▶",next,{big:true});
     return hd;
   },
   profile:function(card){
@@ -1369,7 +1393,7 @@ var BUILD={
     var canSend=!!(S.db&&S.uid&&S.canWrite!==false);
     card.append(!canSend?h("button",{type:"button",class:"btn go big wide",text:"Next: build my profile ▶",onclick:function(){go("done");}}):canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile ▶",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});}})
         :null,st,
-      h("p",{class:"sub center",text:canSend?"Your card goes to Hinda only.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
+      h("p",{class:"sub center",text:canSend?"Hinda sees your answers. The crew sees your About; you choose the rest.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
       h("details",{class:"more"},h("summary",{text:"More: share, PDF, all jobs"}),
         h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"📤 Share my card",onclick:function(){downloadPdf(true);}}),h("button",{type:"button",class:"btn small",text:"⬇ PDF",onclick:function(){downloadPdf(false);}}),
           h("button",{type:"button",class:"btn small",text:"🗂 See all jobs",onclick:function(){S.returnTo="profile";go("all");}}),
@@ -2665,7 +2689,7 @@ function renderInsights(){
 }
 
 /* ---------- Game Plan navigation: Home · Events · Me for the team; Today · Events · Team · Insights · Me for Hinda ---------- */
-var NAV_MEMBER=[["home","🏠","Home"],["mevents","🎲","Events"],["me","🙂","Me"]];
+var NAV_MEMBER=[["home","🏠","Home"],["mevents","🎲","Events"],["crew","👥","Crew"],["me","🙂","Me"]];
 var NAV_ADMIN=[["today","🔥","Today"],["events","🎲","Events"],["team","👥","Team"],["insights","📊","Insights"],["me","🙂","Me"]];
 S.evSel="";S.teamTab="people";
 function onboarded(){return !!S.sentAt;}
@@ -2893,7 +2917,7 @@ function yourPart(ev,mine,me){
     now.length>3&&!showAll?h("button",{type:"button",class:"btn link",text:"Show "+(now.length-3)+" more for now",onclick:function(){S.panel[key]=true;renderMyEvents();}}):null);
   if(later.length){
     var byStage={};later.forEach(function(t){var i=taskStageIdx(ev,t);(byStage[i]=byStage[i]||[]).push(t);});
-    box.append(h("details",{class:"more later"},h("summary",{text:"🔒 Later in the plan ("+later.length+")"}),
+    box.append(h("details",{class:"more later",open:S.panel["later:"+ev.id]?true:null,ontoggle:function(e){S.panel["later:"+ev.id]=e.currentTarget.open;}},h("summary",{text:"🔒 Later in the plan ("+later.length+")"}),
       h("p",{class:"sub",text:"These open up when the event gets there. No need to think about them yet."}),
       Object.keys(byStage).sort().map(function(i){return h("div",{class:"laterstage"},h("b",{text:stageName(Number(i))}),
         byStage[i].map(function(t){return myTaskCard(ev,t,me);}));})));
@@ -2971,12 +2995,12 @@ function drawCoverage(){
 
 
 /* ---------- Views and refresh ---------- */
-var VIEWS=["home","mevents","me","flow","today","events","team","insights","tasks","mine"];
+var VIEWS=["home","mevents","crew","me","flow","today","events","team","insights","tasks","mine"];
 function showView(v){
   S.view=v;
   VIEWS.forEach(function(k){var el=$("view-"+k);if(el)el.hidden=(k!==v);});
   $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="insights"||v==="today");
-  if(v==="home")renderHome();if(v==="mevents")renderMyEvents();if(v==="me")renderProfile();if(v==="flow")render();
+  if(v==="home")renderHome();if(v==="mevents")renderMyEvents();if(v==="crew")renderCrew();if(v==="me")renderProfile();if(v==="flow")render();
   if(v==="today")renderToday();if(v==="team")renderTeam();if(v==="events")renderEvents();if(v==="insights")renderInsights();if(v==="mine")renderMine();
   renderNav();window.scrollTo(0,0);
 }
@@ -2984,7 +3008,7 @@ function updateTabs(){renderNav();}
 function renderTasks(){if(S.view==="home")renderHome();else if(S.view==="mevents")renderMyEvents();renderNav();}
 function refresh(){
   var v=S.view;
-  if(v==="home")renderHome();else if(v==="mevents")renderMyEvents();else if(v==="today")renderToday();else if(v==="me")renderProfile();
+  if(v==="home")renderHome();else if(v==="mevents")renderMyEvents();else if(v==="today")renderToday();else if(v==="me")renderProfile();else if(v==="crew")renderCrew();
   renderNav();
 }
 function homeView(){return S.isAdmin?"today":"home";}
@@ -2998,7 +3022,7 @@ function startExtra(only){var first=only||EXTRA.filter(extraMissing)[0]||EXTRA[0
 function saveResponse(done,fail){
   var p=payload();if(!S.db||!S.uid){if(fail)fail();return;}
   S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
-  S.db.doc("responses/"+S.uid).set(p).then(function(){S.sentAt=p.updated;renderNav();if(done)done();},function(){if(fail)fail();});
+  S.db.doc("responses/"+S.uid).set(p).then(function(){S.sentAt=p.updated;renderNav();publishCrew();if(done)done();},function(){if(fail)fail();});
 }
 function finishOnboarding(){
   if(!S.db||!S.uid){S.screen="profile";saveDraft();render();setTimeout(function(){say($("submitStatus"),"Sending from this page is not set up for you. Use Copy my results and send them to Hinda.","warn");},60);return;}
@@ -3128,6 +3152,7 @@ function drawMe(root){
     h("button",{type:"button",class:"btn small",text:S.photo?"📷 Change photo":"📷 Add a photo",onclick:function(){startExtra("photo");}})),pst);
   var miss=EXTRA.filter(extraMissing).length;
   if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"➕ Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
+  root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"👁 Who sees what"}),shareToggles(function(){saveResponse();})));
   // title
   root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"🎖 My title"}),
     ts.length?ts.map(function(x){return h("div",{class:"box"},h("b",{text:x.name}),x.desc?h("p",{text:x.desc}):null,
@@ -3148,13 +3173,83 @@ function drawMe(root){
       :h("p",{class:"sub",text:"Everything you finish is recorded here, event by event, so your contribution is seen and remembered."})));
   // about + CV, quieter
   var cv=cvOf(p,prof),cvSt=h("p",{class:"status",role:"status","aria-live":"polite"});
-  root.append(h("details",{class:"more msec"},h("summary",{text:"About me"}),prof.lines.map(function(l){return h("p",{text:l});}),
+  root.append(h("details",{class:"more msec",open:S.panel["me-about"]?true:null,ontoggle:function(e){S.panel["me-about"]=e.currentTarget.open;}},h("summary",{text:"About me"}),prof.lines.map(function(l){return h("p",{text:l});}),
       st.proud?h("p",null,h("b",{text:"Proudest work: "}),st.proud):null,
       h("div",{class:"stats"},prof.stats.map(function(s){return h("div",{class:"stat"},h("span",{text:s.label}),h("span",{class:"bar light","aria-hidden":"true"},h("i",{style:"width:"+Math.round(s.v*100)+"%"})));}))),
-    h("details",{class:"more msec"},h("summary",{text:"📄 Strengths for my CV"}),
+    h("details",{class:"more msec",open:S.panel["me-cv"]?true:null,ontoggle:function(e){S.panel["me-cv"]=e.currentTarget.open;}},h("summary",{text:"📄 Strengths for my CV"}),
       cv.map(function(s){return h("div",{class:"cvsec"},h("h4",{text:s[0]}),h("ul",null,s[1].map(function(x){return h("li",{text:x});})));}),
       h("button",{type:"button",class:"btn small",text:"Copy for my CV",onclick:function(){copyText(cvText(cv),cvSt,"Copied. Paste it into your CV or LinkedIn.");}}),cvSt),
     h("div",{class:"row",style:"margin-top:12px"},h("button",{type:"button",class:"btn link",text:"✏️ Update my answers",onclick:function(){S.screen="like";showView("flow");}})));
+}
+
+/* ---------- Sharing: everyone's About is visible to the crew; the rest is each person's choice ---------- */
+// Never shareable: jobs you'd rather not do, why you are here, card corrections. Those stay between you and Hinda.
+var SHARE_OPTS=[["up","👍","Jobs I'm up for"],["did","✅","What I've done"],["brings","🧰","What I bring"],["proud","⭐","My proudest work"],["works","🧭","How I work best"],["cv","📄","My CV or link"]];
+S.share={up:false,did:false,brings:false,proud:false,works:false,cv:false};S.crew={};
+function sanitizeShare(s){var o={};SHARE_OPTS.forEach(function(x){o[x[0]]=!!(s&&s[x[0]]);});return o;}
+// The public card: the About always, plus only the sections this person switched on.
+function publicCard(){
+  var p=payload(),prof=profileOf(p);if(!prof)return null;
+  var sh=sanitizeShare(S.share),st=sanitizeStory(p.story),g=grouped(S),yes=g.top.concat(g.good);
+  var doc={name:p.name,photo:p.photo,type:prof.title,chips:prof.chips.slice(0,2),strengths:prof.top.map(function(t){return TRAIT_LABEL[t];}),sections:{},updated:nowIso()};
+  if(sh.up&&yes.length)doc.sections.up=yes.map(function(i){return FN[i].name;}).slice(0,40);
+  if(sh.did){var d=maskLabels(EXP,p.q[NQ]);if(d.length)doc.sections.did=d;}
+  if(sh.brings){var b=labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]);if(b.length)doc.sections.brings=b;}
+  if(sh.proud&&st.proud)doc.sections.proud=st.proud;
+  if(sh.works&&workStyle(st))doc.sections.works=workStyle(st);
+  if(sh.cv&&clean(p.cv))doc.sections.cv=clean(p.cv).slice(0,1500);
+  return doc;
+}
+function publishCrew(){
+  if(!S.db||!S.uid||S.canWrite===false)return;
+  var doc=publicCard();if(!doc)return;
+  S.db.doc("crew/"+S.uid).set(doc).catch(function(){});
+}
+function shareToggles(onChange){
+  var box=h("div",{class:"sharebox"});
+  box.append(h("div",{class:"shr locked"},h("span",{class:"shr-e","aria-hidden":"true",text:"🙂"}),h("span",{class:"shr-t"},h("b",{text:"Your About"}),h("span",{class:"sub",text:"Name, photo, type, strengths and title. Always visible to the crew, so newcomers can see who does what."})),h("span",{class:"pill","data-s":"taken",text:"Shared"})));
+  SHARE_OPTS.forEach(function(o){
+    var on=!!S.share[o[0]];
+    var b=h("button",{type:"button",class:"shr","aria-pressed":String(on),onclick:function(){S.share[o[0]]=!S.share[o[0]];b.setAttribute("aria-pressed",String(!!S.share[o[0]]));b.querySelector(".pill").textContent=S.share[o[0]]?"Shared":"Private";b.querySelector(".pill").setAttribute("data-s",S.share[o[0]]?"taken":"draft");saveDraft();if(onChange)onChange();}},
+      h("span",{class:"shr-e","aria-hidden":"true",text:o[1]}),h("span",{class:"shr-t"},h("b",{text:o[2]})),h("span",{class:"pill","data-s":on?"taken":"draft",text:on?"Shared":"Private"}));
+    box.append(b);
+  });
+  box.append(h("p",{class:"sub",text:"Always private, whatever you choose: jobs you'd rather not do, why you're here, and your card corrections. Only you and Hinda see those."}));
+  return box;
+}
+
+/* ---------- Crew: who does what ---------- */
+function renderCrew(){
+  var root=$("crewBody");if(!root)return;var keep=focusKeep(root);clear(root);
+  try{drawCrew(root);}finally{focusRestore(root,keep);}
+}
+function drawCrew(root){
+  var ids=Object.keys(S.crew||{});
+  root.append(h("h1",{class:"h-sum",text:"The crew"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Everyone at GCG, and what they do. Tap a person to see what they have chosen to share."}));
+  var tts=S.titles.filter(function(x){return (x.holders||[]).length;});
+  if(tts.length)root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"🎖 Who does what"}),
+    tts.map(function(x){return h("div",{class:"crewtitle"},h("b",{text:x.name}),h("span",{class:"sub",text:(x.holders||[]).map(nameOf).join(", ")}),x.desc?h("span",{class:"sub",text:x.desc}):null);})));
+  if(!ids.length){root.append(h("p",{class:"sub",text:"The crew shows up here as people finish their profiles."}));return;}
+  ids.sort(function(a,b){if(a===S.uid)return -1;if(b===S.uid)return 1;return String(S.crew[a].name).localeCompare(String(S.crew[b].name));});
+  ids.forEach(function(id){
+    var c=S.crew[id],key="crew:"+id,open=!!S.tlOpen[key],secs=c.sections||{},ts=titlesOf(id),n=Object.keys(secs).length;
+    var ph=cleanPhoto(c.photo);
+    var head=h("button",{type:"button",class:"crewhead","aria-expanded":String(open),onclick:function(){S.tlOpen[key]=!open;renderCrew();}},
+      ph?h("img",{class:"avatar md",src:ph,alt:""}):h("div",{class:"avatar md empty","aria-hidden":"true",text:"🙂"}),
+      h("span",{class:"crew-who"},h("b",{text:(c.name||"Someone")+(id===S.uid?" (you)":"")}),
+        ts.length?h("span",{class:"chip t1",text:"🎖 "+ts.map(function(x){return x.name;}).join(", ")}):null,
+        h("span",{class:"sub",text:c.type||""})),
+      h("span",{class:"chev","aria-hidden":"true",text:open?"−":"+"}));
+    var card=h("section",{class:"card crewcard"},head);
+    if(open){
+      card.append(h("div",{class:"chips"},(c.strengths||[]).map(function(s,i){return h("span",{class:"chip t"+i,text:s});})));
+      function sec(label,val){return val&&(!Array.isArray(val)||val.length)?h("div",{class:"crewsec"},h("p",{class:"lab",text:label}),Array.isArray(val)?h("div",{class:"chips"},val.map(function(v){return h("span",{class:"chip",text:v});})):h("p",{text:val})):null;}
+      card.append(sec("👍 Up for",secs.up),sec("✅ Has done",secs.did),sec("🧰 Brings",secs.brings),sec("⭐ Proudest work",secs.proud),sec("🧭 Works best",secs.works),
+        secs.cv?h("div",{class:"crewsec"},h("p",{class:"lab",text:"📄 CV or link"}),safeUrl(secs.cv)&&!/\s/.test(clean(secs.cv))?h("a",{href:safeUrl(secs.cv),target:"_blank",rel:"noopener",text:clean(secs.cv)}):h("p",{text:secs.cv})):null,
+        n?null:h("p",{class:"sub",text:(id===S.uid?"You have":c.name+" has")+" not shared more yet."}));
+    }
+    root.append(card);
+  });
 }
 
 /* ---------- Capabilities ---------- */
@@ -3202,6 +3297,10 @@ function initCaps(){
         S.names={};snap.docs.forEach(function(d){var o=d.data();if(o&&o.name)S.names[d.id]=clean(o.name).slice(0,60);});
         if(S.view==="events")renderEvents();refresh();
       },function(){});
+      S.db.collection("crew").onSnapshot(function(snap){
+        S.crew={};snap.docs.forEach(function(d){S.crew[d.id]=thaw(d.data());});
+        if(S.view==="crew")renderCrew();
+      },function(){});
       S.db.collection("titles").onSnapshot(function(snap){
         S.titles=snap.docs.map(function(d){if(titleDirty[d.id]){var mine=titleById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.jobs=sanitizeIds(o.jobs);o.holders=Array.isArray(o.holders)?o.holders:[];return o;});
         if(S.view==="team")renderTeam();refresh();
@@ -3226,7 +3325,7 @@ function boot(){
   if(LOGO.indexOf("data:")===0){var m=$("miniLogo");m.src=LOGO;m.hidden=false;$("miniFb").hidden=true;}
   var d=loadDraft();
   if(d){
-    S.name=d.name||"";S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.extraMode=!!d.extraMode;
+    S.name=d.name||"";S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.share=sanitizeShare(d.share);S.extraMode=!!d.extraMode;
     S.levels={};Object.keys(d.levels||{}).forEach(function(k){if(FN[k]&&(d.levels[k]==="good"||d.levels[k]==="curious"||d.levels[k]==="no"))S.levels[k]=d.levels[k];});
     S.q=normQ(d.q);S.story=sanitizeStory(d.story);S.confirm=CONFIRM[d.confirm]?d.confirm:"";S.confirmNote=d.confirmNote||"";
     S.deck=Array.isArray(d.deck)?sanitizeIds(d.deck):null;S.deckSig=d.deckSig||"";S.deckAt=Math.max(0,Number(d.deckAt)||0);
