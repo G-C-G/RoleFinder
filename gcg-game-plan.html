@@ -818,6 +818,15 @@ body.has-nav{padding-bottom:88px}
 .notebar .nb-t{flex:1}
 .notes-n{margin-left:0}
 .notes{margin-bottom:12px}
+
+/* Identity band: full-width colour block, then the work below */
+.pband{appearance:none;display:flex;align-items:center;gap:14px;width:calc(100% + 32px);margin:2px -16px 18px;padding:14px 16px;background:var(--night);color:var(--on-night);border:0;border-bottom:3px solid var(--gold);text-align:left;cursor:pointer}
+.pband .pb-av{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none;border:2px solid var(--gold);background:var(--gold-soft)}
+.pband .pb-av.init{display:grid;place-items:center;color:var(--gold-ink);font:600 17px var(--font-display)}
+.pband .pb-who{display:grid;gap:1px;flex:1;min-width:0}
+.pband .pb-name{font:600 20px/1.2 var(--font-display)}
+.pband .pb-bio{font:500 14px/1.3 var(--font-body);color:var(--gold)}
+.pband .ico{color:var(--on-night);opacity:.7;flex:none}
 </style>
 
 <div class="wrap" id="wrap">
@@ -3210,14 +3219,11 @@ function drawHome(root){
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
   var nEv=Object.keys(evCount).length,mp=prof?missingProfile():0;
   var nm=clean(S.name)||"there";
-  if(prof)root.append(h("section",{class:"card place placetop"},
-    h("button",{type:"button",class:"pt-head",onclick:function(){showView("me");}},
-      S.photo?h("img",{class:"avatar sm",src:S.photo,alt:""}):null,
-      h("span",{class:"pt-who"},h("span",{class:"pt-hi",text:greeting()}),h("span",{class:"pt-name",text:nm}),h("span",{class:"pl-type",text:prof.title})),ico("chevR",18)),
-    h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});}),prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
-    h("p",{class:"pl-n",text:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+nEv+" event"+(nEv===1?"":"s"):"Your trail starts with your first task."}),
-    null));
-  else root.append(h("p",{class:"hello"},S.photo?h("img",{class:"avatar sm",src:S.photo,alt:""}):null,greeting()+", "+nm));
+  // Identity band: photo, name, one-line bio. Everything below it is the work.
+  root.append(h("button",{type:"button",class:"pband","aria-label":"Your profile",onclick:function(){showView("me");}},
+    S.photo?h("img",{class:"pb-av",src:cleanPhoto(S.photo)||S.photo,alt:""}):h("span",{class:"pb-av init","aria-hidden":"true",text:initials(nm)||"?"}),
+    h("span",{class:"pb-who"},h("span",{class:"pb-name",text:nm}),h("span",{class:"pb-bio",text:prof?prof.title:"Finish your profile to see your card"})),
+    ico("chevR",18)));
   root.append(noteBox());
   root.append(h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):"You're good for now."}));
   var top=items[0];
