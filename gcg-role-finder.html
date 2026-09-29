@@ -340,6 +340,11 @@ table.map{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
 .tl-who li[data-s="done"]{color:var(--ok)}
 .tl-feed{display:grid;gap:2px;font-size:14px;border-top:1.5px solid var(--soft);padding-top:8px}
 @media (prefers-reduced-motion:no-preference){.tl-fill{transition:width .6s ease-out}}
+.plan{display:grid;gap:6px}
+.plan label{font-weight:800;font-size:14px}
+.calrow .k{font-weight:800;font-size:13.5px;color:var(--muted)}
+.howto{border:2px dashed var(--edge);border-radius:14px;padding:4px 12px;background:var(--bg)}
+.steps{margin:4px 0 8px;padding-left:1.3em;display:grid;gap:6px;font-size:15px}
 .ping{border:2.5px solid var(--edge);border-radius:16px;background:var(--gold-soft);padding:12px 14px;margin-bottom:12px;display:grid;gap:6px}
 .task.flash{outline:4px solid var(--gold);outline-offset:2px}
 .ok{color:var(--ok);font-weight:800}
@@ -2087,7 +2092,8 @@ function adminTask(ev,t,cur){
   var pk="ping"+t.id,lk=h("span",{class:"status"});
   return h("div",{class:"task","data-s":st,id:"task-"+ev.id+"-"+t.id},
     h("div",{class:"task-top"},priBadge(t.pri),title,statusPill(st)),
-    h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?"🕒 "+fmtClock(due):"📅 "+fmtWhen(due))+" · "}),st==="done"?h("span",{text:"done "+fmtWhen(doneAt(ev,t))}):clockSpan(due)]:"No date",slotLabel(ev,t)?" · "+slotLabel(ev,t):"",t.helper?" · helper: "+t.helper:""),
+    h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?"🕒 "+fmtClock(due):"📅 "+fmtWhen(due))+" · "}),st==="done"?h("span",{text:"done "+fmtWhen(doneAt(ev,t))}):clockSpan(due)]:"No date",slotLabel(ev,t)?" · "+slotLabel(ev,t):"",t.helper?" · helper: "+t.helper:"",
+      r&&r.plan&&st!=="done"?" · 🗓 plans "+fmtDate(r.plan):""),
     sel,
     why&&why.why.length?h("div",{class:"chips"},why.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
     r&&(r.note||r.comment)?h("p",{class:"sub"},h("b",{text:nameOf(t.owner)+": "}),[r.mood||"",r.comment||r.note].join(" ")):null,
@@ -2269,8 +2275,15 @@ function drawTasks(root){
   var open=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if(x.t.offered||x.t.manual)open.push(x);});});
   open.sort(function(a,b){return (b.late-a.late)||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o)||((a.due||Infinity)-(b.due||Infinity));});
   var top=open.filter(function(x){return x.st!=="offered";})[0]||open[0];
+  var calSt=h("span",{class:"status"}),seenHelp=lsGet("gcg-help-tasks")==="1";
+  var mineCal=mine.filter(function(x){var s=taskState(x.ev,x.t);return s!=="done"&&s!=="passed"&&s!=="offered";}).map(function(x){return calItem(x.ev,x.t);}).filter(Boolean);
   root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"My tasks"}),h("h2",{class:"q",text:mine.length?"Your tasks":"No tasks for you right now"}),
-    h("p",{class:"sub",text:"Picked for you from your player card. Say yes to the ones you want. Tick them off when they are done, and tell us how it went."}),
+    h("details",{class:"howto",open:seenHelp?null:true,ontoggle:function(e){if(!e.currentTarget.open)lsSet("gcg-help-tasks","1");}},h("summary",{text:"How this works"}),
+      h("ol",{class:"steps"},
+        h("li",null,h("b",{text:"Say yes or no. "}),"Each task was picked for you from your player card. Saying no is fine."),
+        h("li",null,h("b",{text:"Plan it. "}),"Pick your own day to do it, before the deadline, and add it to your calendar."),
+        h("li",null,h("b",{text:"Tick it done. "}),"Say how it went. The event's progress bar moves, and the team sees who did what."))),
+    mineCal.length?h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"📅 Add all my tasks to my calendar",onclick:function(){saveIcs("GCG-my-tasks.ics",mineCal,calSt);}}),calSt):null,
     top?h("div",{class:"topone"},h("span",{class:"k",text:"🎯 Your #1 right now"}),h("b",{text:top.t.title}),h("span",{class:"sub",text:(top.ev.name||"")+(top.due?" · "+fmtWhen(top.due)+" · ":"")}),top.due?clockSpan(top.due):null):null));
   var byEv={};mine.forEach(function(x){(byEv[x.ev.id]=byEv[x.ev.id]||{ev:x.ev,ts:[]}).ts.push(x.t);});
   Object.keys(byEv).map(function(k){return byEv[k];}).sort(function(a,b){return String(a.ev.date||"~").localeCompare(String(b.ev.date||"~"));}).forEach(function(g){
@@ -2306,6 +2319,12 @@ function myTaskCard(ev,t,me){
       h("div",{class:"seg3 two"},h("button",{type:"button",class:"sb","data-c":"yes",text:"✋ I'll take it",onclick:function(){writeReply(ev,t,{answer:"take",note:clean(dr.note)},stat);}}),
         h("button",{type:"button",class:"sb","data-c":"no",text:"🙅 Not this one",onclick:function(){writeReply(ev,t,{answer:"pass",note:clean(dr.note)},stat);}})));
   }else if(st==="taken"||st==="started"||st==="stuck"){
+    var planIn=h("input",{type:"date","aria-label":"My plan for "+t.title,"data-k":"plan-"+key,value:(r&&r.plan)||""});
+    planIn.addEventListener("change",function(){writeReply(ev,t,{plan:planIn.value},stat);});
+    var planLate=r&&r.plan&&due&&new Date(r.plan+"T10:00:00")>due;
+    body.push(h("div",{class:"plan"},h("label",{text:"🗓 When will you do it? (your own plan)"}),planIn,
+      planLate?h("span",{class:"stuck",text:"That is after the deadline. Pick an earlier day, or tell Hinda."}):null),
+      calButtons(ev,t,stat));
     body.push(h("div",{class:"row"},
       st==="taken"?h("button",{type:"button",class:"btn small",text:"▶ Start",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):null,
       h("button",{type:"button",class:"btn small green",text:"✔ Done",onclick:function(){S.panel[key]=panel==="done"?"":"done";renderTasks();}}),
@@ -2334,7 +2353,8 @@ function myTaskCard(ev,t,me){
   }
   return h("div",{class:"task","data-s":st,id:"task-"+ev.id+"-"+t.id},
     h("div",{class:"task-top"},priBadge(t.pri),h("b",{class:"ttl",text:t.title}),statusPill(st)),
-    h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?"🕒 "+fmtClock(due)+" on the day":"📅 by "+fmtWhen(due))+" · "}),st==="done"?"":clockSpan(due)]:"",slotLabel(ev,t)?" · "+slotLabel(ev,t):""),
+    h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?"🕒 "+fmtClock(due)+" on the day":"⏰ Deadline "+fmtWhen(due))+" · "}),st==="done"?"":clockSpan(due)]:"",slotLabel(ev,t)?" · "+slotLabel(ev,t):"",
+      r&&r.plan&&st!=="done"?" · 🗓 Your plan: "+fmtDate(r.plan):""),
     body,stat);
 }
 
@@ -2508,6 +2528,46 @@ function renderProfile(){
     hist.length?h("ul",{class:"crew"},hist.map(function(x){return h("li",null,h("b",{text:x.t.title}),", "+(x.ev.name||"")+(x.at?" · "+fmtWhen(x.at):"")+(x.r&&x.r.mood?" "+x.r.mood:""));})):h("p",{class:"sub",text:"Your finished tasks will build up here, event by event."})));
 }
 
+/* ---------- Calendar: tasks go into people's own calendars ---------- */
+function calItem(ev,t){
+  var r=S.uid?latestReply(ev.id,t.id,S.uid):null,due=taskDue(ev,t),start,end,desc=[];
+  if(r&&r.plan){start=new Date(r.plan+"T10:00:00");end=new Date(start.getTime()+36e5);}
+  else if(due){start=t.phase==="during"?due:new Date(due.getTime()-36e5);end=t.phase==="during"?new Date(due.getTime()+36e5):due;}
+  if(!start||isNaN(start))return null;
+  desc.push((ev.name||"GCG event")+(ev.place?", "+ev.place:""));
+  if(due)desc.push("Deadline: "+fmtWhen(due));
+  if(FN[t.job])desc.push("Job: "+FN[t.job].name);
+  if(S.appUrl)desc.push(taskLink(ev.id,t.id));
+  return {uid:ev.id+"-"+t.id+"@gcg",title:"GCG: "+t.title,start:start,end:end,desc:desc.join("\n"),where:ev.place||""};
+}
+function icsTime(d){return d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");}
+function icsText(s){return String(s||"").replace(/\\/g,"\\\\").replace(/;/g,"\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");}
+function icsFile(items){
+  var L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Gold Coast Games//Role Finder//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH"];
+  items.forEach(function(x){L.push("BEGIN:VEVENT","UID:"+x.uid,"DTSTAMP:"+icsTime(new Date()),"DTSTART:"+icsTime(x.start),"DTEND:"+icsTime(x.end),
+    "SUMMARY:"+icsText(x.title),"DESCRIPTION:"+icsText(x.desc),x.where?"LOCATION:"+icsText(x.where):null,
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsText(x.title),"TRIGGER:-P1D","END:VALARM","END:VEVENT");});
+  L.push("END:VCALENDAR");
+  return L.filter(Boolean).join("\r\n");
+}
+function googleCal(x){
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(x.title)+"&dates="+icsTime(x.start)+"/"+icsTime(x.end)+
+    "&details="+encodeURIComponent(x.desc)+(x.where?"&location="+encodeURIComponent(x.where):"");
+}
+function saveIcs(name,items,st){
+  if(!items.length){say(st,"Nothing with a date to add yet.","warn");return;}
+  var text=icsFile(items);
+  if(S.dl){S.dl.save({filename:name,data:text}).then(function(){say(st,"Saved. Open the file to add it to your calendar.","ok");},function(e){say(st,e&&e.code==="declined"?"Cancelled.":"Could not save here.","warn");});return;}
+  try{var bl=new Blob([text],{type:"text/calendar"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved. Open the file to add it to your calendar.","ok");}
+  catch(e){say(st,"Could not save here.","warn");}
+}
+function calButtons(ev,t,stat){
+  var x=calItem(ev,t);if(!x)return null;
+  return h("div",{class:"row calrow"},h("span",{class:"k",text:"📅 Add to calendar:"}),
+    h("a",{class:"btn small",href:googleCal(x),target:"_blank",rel:"noopener",text:"Google"}),
+    h("button",{type:"button",class:"btn small",text:"Apple / Outlook",onclick:function(){saveIcs("GCG-"+slug(t.title)+".ics",[x],stat);}}));
+}
+
 /* ---------- Insights (Hinda): how fast things really get done ---------- */
 function taskRecords(){
   var out=[];
@@ -2656,7 +2716,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();
