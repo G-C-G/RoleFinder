@@ -756,6 +756,7 @@ input:focus,textarea:focus{border-color:var(--ink);outline:0;box-shadow:0 0 0 3p
 .plan-days{font-weight:700;font-size:.95rem}
 .plan-line{margin:10px 0 2px;font-weight:600}
 .plan-line[data-k="bad"]{color:var(--bad,#b3261e)}
+.subtabs{gap:2px}.subtab{padding:8px 12px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -783,7 +784,9 @@ input:focus,textarea:focus{border-color:var(--ink);outline:0;box-shadow:0 0 0 3p
       <button type="button" class="subtab" data-t="people" role="tab">People</button>
       <button type="button" class="subtab" data-t="coverage" role="tab">Coverage</button>
       <button type="button" class="subtab" data-t="titles" role="tab">Titles</button>
+      <button type="button" class="subtab" data-t="ideas" role="tab">Ideas</button>
     </div>
+    <div id="team-ideas" hidden><div id="ideasInbox"></div></div>
     <div id="team-people">
     <div class="tstats" id="t-stats"></div>
     <div class="row" style="margin-top:14px">
@@ -1845,11 +1848,12 @@ function pname(p){return p.name||"Unnamed";}
 function yesOf(p){return (p.top||[]).concat(p.good||[]);}
 function renderTeam(){
   if(!S.isAdmin)return;
-  ["people","coverage","titles"].forEach(function(k){$("team-"+k).hidden=(S.teamTab!==k);});
+  ["people","coverage","titles","ideas"].forEach(function(k){$("team-"+k).hidden=(S.teamTab!==k);});
   document.querySelectorAll("#teamtabs .subtab").forEach(function(b){b.setAttribute("aria-selected",String(b.getAttribute("data-t")===S.teamTab));});
   if(S.teamTab==="people"){renderStats();renderPings();renderPeople();}
   if(S.teamTab==="coverage"){drawCoverage();renderMap();renderCov();renderRoles();}
   if(S.teamTab==="titles")renderTitles();
+  if(S.teamTab==="ideas")renderInbox();
 }
 function renderStats(){
   var root=$("t-stats");clear(root);
@@ -2748,7 +2752,7 @@ function writeReply(ev,t,patch,st){
   },function(){say(st,"Could not save. Tell Hinda directly.","warn");});
 }
 /* ---------- Pings and links: Hinda nudges a person to a specific thing ---------- */
-S.pings=[];S.acks={};S.allAcks={};S.names={};S.appUrl="";S.goTask=null;
+S.ideas={};S.pings=[];S.acks={};S.allAcks={};S.names={};S.appUrl="";S.goTask=null;
 function taskLink(eid,tid){var base=S.appUrl||String(location.href).split("#")[0];return base+"#task="+eid+"."+tid;}
 function readHash(){var m=String(location.hash||"").match(/task=([^.&]+)\.([^&]+)/);if(m)S.goTask={eid:decodeURIComponent(m[1]),tid:decodeURIComponent(m[2])};}
 function openLinkedTask(){
@@ -3152,6 +3156,7 @@ function drawHome(root){
     upcoming.length?h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Add upcoming dates to my calendar",onclick:function(){saveIcs("GCG-upcoming.ics",upcoming,calSt);}}),calSt):null));
   var grabs=upForGrabs();
   if(grabs.length)root.append(h("button",{type:"button",class:"grabs-link",onclick:function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}},""+grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs ›"));
+  if(S.uid&&!S.isAdmin)root.append(ideaBox());
 }
 
 /* ---------- Team member Events ---------- */
@@ -3266,6 +3271,7 @@ function drawToday(root){
     evs.length?evs.map(function(ev){return h("button",{type:"button",class:"evrow",onclick:function(){S.evOpen=ev.id;showView("events");}},
       h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),h("span",{class:"sub",text:eventPct(ev)+"% ready"}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
     h("button",{type:"button",class:"btn small go",text:"Plan an event",onclick:function(){S.evOpen="";showView("events");}})));
+  if(newIdeaCount())root.append(h("button",{type:"button",class:"grabs-link",onclick:function(){S.teamTab="ideas";showView("team");}},newIdeaCount()+" new idea"+(newIdeaCount()>1?"s":"")+", leads or feedback ›"));
 }
 
 /* ---------- Team: People · Coverage · Titles ---------- */
@@ -3289,6 +3295,47 @@ function drawCoverage(){
   if(multi.length)root.append(h("p",{class:"sub",style:"margin-top:10px",text:"Holding more than one title: "+multi.map(function(p){return pname(p)+" ("+titlesOf(p.id).length+")";}).join(", ")}));
 }
 
+
+/* ---------- Ideas, leads and feedback: one small doc per person; Hinda reads all, each person reads their own ---------- */
+var IDEA_KINDS=[["idea","Idea"],["lead","Lead"],["fix","Something to fix"]];
+function kindName(k){for(var i=0;i<IDEA_KINDS.length;i++)if(IDEA_KINDS[i][0]===k)return IDEA_KINDS[i][1];return "Idea";}
+function ideaItems(uid){var d=S.ideas&&S.ideas[uid];return d&&Array.isArray(d.items)?d.items:[];}
+function newIdeaCount(){var n=0;Object.keys(S.ideas||{}).forEach(function(u){ideaItems(u).forEach(function(i){if(i.status==="new")n++;});});return n;}
+function saveIdeas(uid,items,name){
+  if(!S.db)return Promise.reject();
+  var doc={name:clean(name||nameOf(uid)).slice(0,60),items:items.slice(-30),updated:nowIso()};
+  S.ideas[uid]=doc;
+  return S.db.doc("ideas/"+uid).set(doc);
+}
+function ideaBox(){
+  var kind="idea",st=h("span",{class:"status",role:"status","aria-live":"polite"});
+  var ta=h("textarea",{rows:3,maxlength:600,"aria-label":"Your note",placeholder:"What is it? A line or two is enough."});
+  var chips=h("div",{class:"chips"});
+  function paint(){clear(chips);IDEA_KINDS.forEach(function(k){chips.append(h("button",{type:"button",class:"chip"+(kind===k[0]?" on":""),"aria-pressed":String(kind===k[0]),text:k[1],onclick:function(){kind=k[0];paint();}}));});}
+  paint();
+  var mine=ideaItems(S.uid).slice().reverse().slice(0,5);
+  return h("details",{class:"card hsec ideas"},h("summary",{text:"Got an idea, a lead or something to fix?"}),
+    h("p",{class:"sub",text:"Hinda reads everything and sees who sent it."}),chips,ta,
+    h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Send",onclick:function(){
+      var txt=clean(ta.value).slice(0,600);if(!txt){say(st,"Write a line first.","warn");return;}
+      if(!S.db||S.canWrite===false){say(st,"Sending needs the shared page.","warn");return;}
+      var items=ideaItems(S.uid).slice();items.push({id:"i"+Date.now().toString(36),kind:kind,text:txt,at:nowIso(),status:"new",reply:""});
+      saveIdeas(S.uid,items,S.name).then(function(){ta.value="";say(st,"Sent. Thank you.","ok");renderHome();},function(){say(st,"Could not send.","warn");});
+    }}),st),
+    mine.length?h("ul",{class:"crew"},mine.map(function(i){return h("li",null,h("b",{text:kindName(i.kind)+": "}),i.text+" · ",h("span",{class:i.status==="new"?"sub":"ok",text:i.status==="new"?"sent":i.status==="seen"?"seen":"done"}),i.reply?h("div",{class:"sub",text:"Hinda: "+i.reply}):null);})):null);
+}
+function renderInbox(){
+  var root=$("ideasInbox");if(!root)return;clear(root);
+  var all=[];Object.keys(S.ideas||{}).forEach(function(u){ideaItems(u).forEach(function(i){all.push({u:u,i:i});});});
+  all.sort(function(a,b){var an=a.i.status==="done"?1:0,bn=b.i.status==="done"?1:0;return (an-bn)||String(b.i.at).localeCompare(String(a.i.at));});
+  root.append(h("h2",{text:"Ideas, leads and feedback"}),h("p",{class:"sub",text:all.length?newIdeaCount()+" new. Newest first, finished ones last.":"Nothing yet. Team members send these from the bottom of Home."}));
+  all.forEach(function(x){
+    var reply=h("input",{type:"text","aria-label":"Reply",placeholder:"Reply (optional)",value:x.i.reply||""});
+    function set(status){var items=ideaItems(x.u).map(function(o){if(o.id!==x.i.id)return o;var n=JSON.parse(JSON.stringify(o));n.status=status;n.reply=clean(reply.value).slice(0,300);return n;});saveIdeas(x.u,items,S.ideas[x.u].name).then(renderInbox,function(){});}
+    root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:kindName(x.i.kind)+" · "+nameOf(x.u)+" · "+fmtDate(String(x.i.at).slice(0,10))}),h("p",{text:x.i.text}),reply,
+      h("div",{class:"row"},x.i.status==="done"?null:h("button",{type:"button",class:"btn small go",text:"Done",onclick:function(){set("done");}}),x.i.status==="new"?h("button",{type:"button",class:"btn small",text:"Seen",onclick:function(){set("seen");}}):null,x.i.status==="done"?h("span",{class:"ok",text:"done"}):null)));
+  });
+}
 
 /* ---------- Plan: where each event is, how ready it is, and where it is heading ---------- */
 function renderPlan(){
@@ -3626,6 +3673,8 @@ function initCaps(){
         S.titles=snap.docs.map(function(d){if(titleDirty[d.id]){var mine=titleById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.jobs=sanitizeIds(o.jobs);o.holders=Array.isArray(o.holders)?o.holders:[];return o;});
         if(S.view==="team")renderTeam();refresh();
       },function(){});
+      if(S.uid&&!S.isAdmin)S.db.doc("ideas/"+S.uid).onSnapshot(function(snap){S.ideas={};if(snap.exists)S.ideas[S.uid]=thaw(snap.data());if(S.view==="home")renderHome();},function(){});
+      if(S.isAdmin)S.db.collection("ideas").onSnapshot(function(snap){S.ideas={};snap.docs.forEach(function(d){S.ideas[d.id]=thaw(d.data());});if(S.view==="team"&&S.teamTab==="ideas")renderInbox();if(S.view==="today")renderToday();if(S.view==="home")renderHome();},function(){});
       S.db.doc("settings/app").onSnapshot(function(snap){if(snap.exists&&snap.data().url)S.appUrl=clean(snap.data().url);},function(){});
       S.db.collection("pings").onSnapshot(function(snap){
         S.pings=snap.docs.map(function(d){var o=thaw(d.data());o.id=d.id;return o;});
