@@ -309,6 +309,38 @@ table.map{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
 .msgrow{display:grid;gap:6px;border-top:1.5px solid var(--soft);padding-top:10px}
 .msgrow pre{white-space:pre-wrap;margin:0;background:var(--card);border-radius:10px;padding:10px;border:1.5px solid var(--soft)}
 .crew{margin:8px 0;padding-left:1.2em;display:grid;gap:4px}
+.ping{border:2.5px solid var(--edge);border-radius:16px;background:var(--gold-soft);padding:12px 14px;margin-bottom:12px;display:grid;gap:6px}
+.task.flash{outline:4px solid var(--gold);outline-offset:2px}
+.ok{color:var(--ok);font-weight:800}
+.three-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:10px}
+.cd{font-weight:800;font-size:13px;white-space:nowrap}
+.cd[data-k="soon"]{color:var(--gold-ink)}
+.cd[data-k="bad"]{color:var(--red)}
+.pri{flex:none;font-size:12px;font-weight:800;border-radius:6px;padding:2px 6px;border:1.5px solid var(--soft);background:var(--card);white-space:nowrap}
+.pri[data-p="must"]{border-color:var(--red)}
+.task .meta{font-size:13.5px;color:var(--muted);font-weight:700}
+.clockbar{display:grid;gap:8px;border:2.5px solid var(--edge);border-radius:16px;padding:12px;background:var(--bg-2)}
+.clockbar .k,.topone .k{display:block;font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.clockbar b{font-family:var(--font-display);font-weight:600;font-size:18px;margin-right:8px}
+.phase{font-family:var(--font-display);font-weight:600;font-size:17px;margin:10px 0 0;padding-top:10px;border-top:2.5px solid var(--edge)}
+.cphead{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:800;font-size:14px;padding:8px 10px;border-radius:10px;background:var(--bg-2)}
+.cphead[data-c="done"]{background:var(--green-soft)}
+.cphead[data-c="cur"]{background:var(--gold-soft)}
+.risk{margin:0;padding-left:1.3em;display:grid;gap:6px}
+.risk .why{font-weight:800;color:var(--red)}
+.stuck{font-weight:800;color:var(--red);font-size:14px}
+.claim{background:var(--gold-soft);border-radius:10px;padding:6px 10px;font-weight:700;font-size:14px}
+.topone{display:grid;gap:2px;border:2.5px solid var(--edge);border-radius:16px;padding:12px 14px;background:var(--gold)}
+.topone,.topone .k,.topone .sub{color:var(--on-gold)}
+.topone b{font-family:var(--font-display);font-weight:600;font-size:19px}
+.runlist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.runlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;border:1.5px solid var(--soft)}
+.runlist li[data-t="now"]{background:var(--green-soft);border-color:var(--green)}
+.runlist li[data-t="next"]{background:var(--gold-soft)}
+.runlist .rt{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800}
+.bigclock{font-family:var(--font-display);font-weight:700;font-size:28px}
+.more>summary{font-size:13.5px}
+table.map.ins td,table.map.ins th{white-space:normal}
 .next-phase{border:2.5px dashed var(--edge);border-radius:16px;padding:6px 14px 14px;background:var(--card)}
 </style>
 
@@ -321,17 +353,17 @@ table.map{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
       <button class="tab" role="tab" id="tab-flow" data-view="flow" aria-selected="true">My card</button>
       <button class="tab" role="tab" id="tab-mine" data-view="mine" aria-selected="false" hidden>Proposed roles</button>
       <button class="tab" role="tab" id="tab-tasks" data-view="tasks" aria-selected="false" hidden>My tasks</button>
-      <button class="tab" role="tab" id="tab-crew" data-view="crew" aria-selected="false" hidden>Crew</button>
       <button class="tab" role="tab" id="tab-team" data-view="team" aria-selected="false" hidden>Team</button>
       <button class="tab" role="tab" id="tab-events" data-view="events" aria-selected="false" hidden>Events</button>
+      <button class="tab" role="tab" id="tab-insights" data-view="insights" aria-selected="false" hidden>Insights</button>
     </div>
   </div>
 
   <main id="view-flow"><div id="flow"></div></main>
 
-  <section id="view-crew" hidden><div id="crewBody"></div></section>
   <section id="view-tasks" hidden><div id="tasksBody"></div></section>
   <section id="view-events" hidden><div id="evBody"></div></section>
+  <section id="view-insights" hidden><div id="insBody"></div></section>
   <section id="view-mine" hidden><div id="mineBody" class="card"></div></section>
 
   <section id="view-team" hidden>
@@ -339,6 +371,12 @@ table.map{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
     <div class="row" style="margin-top:14px">
       <button class="btn small" id="t-csv">Export everyone (CSV)</button>
       <span class="status" id="t-exportStatus" role="status" aria-live="polite"></span>
+    </div>
+
+    <div class="sect">
+      <h2>📣 Ping someone</h2>
+      <p class="sub">Send a nudge to one person. They see it the next time they open the page, and you see when they have. Copy the message to WhatsApp too.</p>
+      <div id="t-pings"></div>
     </div>
 
     <div class="sect">
@@ -422,6 +460,9 @@ var RAW=[
 ["C6","Run sheet and timing","Keeps the night to time and calls the transitions.","You keep time without being pushy.","Now"],
 ["C7","Scoring and answer checking","Keeps score live and verifies answers.","You are quick, accurate and fair when people argue about points.","Now"],
 ["C8","Photography and videography","Captures the night on camera.","You can film or shoot without disrupting the moment.","Now"],
+["C9","Floor manager","Runs the crew on the night: who is where, what is next, and filling gaps.","You stay calm, see the whole room and direct people kindly.","Now"],
+["C10","Food, drinks and prizes","Sorts welcome drinks, snacks, prizes and giveaways with the venue or partners.","You think about guests' comfort and never forget the details.","Now"],
+["C11","Guest hosts and speakers","Invites, briefs and looks after guest hosts, judges or speakers.","You are at ease with well-known people and brief them clearly.","Now"],
 
 ["D1","Social media","Posts, replies and manages the accounts.","You know how the platforms work and reply like a human.","Now"],
 ["D2","Content capture","Takes photos and video during events and behind the scenes. Open to everyone.","You have a phone and an eye. Anyone can pick this one.","Now"],
@@ -431,14 +472,16 @@ var RAW=[
 ["D6","Invitations and broadcasts","Sends SMS, WhatsApp, email, event pages and reminders.","You write short messages that people act on.","Now"],
 ["D7","Testimonials","Collects guest quotes and stories.","People tell you things and you ask the right follow-up.","Now"],
 ["D8","Press and media","Handles media coverage, features and outside collaborations.","You have media contacts or enjoy pitching stories.","Later"],
+["D9","Guest messages and replies","Answers guest questions and DMs, sends updates, and follows up after the night.","You reply fast, warmly and clearly.","Now"],
 
 ["E1","Ticketing and registration","Sets up ticket pages, QR codes, registration forms and pre-sales.","You set up forms and payment links that just work.","Now"],
 ["E2","Partner outreach","Approaches event companies, schools and organisations.","You are comfortable starting conversations with strangers.","Now"],
 ["E3","Pricing, proposals and quotes","Works out what we charge and puts it in writing.","You can explain value in a clear one-page proposal.","Now"],
-["E4","Company and client sales","Sells hosted and bespoke events to companies.","You have worked with corporate buyers or enjoy closing deals.","Soon"],
-["E5","Client management","Acts as the one point of contact for a booked client, from brief to follow-up.","You are reliable, responsive and remember every detail.","Soon"],
+["E4","Company and client sales","Sells hosted and bespoke events to companies.","You have worked with corporate buyers or enjoy closing deals.","Now"],
+["E5","Client management","Acts as the one point of contact for a booked client, from brief to follow-up.","You are reliable, responsive and remember every detail.","Now"],
 ["E6","Venue deals","Agrees terms with venues: door, bar, welcome drink.","You negotiate calmly and get terms in writing.","Soon"],
 ["E7","Sponsorship","Finds and manages sponsors.","You can match a brand's goals to what we offer.","Soon"],
+["E8","Community partners","Finds and works with the association, club or group behind each night.","You can walk into a new community and earn its trust.","Now"],
 
 ["F1","Project management","Runs the weekly check-in and the task list, and follows through.","You chase tasks kindly and never lose the thread.","Now"],
 ["F2","Event logistics","Handles transport, moving equipment, supplies and the day-of schedule.","You plan the how: what goes where, when, and who carries it.","Now"],
@@ -447,6 +490,8 @@ var RAW=[
 ["F5","Event data and learning","Tracks attendance, strongest and weakest rounds, feedback and contact collection.","You like finding patterns in what happened.","Now"],
 ["F6","Accounts and tools","Manages shared logins, subscriptions and who has access to what.","You keep access tidy and secure.","Now"],
 ["F7","Game review and fit check","Inspects a game before we run it: does it fit GCG's principles and the audience, will it work in the room, are the answers verified with a source and date.","You are curious, critical and good at spotting weak questions.","Now"],
+["F8","Game making and GGN requests","Makes and play-tests games with Global Games, or briefs them and gets the game licensed on time.","You love games, write clear briefs and chase deadlines.","Now"],
+["F9","Outdoor, permits and safety","Handles permits, first aid, crowd safety and weather plans for outdoor events.","You think about what could go wrong and plan for it.","Soon"],
 
 ["G1","Payments and bookkeeping","Handles Paystack and receipts, and records what each event cost and earned.","You reconcile every cedi.","Now"],
 ["G2","Budgeting","Builds event budgets, break-even points, and what a night really costs.","You build a simple spreadsheet and trust it.","Now"],
@@ -462,8 +507,9 @@ var RAW=[
 ["H5","Audience research","Studies how different groups respond and builds sector profiles.","You enjoy asking people questions and learning from the answers.","Soon"],
 
 ["I1","Team scheduling","Tracks who is available and who is at which event.","You keep an accurate calendar for other people.","Now"],
-["I2","Host training","Trains new hosts and sets a standard.","You coach people patiently.","Later"],
+["I2","Host training","Trains new hosts and sets a standard.","You coach people patiently.","Now"],
 ["I3","Onboarding","Brings new team members and volunteers up to speed.","You explain things simply and make newcomers feel settled.","Later"],
+["I4","Team updates and group chats","Keeps the team informed: updates, reminders and the WhatsApp groups.","You keep everyone in the loop without being asked.","Now"],
 
 ["J1","Digital tools and set-up","Sets up forms, sheets, Drive and automations.","You like making tools work together.","Now"],
 ["J2","Website and game page","Builds and maintains our own page and the builder behind it.","You build or maintain web pages.","Soon"]
@@ -506,6 +552,7 @@ var TRAIT_LABEL={welcome:"Welcoming people",host:"Hosting a room",organise:"Orga
 var FN_TRAITS={
  A1:["lead","sell"],A2:["organise","lead"],A3:["numbers","organise"],A4:["lead","connect"],A5:["organise","lead"],
  B1:["research","write"],B2:["write","connect"],B3:["write","organise"],B4:["visual","write"],B5:["connect","welcome"],
+ C9:["organise","lead"],C10:["organise","welcome"],C11:["connect","host"],D9:["write","welcome"],E8:["connect","sell"],F8:["organise","write"],F9:["organise","research"],I4:["write","connect"],
  C1:["host","welcome"],C2:["welcome","connect"],C3:["fix","organise"],C4:["fix","host"],C5:["organise","visual"],C6:["organise","host"],C7:["numbers","research"],C8:["visual","fix"],
  D1:["write","visual"],D2:["visual"],D3:["visual","fix"],D4:["visual","write","organise"],D5:["visual"],D6:["write","organise"],D7:["connect","write"],D8:["sell","write"],
  E1:["organise","fix"],E2:["sell","connect"],E3:["numbers","write","sell"],E4:["sell","connect"],E5:["connect","organise"],E6:["sell","numbers"],E7:["sell","write"],
@@ -926,7 +973,7 @@ var BUILD={
     var steps=[["You","What kind of work pulls you in"],["Situations","8 quick ones: pick what is most and least like you"],["Experience","What you have done and what you bring"],["Jobs","Jobs that might suit you. Pick as many as you like"],["About you","How you work best and why you are here"]];
     card.append(h("ol",{class:"levels","aria-label":"The five levels"},steps.map(function(s,i){return h("li",null,h("span",{class:"n","aria-hidden":"true",text:String(i+1)}),h("div",null,h("b",{text:s[0]}),h("span",{text:s[1]})));})));
     card.append(h("div",{class:"prize"},h("b",{text:"🏆 At the end: your player card"}),
-      h("span",{text:"Your natural strengths, how you work best, the jobs that suit you, and strengths written for your CV or LinkedIn. Download it as a PDF and keep it. Your card is shared with the GCG crew, so we all know who does what."})));
+      h("span",{text:"Your natural strengths, how you work best, the jobs that suit you, and strengths written for your CV or LinkedIn. Your card goes to Hinda. Download it as a PDF and share it with anyone you choose."})));
     var inp=h("input",{type:"text",id:"name",autocomplete:"name",placeholder:"First name is fine",value:S.name});
     inp.addEventListener("input",function(){S.name=inp.value;saveDraft();});
     function start(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}next();}
@@ -1132,8 +1179,8 @@ var BUILD={
     var canSend=!!(S.db&&S.uid&&S.canWrite!==false);
     var sendB=h("button",{type:"button",class:"btn go big",text:S.sentAt?"Send again":"Send to Hinda ▶",onclick:submit});
     var copyB=h("button",{type:"button",class:"btn"+(canSend?"":" go big"),text:"Copy my results",onclick:function(){copyText(shareText(),st,"Copied. Send it to Hinda.");}});
-    card.append(h("div",{class:"row"},canSend?sendB:null,copyB,h("button",{type:"button",class:"btn",text:"⬇ Download my card (PDF)",onclick:downloadPdf})),
-      h("p",{class:"sub",text:canSend?"You can change your answers and send again any time.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),st,
+    card.append(h("div",{class:"row"},canSend?sendB:null,copyB,h("button",{type:"button",class:"btn",text:"⬇ Download my card (PDF)",onclick:function(){downloadPdf(false);}}),h("button",{type:"button",class:"btn",text:"📤 Share my card",onclick:function(){downloadPdf(true);}})),
+      h("p",{class:"sub",text:(canSend?"Your card goes to Hinda only. You can change your answers and send again any time.":"Sending from this page is not set up for you. Copy your results and send them to Hinda.")+" Want others to see it? Share your PDF."}),st,
       h("details",null,h("summary",{text:"See the message Copy uses"}),h("textarea",{id:"msg",class:"mono",rows:"8",readonly:true,"aria-label":"Your results as text"},shareText())));
     return hd;
   }
@@ -1142,6 +1189,7 @@ function render(){
   var root=$("flow");clear(root);
   var sc=S.screen,kind=/^s\d+$/.test(sc)?"sit":sc;
   if(!BUILD[kind]){S.screen=sc="intro";kind="intro";}
+  pingBanners().forEach(function(b){root.append(b);});
   var np=pendingCount();
   if(np)root.append(h("button",{type:"button",class:"banner",onclick:function(){showView("tasks");}},"🎲 You have "+np+" task"+(np>1?"s":"")+" to answer. Tap to see them →"));
   if(sc!=="intro")root.append(hud());
@@ -1157,6 +1205,7 @@ function submit(){
   if(!p.name){say(st,"Add your name first. Go back to the start.","warn");return;}
   if(!S.db||!S.uid){say(st,"Sending is not set up for you here. Use Copy my results and send it to Hinda.","warn");return;}
   say(st,"Sending…");
+  S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
   S.db.doc("responses/"+S.uid).set(p).then(function(){
     S.sentAt=p.updated;say(st,"Sent to Hinda. 🎉 Thank you. You can change your answers and send again any time.","ok");
   },function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});
@@ -1235,17 +1284,23 @@ function summaryBlocks(){
   }
   cvOf(p,prof).forEach(function(s){B.push({t:"h",text:s[0]});s[1].forEach(function(x){B.push({t:"li",text:x});});});
   function grp(title,ids){if(!ids.length)return;B.push({t:"h",text:title});ids.forEach(function(i){B.push({t:"li",text:FN[i].name+": "+FN[i].covers});});}
-  grp("Jobs I said yes to",g.top.concat(g.good));grp("Jobs I might try",g.curious);
+  grp("Jobs I said yes to",g.top.concat(g.good));grp("Jobs I might try",g.curious);grp("Jobs I would rather not do",g.no);
   var st=sanitizeStory(p.story);
   if(st.why.length){B.push({t:"h",text:"Why I am here"});labels(M_WHY,st.why).forEach(function(x){B.push({t:"li",text:x});});}
   if(st.future){B.push({t:"h",text:"In a few years"});B.push({t:"p",text:M_FUTURE[st.future].label});}
   if(p.cv){B.push({t:"h",text:"CV or LinkedIn"});B.push({t:"p",text:p.cv});}
   return B;
 }
-function downloadPdf(){
+function downloadPdf(share){share=share===true;
   var st=$("submitStatus"),p=payload();
   var name="GCG-player-card-"+(p.name.replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"me")+".pdf",bytes;
   try{bytes=buildPdf(summaryBlocks());}catch(e){say(st,"Could not make the PDF here.","warn");return;}
+  if(share){
+    try{var file=new File([bytes],name,{type:"application/pdf"});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"My GCG player card"}).then(function(){say(st,"Shared.","ok");},function(e){if(!e||e.name!=="AbortError")say(st,"Could not share here. Download it instead.","warn");});return;}
+    }catch(e){}
+    say(st,"Sharing is not available here, so the PDF is downloading instead. Send it on from your phone or computer.","warn");
+  }
   if(S.dl){
     S.dl.save({filename:name,data:bytes}).then(function(){say(st,"Saved "+name+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the PDF here.","warn");});
     return;
@@ -1257,18 +1312,17 @@ function downloadPdf(){
 /* ---------- Views ---------- */
 function showView(v){
   S.view=v;
-  ["flow","tasks","crew","mine","team","events"].forEach(function(k){$("view-"+k).hidden=(k!==v);$("tab-"+k).setAttribute("aria-selected",String(k===v));});
-  $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="crew");
-  if(v==="team")renderTeam();if(v==="mine")renderMine();if(v==="tasks")renderTasks();if(v==="crew")renderCrew();if(v==="events")renderEvents();if(v==="flow")render();
+  ["flow","tasks","mine","team","events","insights"].forEach(function(k){$("view-"+k).hidden=(k!==v);$("tab-"+k).setAttribute("aria-selected",String(k===v));});
+  $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="crew"||v==="insights");
+  if(v==="team")renderTeam();if(v==="mine")renderMine();if(v==="tasks")renderTasks();if(v==="events")renderEvents();if(v==="insights")renderInsights();if(v==="flow")render();
   window.scrollTo(0,0);
 }
 function updateTabs(){
   var showMine=!!(S.roles&&S.roles.assign);
   var nt=myTasks().length,np=pendingCount();
-  $("tab-mine").hidden=!showMine;$("tab-team").hidden=!S.isAdmin;$("tab-events").hidden=!S.isAdmin;
+  $("tab-mine").hidden=!showMine;$("tab-team").hidden=!S.isAdmin;$("tab-events").hidden=!S.isAdmin;$("tab-insights").hidden=!S.isAdmin;
   $("tab-tasks").hidden=!nt;$("tab-tasks").textContent="My tasks"+(np?" ("+np+")":"");
-  var nc=S.people.length>0;$("tab-crew").hidden=!nc;
-  $("tabs").hidden=!(showMine||S.isAdmin||nt||nc);
+  $("tabs").hidden=!(showMine||S.isAdmin||nt);
 }
 function renderMine(){
   var root=$("mineBody");clear(root);
@@ -1286,7 +1340,7 @@ function pname(p){return p.name||"Unnamed";}
 function yesOf(p){return (p.top||[]).concat(p.good||[]);}
 function renderTeam(){
   if(!S.isAdmin)return;
-  renderStats();renderMap();renderPeople();renderCov();renderRoles();
+  renderStats();renderPings();renderMap();renderPeople();renderCov();renderRoles();
 }
 function renderStats(){
   var root=$("t-stats");clear(root);
@@ -1381,27 +1435,6 @@ function renderCov(){
   if(!root.firstChild)root.append(h("p",{class:"sub",text:"Every job has at least one person."}));
 }
 
-/* ---------- Crew: everyone's player card, visible to the whole team ---------- */
-function renderCrew(){
-  var root=$("crewBody");if(!root)return;clear(root);
-  root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"The crew"}),h("h2",{class:"q",text:"Everyone at GCG"}),
-    h("p",{class:"sub",text:"Each person's player card: what they are strong at, what they have done and what they want to do. Use it to find the right person to ask."})));
-  var grid=h("div",{class:"people",style:"margin-top:14px"});
-  S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).forEach(function(p){
-    var prof=profileOf(p),yes=yesOf(p),done=maskLabels(EXP,p.q&&p.q[NQ]),st=sanitizeStory(p.story);
-    var brings=labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]);
-    grid.append(h("div",{class:"person"},h("h3",{text:pname(p)}),
-      prof?h("p",{class:"ttl",text:prof.title}):null,
-      prof?h("div",{class:"chips"},prof.chips.map(function(c,i){return h("span",{class:"chip t"+i,text:c});})):null,
-      yes.length?h("p",{class:"lab",text:"Up for"}):null,yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name});})):null,
-      done.length?h("p",{class:"lab",text:"Has done"}):null,done.length?h("p",{text:done.join("; ")}):null,
-      brings.length?h("p",{class:"lab",text:"Brings"}):null,brings.length?h("p",{text:brings.join("; ")}):null,
-      st.proud?h("p",{class:"lab",text:"Proudest work"}):null,st.proud?h("p",{text:st.proud}):null,
-      workStyle(st)?h("p",{class:"meta",text:"Works best: "+workStyle(st)}):null));
-  });
-  root.append(grid);
-}
-
 /* ---------- Draft roles (next phase) ---------- */
 function scoreOf(p,id){
   if((p.no||[]).indexOf(id)>-1)return -100;
@@ -1476,8 +1509,8 @@ function csv(rows){
     return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
   }).join(",");}).join("\r\n");
 }
-function saveFile(name,text){
-  var st=$("t-exportStatus");
+function saveFile(name,text,st){
+  st=st||$("t-exportStatus");
   if(S.dl){S.dl.save({filename:name,data:text}).then(function(){say(st,"Saved "+name+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the file here.","warn");});return;}
   try{var bl=new Blob([text],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved "+name+".","ok");}
   catch(e){say(st,"Could not save the file here.","warn");}
@@ -1515,45 +1548,230 @@ function addPasted(){
   var pending=parsed.length,ok=0;say(st,"Adding…");
   parsed.forEach(function(o,i){
     var id="manual-"+Date.now().toString(36)+"-"+i+Math.floor(Math.random()*1296).toString(36);
+    S.db.doc("people/"+id).set({name:o.name,updated:o.updated}).catch(function(){});
     S.db.doc("responses/"+id).set(o).then(function(){ok++;},function(){}).then(function(){
       if(--pending===0){say(st,ok+" added"+(ok<parsed.length?", "+(parsed.length-ok)+" could not be saved":"")+".",ok?"ok":"warn");if(ok)$("paste").value="";}
     });
   });
 }
 
-/* ---------- Events: break an event into tasks, offer each task to the best-suited person ---------- */
-// [task title, the job it belongs to]. Hinda can also type any task and pick its closest job.
-var TASK_LIB=[
- ["Host the night","C1"],["Run the door and registration","C2"],["Set up projector and sound","C3"],["Music and sound cues","C4"],
- ["Set up the room","C5"],["Keep the run sheet and timing","C6"],["Keep score and check answers","C7"],["Take photos and video on the night","C8"],
- ["Edit a highlights video","D3"],["Post on social media","D1"],["Design the flyer","D5"],["Send invitations and reminders","D6"],
- ["Collect guest testimonials","D7"],["Set up tickets and registration","E1"],["Talk to the venue","E6"],["Transport and equipment","F2"],
- ["Check the games and answers before the night","F7"],["Track payments and costs","G1"],["Record attendance and feedback","F5"]
-];
-var TEMPLATE_GAME=["Host the night","Run the door and registration","Set up projector and sound","Music and sound cues","Set up the room","Keep the run sheet and timing","Keep score and check answers","Take photos and video on the night","Post on social media"];
-var STATE_LABEL={open:"No one yet",draft:"Not sent",offered:"⏳ Waiting",taken:"✅ Taken",passed:"🙅 Passed"};
-S.events=[];S.replies=[];S.evOpen="";S.evMsgs=null;
+/* ---------- Events: templates, checkpoints, priorities, a clock, and every step timestamped ---------- */
+var PRI={must:{l:"Must",e:"🔴",o:0},should:{l:"Should",e:"🟡",o:1},nice:{l:"Nice",e:"⚪",o:2}};
+var SIZE={S:"Small",M:"Medium",L:"Large"};
+var PHASES=[["before","Before"],["during","On the day"],["after","After"]];
+// A template task: title, job, phase, day offset from the event date, minutes from start time (on-the-day tasks only),
+// priority, people needed, size, checkpoint index, and the guest message it drafts (if any).
+function T(title,job,phase,d,m,pri,need,size,cp,msg){return {title:title,job:job,phase:phase,d:d,m:m,pri:pri,need:need||1,size:size||"M",cp:cp,msg:msg||""};}
+function corporate(name,product,cps,gameTasks,hostLen){
+  var t=[
+    T("Take the client brief","E5","before",cps[0][1]-3,null,"must",1,"S",0),
+    T("Send the quote and proposal","E3","before",cps[0][1],null,"must",1,"M",0),
+    T("Agreement signed","G5","before",cps[1][1],null,"must",1,"S",1),
+    T("Deposit received","G1","before",cps[1][1],null,"must",1,"S",1)
+  ].concat(gameTasks).concat([
+    T("Confirm venue access, timings and AV with the client","E5","before",-4,null,"must",1,"S",3),
+    T("Offer tasks and confirm the crew","I1","before",-4,null,"must",1,"S",3),
+    T("Test projector, sound and slides","F3","before",-1,null,"must",1,"S",3),
+    T("Client point of contact on the day","E5","during",0,-60,"must",1,"M",4),
+    T("Set up","C5","during",0,-90,"must",2,"M",4),
+    T("Tech and sound check","C3","during",0,-60,"must",1,"S",4),
+    T(product==="welcome"?"Host the welcome game":"Host the game","C1","during",0,0,"must",1,product==="welcome"?"M":"L",4),
+    product==="welcome"?null:T("Keep score and check answers","C7","during",0,0,"must",1,"M",4),
+    T("Photos and video","C8","during",0,0,"should",1,"M",4),
+    T("Pack down","F2","during",0,hostLen,"must",2,"S",4),
+    T("Send the client report with photos","E5","after",3,null,"must",1,"M",5),
+    T("Invoice and follow up payment","G1","after",2,null,"must",1,"S",5),
+    T("Ask the client for a testimonial","D7","after",5,null,"should",1,"S",5),
+    T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",5)
+  ]).filter(Boolean);
+  return {name:name,start:"18:00",cps:cps,tasks:t};
+}
+var TEMPLATES={
+  flagship:{name:"Flagship night",start:"18:30",cps:[["Game made and play-tested",-28],["Venue, partner and host locked",-21],["Tickets live and promo out",-14],["Crew confirmed and tested",-2],["Event night",0],["Report done",7]],tasks:[
+    T("Research the community: culture, inside jokes, folklore","H5","before",-35,null,"must",1,"M",0),
+    T("Brief Global Games and make the game","F8","before",-33,null,"must",1,"L",0),
+    T("Play-test the game with a small group","F8","before",-29,null,"must",2,"M",0),
+    T("Review the game and verify every answer","F7","before",-28,null,"must",1,"M",0),
+    T("Lock the venue and terms","E6","before",-24,null,"must",1,"M",1),
+    T("Bring in the community partner","E8","before",-22,null,"must",1,"M",1),
+    T("Invite and confirm a guest host","C11","before",-21,null,"should",1,"S",1),
+    T("Create the Luma event page","E1","before",-18,null,"must",1,"S",2),
+    T("Design the flyer","D5","before",-16,null,"should",1,"M",2),
+    T("Announce on socials and WhatsApp","D1","before",-14,null,"must",1,"S",2,"announce"),
+    T("Partner shares the invite with their members","E8","before",-14,null,"must",1,"S",2),
+    T("Send personal invitations","D6","before",-10,null,"should",1,"S",2,"announce"),
+    T("Sort welcome drinks and prizes","C10","before",-5,null,"should",1,"S",3),
+    T("Offer tasks and confirm the crew","I1","before",-5,null,"must",1,"S",3),
+    T("Brief the host on the game and rounds","C11","before",-3,null,"must",1,"S",3),
+    T("Test projector, sound and slides","F3","before",-2,null,"must",1,"S",3),
+    T("Reminder to registered guests","D9","before",-1,null,"should",1,"S",3,"remind"),
+    T("Day-of reminder","D9","during",0,-390,"should",1,"S",4,"dayof"),
+    T("Floor manager","C9","during",0,-120,"must",1,"L",4),
+    T("Set up the room","C5","during",0,-120,"must",3,"M",4),
+    T("Tech and sound check","C3","during",0,-90,"must",1,"S",4),
+    T("Doors open: welcome and registration","C2","during",0,-30,"must",2,"M",4),
+    T("Welcome game","C1","during",0,0,"should",1,"S",4),
+    T("Host the three rounds","C1","during",0,15,"must",1,"L",4),
+    T("Keep score and check answers","C7","during",0,15,"must",1,"M",4),
+    T("Music and sound cues","C4","during",0,0,"should",1,"M",4),
+    T("Photos and video","C8","during",0,0,"should",1,"M",4),
+    T("Collect guest testimonials","D7","during",0,150,"nice",1,"S",4),
+    T("Pack down and return equipment","F2","during",0,180,"must",2,"M",4),
+    T("Thank-you message and feedback form","D9","after",1,null,"must",1,"S",5,"thanks"),
+    T("Post photos from the night","D1","after",1,null,"should",1,"S",5),
+    T("Count money and record costs","G1","after",3,null,"must",1,"M",5),
+    T("Thank the community partner","E8","after",3,null,"should",1,"S",5),
+    T("Edit the highlights video","D3","after",4,null,"should",1,"M",5),
+    T("Record attendance and feedback","F5","after",5,null,"should",1,"S",5),
+    T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",5)
+  ]},
+  welcome:corporate("Corporate: welcome game","welcome",[["Brief and quote agreed",-8],["Agreement and deposit",-6],["Game ready",-4],["Crew confirmed",-2],["Event day",0],["Client report and invoice paid",10]],[
+    T("Pick and adapt the welcome game to the client","F8","before",-5,null,"must",1,"S",2),
+    T("Review the game and verify answers","F7","before",-4,null,"must",1,"S",2)],30),
+  standard:corporate("Corporate: standard GCG game (3 rounds)","standard",[["Brief and quote agreed",-12],["Agreement and deposit",-9],["Game adapted and play-tested",-6],["Crew confirmed",-3],["Event day",0],["Client report and invoice paid",10]],[
+    T("Adapt the three rounds to the client","F8","before",-8,null,"must",1,"M",2),
+    T("Play-test the adapted game","F8","before",-7,null,"should",2,"S",2),
+    T("Review the game and verify every answer","F7","before",-6,null,"must",1,"M",2)],150),
+  custom:corporate("Corporate: custom game","custom",[["Brief and quote agreed",-33],["Agreement and deposit",-30],["Game made and play-tested",-23],["Client signs off the game",-20],["Event day",0],["Client report and invoice paid",14]],[
+    T("Brief Global Games and make the custom game","F8","before",-29,null,"must",1,"L",2),
+    T("Play-test the custom game","F8","before",-24,null,"must",2,"M",2),
+    T("Review the game and verify every answer","F7","before",-23,null,"must",1,"M",2),
+    T("Client signs off the game","E5","before",-20,null,"must",1,"S",3)],150),
+  december:{name:"December Flagship (2 days, outdoor)",start:"09:00",cps:[["Dates and beach site locked",-55],["Permits and partners confirmed",-40],["Games made and play-tested",-30],["Tickets live and promo out",-21],["Crew and safety plan ready",-7],["Beach Day",0],["Unity Night",1],["Report done",10]],tasks:[
+    T("Lock the dates and the beach site","A2","before",-60,null,"must",1,"M",0),
+    T("Apply for permits","F9","before",-50,null,"must",1,"M",1),
+    T("Bring in running-club partners","E8","before",-45,null,"must",1,"M",1),
+    T("Find sponsors","E7","before",-42,null,"should",1,"L",1),
+    T("Diaspora outreach plan","B1","before",-40,null,"must",1,"M",1),
+    T("Make the Beach Day games and cleanup game","F8","before",-37,null,"must",1,"L",2),
+    T("Make the Unity Night trivia (current events)","F8","before",-35,null,"must",1,"L",2),
+    T("Play-test both games","F8","before",-31,null,"must",3,"M",2),
+    T("Review the games and verify every answer","F7","before",-30,null,"must",1,"M",2),
+    T("Create the Luma event pages","E1","before",-25,null,"must",1,"S",3),
+    T("Design the flyers","D5","before",-24,null,"must",1,"M",3),
+    T("Announce on socials and WhatsApp","D1","before",-21,null,"must",1,"S",3,"announce"),
+    T("First aid, safety and weather plan","F9","before",-10,null,"must",1,"M",4),
+    T("Outdoor projector, power and sound","F3","before",-8,null,"must",1,"M",4),
+    T("Cleanup supplies, water and prizes","C10","before",-7,null,"must",1,"M",4),
+    T("Offer tasks and confirm the crew","I1","before",-7,null,"must",1,"S",4),
+    T("Reminder to registered guests","D9","before",-1,null,"should",1,"S",4,"remind"),
+    T("Beach Day: floor manager","C9","during",0,-60,"must",1,"L",5),
+    T("Beach Day: set up the site","C5","during",0,-60,"must",4,"M",5),
+    T("Beach Day: welcome and registration","C2","during",0,-15,"must",2,"M",5),
+    T("Beach Day: host the games","C1","during",0,0,"must",1,"L",5),
+    T("Beach Day: first aid on site","F9","during",0,0,"must",1,"M",5),
+    T("Beach Day: photos and video","C8","during",0,0,"should",2,"M",5),
+    T("Unity Night: set up projector and seating","C3","during",1,480,"must",2,"M",6),
+    T("Unity Night: welcome and registration","C2","during",1,570,"must",2,"M",6),
+    T("Unity Night: host the trivia","C1","during",1,600,"must",1,"L",6),
+    T("Unity Night: keep score and check answers","C7","during",1,600,"must",1,"M",6),
+    T("Unity Night: pack down","F2","during",1,780,"must",3,"M",6),
+    T("Thank-you message and feedback form","D9","after",2,null,"must",1,"S",7,"thanks"),
+    T("Thank partners and sponsors","E8","after",4,null,"must",1,"S",7),
+    T("Count money and record costs","G1","after",5,null,"must",1,"M",7),
+    T("Edit the highlights video","D3","after",7,null,"should",1,"L",7),
+    T("Debrief: what worked, what to change","A2","after",10,null,"must",1,"S",7)
+  ]}
+};
+var TEMPLATE_ORDER=["flagship","welcome","standard","custom","december"];
+// Keep Must for what makes or breaks the event (about a third); everything else starts as Should.
+var MUST_KEEP=["Brief Global Games and make the game","Review the game and verify every answer","Review the game and verify answers","Lock the venue and terms","Create the Luma event page","Announce on socials and WhatsApp",
+  "Offer tasks and confirm the crew","Floor manager","Doors open: welcome and registration","Host the three rounds","Keep score and check answers","Count money and record costs",
+  "Send the quote and proposal","Deposit received","Brief Global Games and make the custom game","Client signs off the game","Host the welcome game","Host the game","Invoice and follow up payment",
+  "Lock the dates and the beach site","Apply for permits","Make the Beach Day games and cleanup game","Make the Unity Night trivia (current events)","First aid, safety and weather plan","Create the Luma event pages",
+  "Beach Day: floor manager","Beach Day: host the games","Beach Day: first aid on site","Unity Night: host the trivia"];
+TEMPLATE_ORDER.forEach(function(k){TEMPLATES[k].tasks.forEach(function(x){if(x.pri==="must"&&MUST_KEEP.indexOf(x.title)<0)x.pri="should";});});
+function mustShare(ev){var g={},m={};(ev.tasks||[]).forEach(function(t){var k=t.group||t.id;g[k]=1;if(t.pri==="must")m[k]=1;});var n=Object.keys(g).length;return {must:Object.keys(m).length,all:n};}
+var STATE_LABEL={open:"No one yet",draft:"Not sent",offered:"⏳ Waiting",taken:"✅ Taken",started:"▶ In progress",stuck:"⚠ Stuck",done:"✔ Done",passed:"🙅 Passed"};
+var ACTIVE={taken:1,started:1,stuck:1,done:1};
+S.events=[];S.replies=[];S.evOpen="";S.evMsgs=null;S.evDraft=null;S.run=null;S.panel={};
 function newId(p){return p+Date.now().toString(36)+Math.floor(Math.random()*46656).toString(36);}
+function nowIso(){return new Date().toISOString();}
 function evById(id){return S.events.filter(function(e){return e.id===id;})[0]||null;}
+function personById(pid){return S.people.filter(function(x){return x.id===pid;})[0]||null;}
+function nameOf(pid){var p=personById(pid);if(p)return pname(p);if(S.names&&S.names[pid])return S.names[pid];return pid&&pid===S.uid?(clean(S.name)||"You"):"Someone";}
+
+/* time */
+function dateAt(ev,d,m){
+  if(!ev.date||d==null)return null;
+  var dt=new Date(ev.date+"T00:00:00");if(isNaN(dt))return null;
+  dt.setDate(dt.getDate()+d);
+  if(m!=null){var st=String(ev.start||"18:30").split(":");dt.setHours(Number(st[0])||0,(Number(st[1])||0)+m,0,0);}
+  else dt.setHours(18,0,0,0);
+  return dt;
+}
+function taskDue(ev,t){return dateAt(ev,t.d,t.m);}
+function cpDue(ev,i){var c=(ev.cps||[])[i];if(!c)return null;return c.d===0||(ev.cps[i+1]&&ev.cps[i+1].d===c.d+1&&c.d>=0)?dateAt(ev,c.d,0):dateAt(ev,c.d,null);}
+function fmtDate(d){if(!d)return "Date not set";try{return new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});}catch(e){return d;}}
+function fmtWhen(dt){if(!dt)return "";return dt.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})+(dt.getHours()===18&&dt.getMinutes()===0?"":" "+fmtClock(dt));}
+function fmtClock(dt){return ("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2);}
+function countdown(due){
+  if(!due)return {text:"",k:""};
+  var ms=due-Date.now(),a=Math.abs(ms),d=Math.floor(a/864e5),hh=Math.floor(a%864e5/36e5),mm=Math.floor(a%36e5/6e4);
+  var span=d?d+"d "+hh+"h":hh?hh+"h "+mm+"m":mm+"m";
+  return ms<0?{text:"overdue by "+span,k:"bad"}:{text:"in "+span,k:ms<48*36e5?"soon":""};
+}
+function clockSpan(due){var c=countdown(due);return h("span",{class:"cd","data-due":due?String(due.getTime()):"","data-k":c.k,text:c.text});}
+function tickClocks(){
+  document.querySelectorAll("[data-due]").forEach(function(el){var v=Number(el.getAttribute("data-due"));if(!v)return;var c=countdown(new Date(v));el.textContent=c.text;el.setAttribute("data-k",c.k);});
+  var clk=$("liveClock");if(clk)clk.textContent=fmtClock(new Date());
+  if(S.run&&(S.view==="tasks"||S.view==="events"))renderRunSheet();
+}
+setInterval(tickClocks,30000);
+
+/* who said what: each person writes only their own reply record per task */
 function latestReply(eid,tid,pid){
   return S.replies.filter(function(r){return r.eid===eid&&r.tid===tid&&r.pid===pid;}).sort(function(a,b){return String(b.at).localeCompare(String(a.at));})[0]||null;
 }
+function replyOf(ev,t){return t.owner?latestReply(ev.id,t.id,t.owner):null;}
 function taskState(ev,t){
-  if(t.manual==="take")return "taken";if(t.manual==="pass")return "passed";
-  if(!t.owner)return "open";
-  var r=t.offered?latestReply(ev.id,t.id,t.owner):null;
-  if(r)return r.answer==="take"?"taken":"passed";
+  if(t.manual==="done")return "done";
+  if(t.manual==="pass")return "passed";
+  if(!t.owner)return t.helper?"taken":"open";
+  var r=(t.offered||t.manual)?replyOf(ev,t):null;
+  if(r&&r.answer==="pass")return "passed";
+  if(r&&(r.answer==="take"||r.answer==="claim")){if(r.state==="done")return "done";if(r.state==="stuck")return "stuck";if(r.state==="started")return "started";return "taken";}
+  if(t.manual==="take")return "taken";
   return t.offered?"offered":"draft";
+}
+function doneAt(ev,t){
+  if(t.manual==="done")return t.mts&&t.mts.done?new Date(t.mts.done):null;
+  var r=replyOf(ev,t);if(r&&r.state==="done")return new Date(r.doneAt||(r.ts&&r.ts.done)||r.at);return null;
 }
 function passersOf(ev,t){
   var out=(t.passed||[]).slice();
   S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===t.id&&r.answer==="pass"&&out.indexOf(r.pid)<0)out.push(r.pid);});
   return out;
 }
+function claimsOf(ev,t){return S.replies.filter(function(r){return r.eid===ev.id&&r.tid===t.id&&r.answer==="claim"&&r.pid!==t.owner;});}
 function gcgCount(pid,job,skipEid){
-  var n=0;S.events.forEach(function(ev){if(ev.id===skipEid)return;(ev.tasks||[]).forEach(function(t){if(t.job===job&&t.owner===pid&&taskState(ev,t)==="taken")n++;});});return n;
+  var n=0;S.events.forEach(function(ev){if(ev.id===skipEid)return;(ev.tasks||[]).forEach(function(t){if(t.job===job&&t.owner===pid&&ACTIVE[taskState(ev,t)])n++;});});return n;
 }
-// Why this person suits a task: the jobs they said yes to, any role they hold, what they have done, what they bring.
+
+/* checkpoints and priority */
+function cpCleared(ev,i){
+  var ts=(ev.tasks||[]).filter(function(t){return t.cp===i;});if(!ts.length)return null;
+  var must=ts.filter(function(t){return t.pri==="must";});var need=must.length?must:ts;
+  var last=null;
+  for(var k=0;k<need.length;k++){if(taskState(ev,need[k])!=="done")return null;var d=doneAt(ev,need[k]);if(d&&(!last||d>last))last=d;}
+  return last||new Date(0);
+}
+function currentCp(ev){var n=(ev.cps||[]).length;for(var i=0;i<n;i++){if(!cpCleared(ev,i))return i;}return n;}
+function priorityList(ev,pid){
+  var cur=currentCp(ev),now=Date.now();
+  return (ev.tasks||[]).filter(function(t){var s=taskState(ev,t);return s!=="done"&&(!pid||t.owner===pid);})
+    .map(function(t){var due=taskDue(ev,t);return {ev:ev,t:t,st:taskState(ev,t),due:due,late:!!(due&&due<now),waiting:(t.cp!=null&&t.cp>cur&&ev.cps&&ev.cps[cur])?ev.cps[cur].name:""};})
+    .sort(function(a,b){return (b.late-a.late)||((a.t.cp==null?99:a.t.cp)-(b.t.cp==null?99:b.t.cp))||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o)||((a.due||Infinity)-(b.due||Infinity));});
+}
+function atRisk(ev){
+  var soon=Date.now()+3*864e5;
+  return priorityList(ev).filter(function(x){return x.late||x.st==="open"||x.st==="passed"||x.st==="stuck"||(x.due&&x.due<soon&&!ACTIVE[x.st]);}).slice(0,5);
+}
+function riskWhy(x){
+  if(x.st==="stuck")return "stuck";if(x.st==="open")return "no one yet";if(x.st==="passed")return "passed, needs someone";if(x.late)return "overdue";return "due soon, not taken";
+}
+
+/* matching */
 function taskMatch(p,job,skipEid){
   if(!FN[job])return null;
   var s=scoreOf(p,job);if(s<0)return null;
@@ -1571,62 +1789,109 @@ function taskMatch(p,job,skipEid){
   return {pts:pts,why:why};
 }
 function rankFor(ev,t,load){
-  var out=passersOf(ev,t);
-  return S.people.filter(function(p){return out.indexOf(p.id)<0;}).map(function(p){var m=taskMatch(p,t.job,ev.id);return m?{p:p,m:m,v:m.pts-1.2*((load&&load[p.id])||0)}:null;})
+  var out=passersOf(ev,t),g=t.group||t.id;
+  var sameGroup=(ev.tasks||[]).filter(function(x){return x!==t&&(x.group||x.id)===g&&x.owner;}).map(function(x){return x.owner;});
+  return S.people.filter(function(p){return out.indexOf(p.id)<0&&sameGroup.indexOf(p.id)<0;}).map(function(p){var m=taskMatch(p,t.job,ev.id);return m?{p:p,m:m,v:m.pts-1.2*((load&&load[p.id])||0)}:null;})
     .filter(Boolean).sort(function(a,b){return b.v-a.v;});
 }
 function eventLoad(ev,skip){
   var load={};(ev.tasks||[]).forEach(function(t){if(t!==skip&&t.owner&&taskState(ev,t)!=="passed")load[t.owner]=(load[t.owner]||0)+1;});return load;
 }
+
+/* saving: only Hinda writes the event; a local edit waiting to save wins over an incoming copy */
 var evTimers={},evDirty={};
-// While a local edit is waiting to save, incoming snapshots keep the local copy so nothing typed is lost.
+function cleanTask(t){
+  return {id:t.id,title:clean(t.title).slice(0,120),job:FN[t.job]?t.job:"",phase:t.phase||"before",d:t.d==null||t.d===""?null:Number(t.d),m:t.m==null||t.m===""?null:Number(t.m),
+    pri:PRI[t.pri]?t.pri:"should",size:SIZE[t.size]?t.size:"M",cp:t.cp==null?null:Number(t.cp),msg:t.msg||"",group:t.group||"",helper:clean(t.helper).slice(0,60),
+    owner:t.owner||"",offered:!!t.offered,ots:t.ots||"",manual:t.manual||"",mts:t.mts||{},passed:(t.passed||[]).slice(0,30),handDone:t.handDone||{}};
+}
 function saveEvent(ev,now){
   clearTimeout(evTimers[ev.id]);evDirty[ev.id]=(evDirty[ev.id]||0)+1;
   function go(){
     ev=evById(ev.id)||ev;
     if(!S.db){evDirty[ev.id]=0;return;}
-    var doc={name:clean(ev.name).slice(0,80),date:ev.date||"",place:clean(ev.place).slice(0,120),notes:clean(ev.notes).slice(0,600),
-      tasks:(ev.tasks||[]).map(function(t){return {id:t.id,title:clean(t.title).slice(0,120),job:FN[t.job]?t.job:"",owner:t.owner||"",offered:!!t.offered,manual:t.manual||"",passed:(t.passed||[]).slice(0,30)};}),
-      updated:new Date().toISOString()};
+    var doc={name:clean(ev.name).slice(0,80),type:ev.type||"",date:ev.date||"",start:ev.start||"18:30",place:clean(ev.place).slice(0,120),lead:ev.lead||"",
+      links:{luma:clean(ev.links&&ev.links.luma).slice(0,300),form:clean(ev.links&&ev.links.form).slice(0,300),group:clean(ev.links&&ev.links.group).slice(0,300)},
+      guests:{registered:ev.guests&&ev.guests.registered||"",attended:ev.guests&&ev.guests.attended||"",feedback:ev.guests&&ev.guests.feedback||""},
+      debrief:{worked:clean(ev.debrief&&ev.debrief.worked).slice(0,800),didnt:clean(ev.debrief&&ev.debrief.didnt).slice(0,800),change:clean(ev.debrief&&ev.debrief.change).slice(0,800)},
+      cps:(ev.cps||[]).map(function(c){return {name:clean(c.name).slice(0,80),d:Number(c.d)||0};}),
+      tasks:(ev.tasks||[]).map(cleanTask),created:ev.created||nowIso(),updated:nowIso()};
     var id=ev.id,mark=evDirty[id];
     S.db.doc("events/"+id).set(doc).then(function(){if(evDirty[id]===mark)evDirty[id]=0;},function(){evDirty[id]=0;say($("evStatus"),"Could not save the event. Check that you have edit access.","warn");});
   }
   if(now)go();else evTimers[ev.id]=setTimeout(go,600);
 }
+function fromTemplate(key,name,date,start){
+  var tp=TEMPLATES[key],ev={id:newId("e"),name:name||tp.name,type:key,date:date||"",start:start||tp.start,place:"",lead:"",links:{},guests:{},debrief:{},created:nowIso(),
+    cps:tp.cps.map(function(c){return {name:c[0],d:c[1]};}),tasks:[]};
+  tp.tasks.forEach(function(x){
+    var g=newId("g");
+    for(var i=0;i<(x.need||1);i++)ev.tasks.push({id:newId("t"),title:x.title,job:x.job,phase:x.phase,d:x.d,m:x.m,pri:x.pri,size:x.size,cp:x.cp,msg:x.msg,group:g,owner:"",offered:false,manual:"",passed:[]});
+  });
+  return ev;
+}
 function suggestEvent(ev){
   var n=0;
-  (ev.tasks||[]).forEach(function(t){
-    var st=taskState(ev,t);if(st!=="open")return;
-    var r=rankFor(ev,t,eventLoad(ev,t))[0];if(r){t.owner=r.p.id;t.offered=false;n++;}
-  });
+  (ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="open"||t.helper)return;var r=rankFor(ev,t,eventLoad(ev,t))[0];if(r){t.owner=r.p.id;t.offered=false;n++;}});
   saveEvent(ev,true);renderEvents();
   say($("evStatus"),n?"Suggested people for "+n+" task"+(n>1?"s":"")+". Check them, then send the offers.":"Nothing to suggest. Every task has someone, or nobody fits yet.",n?"ok":"");
 }
 function nextBest(ev,t){
   if(t.owner&&(t.passed||[]).indexOf(t.owner)<0)(t.passed=t.passed||[]).push(t.owner);
-  t.manual="";t.offered=false;
-  var r=rankFor(ev,t,eventLoad(ev,t))[0];t.owner=r?r.p.id:"";
+  t.manual="";t.offered=false;var r=rankFor(ev,t,eventLoad(ev,t))[0];t.owner=r?r.p.id:"";
   saveEvent(ev,true);renderEvents();
 }
-function fmtDate(d){if(!d)return "Date not set";try{return new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});}catch(e){return d;}}
+function giveTo(ev,t,pid){t.owner=pid;t.offered=true;t.ots=nowIso();t.manual="";saveEvent(ev,true);renderEvents();}
+function addSlot(ev,t,reqKey){
+  var g=t.group||(t.group=newId("g"));
+  var c=cleanTask(t);c.id=newId("t");c.group=g;c.owner="";c.offered=false;c.ots="";c.manual="";c.mts={};c.passed=[];c.handDone={};c.helper="";
+  if(reqKey)(t.handDone=t.handDone||{})[reqKey]=nowIso();
+  ev.tasks.splice(ev.tasks.indexOf(t)+1,0,c);saveEvent(ev,true);renderEvents();
+}
+function slotLabel(ev,t){
+  if(!t.group)return "";var g=(ev.tasks||[]).filter(function(x){return x.group===t.group;});if(g.length<2)return "";
+  var filled=g.filter(function(x){return ACTIVE[taskState(ev,x)];}).length;
+  return "slot "+(g.indexOf(t)+1)+" of "+g.length+" · "+filled+" filled";
+}
 function offerMessages(ev){
   var by={};
   (ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="offered")(by[t.owner]=by[t.owner]||[]).push(t);});
   return Object.keys(by).map(function(pid){
-    var p=S.people.filter(function(x){return x.id===pid;})[0],name=p?pname(p):"there";
-    var app=!/^manual-/.test(pid);
-    var L=["Hi "+name+"! For "+(ev.name||"our next event")+" ("+fmtDate(ev.date)+(ev.place?", "+ev.place:"")+") we would love you to take:"];
-    by[pid].forEach(function(t){L.push("- "+t.title);});
-    L.push(app?"Open the GCG Role Finder and tap My tasks to say yes or no to each one.":"Reply yes or no to each one.");
-    return {pid:pid,name:name,text:L.join("\n")};
+    var L=["Hi "+nameOf(pid)+"! For "+(ev.name||"our next event")+" ("+fmtDate(ev.date)+(ev.place?", "+ev.place:"")+") we would love you to take:"];
+    by[pid].forEach(function(t){var d=taskDue(ev,t);L.push("- "+t.title+(d?" (by "+fmtWhen(d)+")":""));});
+    L.push(/^manual-/.test(pid)?"Reply yes or no to each one.":"Open the GCG Role Finder and tap My tasks to say yes or no.");
+    return {pid:pid,name:nameOf(pid),text:L.join("\n")};
   });
 }
 function sendOffers(ev){
-  var n=0;(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"){t.offered=true;n++;}});
-  saveEvent(ev,true);S.evMsgs={eid:ev.id,list:offerMessages(ev)};renderEvents();
+  var n=0,ts=nowIso();(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"){t.offered=true;t.ots=ts;n++;}});
+  saveEvent(ev,true);S.evMsgs={eid:ev.id,title:"Messages to nudge people",list:offerMessages(ev)};renderEvents();
   say($("evStatus"),n?"Sent "+n+" offer"+(n>1?"s":"")+". People see them under My tasks. Copy a message below to nudge them on WhatsApp.":"No new offers to send.",n?"ok":"");
 }
+function dueSoonText(ev){
+  var lim=Date.now()+7*864e5,by={},none=[];
+  priorityList(ev).forEach(function(x){if(!x.due||x.due>lim)return;
+    var line=x.t.title+" ("+(x.late?"OVERDUE, was ":"")+fmtWhen(x.due)+")";
+    if(x.t.owner&&ACTIVE[x.st])(by[x.t.owner]=by[x.t.owner]||[]).push(line);else none.push(line);});
+  var L=["⏰ "+(ev.name||"Event")+" · due in the next 7 days"];
+  Object.keys(by).forEach(function(pid){L.push("","• "+nameOf(pid)+":");by[pid].forEach(function(l){L.push("  - "+l);});});
+  if(none.length){L.push("","🙋 Still needs someone:");none.forEach(function(l){L.push("  - "+l);});}
+  if(L.length===1)L.push("Nothing due this week. 🎉");
+  return L.join("\n");
+}
+// Guest-facing drafts for Luma blasts, WhatsApp or SMS.
+function guestMessage(ev,kind){
+  var when=fmtDate(ev.date)+(ev.start?", "+ev.start:""),where=ev.place?" at "+ev.place:"",luma=ev.links&&ev.links.luma?"\n"+ev.links.luma:"",form=ev.links&&ev.links.form?"\n"+ev.links.form:"";
+  if(kind==="announce")return "🎲 "+(ev.name||"Game night")+"\n"+when+where+"\nAn evening of games, teams and good company with Gold Coast Games. Spots are limited, so register early."+luma;
+  if(kind==="remind")return "Reminder: "+(ev.name||"our game night")+" is on "+when+where+". Bring your energy, and a friend if you like. Details:"+luma;
+  if(kind==="dayof")return "Tonight! "+(ev.name||"Game night")+" starts at "+(ev.start||"")+where+". See you there. 🎲"+luma;
+  if(kind==="thanks")return "Thank you for coming to "+(ev.name||"game night")+"! Tell us how it went, it takes two minutes:"+form+"\nPhotos are coming soon.";
+  return "";
+}
+
+/* ---------- Events view (Hinda) ---------- */
 function statusPill(st){return h("span",{class:"pill","data-s":st,text:STATE_LABEL[st]});}
+function priBadge(p){p=PRI[p]?p:"should";return h("span",{class:"pri","data-p":p,title:PRI[p].l,text:PRI[p].e+" "+PRI[p].l});}
 function jobSelect(val,onchange,label){
   var sel=h("select",{"aria-label":label||"Closest job"},h("option",{value:"",text:"Closest job…"}),
     AREAS.map(function(a){return h("optgroup",{label:a.short},FNS.filter(function(f){return f.area===a.id;}).map(function(f){return h("option",{value:f.id,text:f.name});}));}));
@@ -1637,7 +1902,6 @@ function renderEvents(){
   var keep=focusKeep(root);clear(root);
   try{drawEvents(root);}finally{focusRestore(root,keep);}
 }
-// Redraws happen while people type (a save comes back). Put the cursor back where it was.
 function focusKeep(root){
   var ae=document.activeElement;if(!ae||!root.contains(ae)||!ae.getAttribute("data-k"))return null;
   var k={k:ae.getAttribute("data-k")};try{k.s=ae.selectionStart;k.e=ae.selectionEnd;}catch(e){}return k;
@@ -1646,135 +1910,267 @@ function focusRestore(root,k){
   if(!k)return;var el=root.querySelector('[data-k="'+k.k+'"]');if(!el)return;
   try{el.focus({preventScroll:true});if(k.s!=null)el.setSelectionRange(k.s,k.e);}catch(e){}
 }
+function msgBox(title,list){
+  return h("div",{class:"box"},h("h3",{text:title}),list.map(function(m){var st=h("span",{class:"status"});
+    return h("div",{class:"msgrow"},h("pre",{class:"mono",text:m.text}),h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy"+(m.name?" for "+m.name:""),onclick:function(){copyText(m.text,st,"Copied.");}}),st));}));
+}
 function drawEvents(root){
   var ev=S.evOpen?evById(S.evOpen):null;
-  if(!ev){
-    root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Events"}),h("h2",{class:"q",text:"Break an event into tasks"}),
-      h("p",{class:"sub",text:"Add the tasks an event needs. The page suggests who fits each one, from the jobs they said yes to, any role they hold, what they have done and what they bring. They say yes or no to each task."}),
-      h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"＋ New event",onclick:function(){
-        if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
-        var e={id:newId("e"),name:"New event",date:"",place:"",notes:"",tasks:[]};S.events.push(e);S.evOpen=e.id;saveEvent(e,true);renderEvents();}})),
-      h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
-    var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
-    if(!list.length)root.append(h("p",{class:"sub",style:"margin-top:14px",text:"No events yet."}));
-    root.append(h("div",{class:"evlist"},list.map(function(e){
-      var ts=e.tasks||[],taken=ts.filter(function(t){return taskState(e,t)==="taken";}).length,wait=ts.filter(function(t){return taskState(e,t)==="offered";}).length;
-      return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;renderEvents();window.scrollTo(0,0);}},
-        h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")}),
-        h("span",{class:"evmeta",text:taken+" of "+ts.length+" tasks taken"+(wait?" · "+wait+" waiting":"")}));
-    })));
-    return;
-  }
-  // one event
-  function field(label,type,val,set){
-    var inp=h("input",{type:type,value:val||"","aria-label":label,placeholder:label,"data-k":"ev-"+label});
-    inp.addEventListener("input",function(){set(inp.value);saveEvent(ev);});
+  if(!ev){drawEventList(root);return;}
+  var ts=ev.tasks||(ev.tasks=[]);ev.links=ev.links||{};ev.guests=ev.guests||{};ev.debrief=ev.debrief||{};ev.cps=ev.cps||[];
+  function field(label,type,val,set,k){
+    var inp=h(type==="textarea"?"textarea":"input",{type:type==="textarea"?null:type,rows:type==="textarea"?"2":null,"aria-label":label,placeholder:label,"data-k":"ev-"+(k||label)});
+    inp.value=val||"";inp.addEventListener("input",function(){set(inp.value);saveEvent(ev);});
     return h("div",{class:"field"},h("label",{text:label}),inp);
   }
-  var ts=ev.tasks||(ev.tasks=[]);
   var counts={};ts.forEach(function(t){var s=taskState(ev,t);counts[s]=(counts[s]||0)+1;});
+  var ms=mustShare(ev);
+  var cur=currentCp(ev),nextCp=ev.cps[cur];
+  var leadSel=h("select",{"aria-label":"Event lead"},h("option",{value:"",text:"No lead yet"}),S.people.map(function(p){return h("option",{value:p.id,text:pname(p)});}));
+  leadSel.value=ev.lead||"";leadSel.addEventListener("change",function(){ev.lead=leadSel.value;saveEvent(ev,true);});
   root.append(h("div",{class:"card"},
-    h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"← All events",onclick:function(){S.evOpen="";S.evMsgs=null;renderEvents();}})),
-    field("Event name","text",ev.name,function(v){ev.name=v;}),
-    h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;}),field("Place","text",ev.place,function(v){ev.place=v;})),
-    h("div",{class:"chips"},["taken","offered","passed","draft","open"].filter(function(k){return counts[k];}).map(function(k){return h("span",{class:"pill","data-s":k,text:counts[k]+" · "+STATE_LABEL[k]});})),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"← All events",onclick:function(){S.evOpen="";S.evMsgs=null;renderEvents();}}),
+      h("span",{class:"tag",text:TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event"})),
+    field("Event name","text",ev.name,function(v){ev.name=v;},"name"),
+    h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time","time",ev.start,function(v){ev.start=v;},"start")),
+    h("div",{class:"two-col"},field("Place","text",ev.place,function(v){ev.place=v;},"place"),h("div",{class:"field"},h("label",{text:"Event lead (chases the list)"}),leadSel)),
+    h("div",{class:"clockbar"},
+      nextCp?h("div",null,h("span",{class:"k",text:"Next checkpoint"}),h("b",{text:nextCp.name}),clockSpan(cpDue(ev,cur))):h("div",null,h("b",{text:"✔ All checkpoints cleared"})),
+      h("div",{class:"chips"},["done","taken","started","offered","stuck","passed","draft","open"].filter(function(k){return counts[k];}).map(function(k){return h("span",{class:"pill","data-s":k,text:counts[k]+" · "+STATE_LABEL[k]});}))),
+    ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:"⚠ "+ms.must+" of "+ms.all+" tasks are Must. Keep it to about a third, or the priority list stops meaning anything."}):null,
     h("div",{class:"row"},
       h("button",{type:"button",class:"btn go",text:"✨ Suggest people",onclick:function(){suggestEvent(ev);}}),
       h("button",{type:"button",class:"btn green",text:"📣 Send offers",onclick:function(){sendOffers(ev);}}),
-      h("button",{type:"button",class:"btn",text:"🖨 Who is doing what (PDF)",onclick:function(){crewPdf(ev,$("evStatus"));}})),
+      h("button",{type:"button",class:"btn",text:"⏰ Due-soon message",onclick:function(){S.evMsgs={eid:ev.id,title:"Due soon (paste in the team group)",list:[{text:dueSoonText(ev)}]};renderEvents();}}),
+      h("button",{type:"button",class:"btn",text:"🕒 Run sheet",onclick:function(){S.run={eid:ev.id};renderEvents();}}),
+      h("button",{type:"button",class:"btn",text:"🖨 Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
+      h("button",{type:"button",class:"btn",text:"📊 Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
-  if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length){
-    root.append(h("div",{class:"box",style:"margin-top:14px"},h("h3",{text:"Messages to nudge people"}),
-      S.evMsgs.list.map(function(m){var st=h("span",{class:"status"});
-        return h("div",{class:"msgrow"},h("pre",{class:"mono",text:m.text}),h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy for "+m.name,onclick:function(){copyText(m.text,st,"Copied.");}}),st));})));
-  }
-  // tasks
-  var tl=h("div",{class:"tasks"});
-  if(!ts.length)tl.append(h("p",{class:"sub",text:"No tasks yet. Add the usual game night set, or add tasks one by one below."}));
-  ts.forEach(function(t){
-    var st=taskState(ev,t),rank=rankFor(ev,t,eventLoad(ev,t)),cur=S.people.filter(function(p){return p.id===t.owner;})[0];
-    var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:rank.length?"Choose someone…":"Nobody fits yet"}),
-      rank.map(function(x,i){return h("option",{value:x.p.id,text:(i===0?"★ ":"")+pname(x.p)+(x.m.why.length?" · "+x.m.why[0].replace(/^\S+ /,""):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"")});}));
-    if(cur&&!rank.some(function(x){return x.p.id===cur.id;}))sel.append(h("option",{value:cur.id,text:pname(cur)}));
-    sel.value=t.owner||"";
-    sel.addEventListener("change",function(){t.owner=sel.value;t.offered=false;t.manual="";saveEvent(ev,true);renderEvents();});
-    var why=cur?taskMatch(cur,t.job,ev.id):null;
-    var r=t.owner?latestReply(ev.id,t.id,t.owner):null;
-    var title=h("input",{type:"text",value:t.title,"aria-label":"Task","data-k":"title-"+t.id});
-    title.addEventListener("input",function(){t.title=title.value;saveEvent(ev);});
-    tl.append(h("div",{class:"task","data-s":st},
-      h("div",{class:"task-top"},title,statusPill(st)),
-      h("div",{class:"two-col"},jobSelect(t.job,function(v){t.job=v;t.owner="";t.offered=false;t.manual="";saveEvent(ev,true);renderEvents();},"Closest job for "+t.title),sel),
-      why&&why.why.length?h("div",{class:"chips"},why.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
-      r&&r.note?h("p",{class:"sub"},h("b",{text:(cur?pname(cur):"They")+" said: "}),r.note):null,
-      h("div",{class:"row"},
-        st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best →",onclick:function(){nextBest(ev,t);}}):null,
-        t.owner&&st!=="taken"?h("button",{type:"button",class:"btn small",text:"✓ Mark taken",onclick:function(){t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
-        t.owner&&st!=="passed"&&st!=="open"?h("button",{type:"button",class:"btn small",text:"✗ Mark passed",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null,
-        h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){ev.tasks=ts.filter(function(x){return x!==t;});saveEvent(ev,true);renderEvents();}}))));
+  if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length)root.append(h("div",{style:"margin-top:14px"},msgBox(S.evMsgs.title,S.evMsgs.list)));
+  if(S.run&&S.run.eid===ev.id)root.append(h("div",{id:"runBox",class:"card",style:"margin-top:14px"}));
+  // at risk
+  var risk=atRisk(ev);
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"🔥 Priority now"}),
+    risk.length?h("ol",{class:"risk"},risk.map(function(x){return h("li",null,priBadge(x.t.pri)," ",h("b",{text:x.t.title}),
+      " · "+(x.t.owner?nameOf(x.t.owner):x.t.helper||"no one")+" · ",h("span",{class:"why",text:riskWhy(x)}),x.due?[" · ",clockSpan(x.due)]:null,x.waiting?h("span",{class:"sub",text:" (⏸ waits on "+x.waiting+")"}):null);})):h("p",{class:"sub",text:"Nothing at risk right now. 🎉"})));
+  // tasks by phase and checkpoint
+  var tl=h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"Tasks"}));
+  if(!ts.length)tl.append(h("p",{class:"sub",text:"No tasks yet. Add tasks below."}));
+  PHASES.forEach(function(ph){
+    var list=ts.filter(function(t){return (t.phase||"before")===ph[0];});if(!list.length)return;
+    list.sort(function(a,b){var da=taskDue(ev,a),db=taskDue(ev,b);return ((da||Infinity)-(db||Infinity));});
+    tl.append(h("h4",{class:"phase",text:ph[1]+" ("+list.length+")"}));
+    var lastCp=-1;
+    list.forEach(function(t){
+      if(ph[0]==="before"&&t.cp!=null&&t.cp!==lastCp&&ev.cps[t.cp]){
+        lastCp=t.cp;var cl=cpCleared(ev,t.cp);
+        tl.append(h("div",{class:"cphead","data-c":cl?"done":t.cp===cur?"cur":""},h("span",{text:(cl?"✔ ":t.cp===cur?"▶ ":"⏸ ")+"Checkpoint: "+ev.cps[t.cp].name}),cl?h("span",{class:"sub",text:"cleared"}):clockSpan(cpDue(ev,t.cp))));
+      }
+      tl.append(adminTask(ev,t,cur));
+    });
   });
+  root.append(tl);
   // add tasks
-  var have=ts.map(function(t){return t.title;});
-  function addTask(title,job){ts.push({id:newId("t"),title:title,job:job,owner:"",offered:false,manual:"",passed:[]});}
-  var dr=S.evDraft||(S.evDraft={text:"",job:""});
-  var custom=h("input",{type:"text",placeholder:"Or type any task, e.g. Make a 30-second teaser video","aria-label":"New task","data-k":"custom",value:dr.text});
+  var dr=S.evDraft||(S.evDraft={text:"",job:"",phase:"before",d:"",pri:"should"});
+  var custom=h("input",{type:"text",placeholder:"Type any task, e.g. Make a 30-second teaser video","aria-label":"New task","data-k":"custom",value:dr.text});
   custom.addEventListener("input",function(){dr.text=custom.value;});
-  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"Tasks"}),tl,
-    h("div",{class:"box"},h("h3",{text:"Add tasks"}),
-      h("button",{type:"button",class:"btn small",text:"＋ Add the usual game night set",onclick:function(){
-        TEMPLATE_GAME.forEach(function(tt){if(have.indexOf(tt)<0){var j=TASK_LIB.filter(function(x){return x[0]===tt;})[0];addTask(tt,j[1]);}});saveEvent(ev,true);renderEvents();}}),
-      h("div",{class:"chips"},TASK_LIB.filter(function(x){return have.indexOf(x[0])<0;}).map(function(x){
-        return h("button",{type:"button",class:"chip addchip",text:"＋ "+x[0],onclick:function(){addTask(x[0],x[1]);saveEvent(ev,true);renderEvents();}});})),
-      custom,jobSelect(dr.job,function(v){dr.job=v;},"Closest job for the new task"),
-      h("button",{type:"button",class:"btn small",text:"Add this task",onclick:function(){
-        if(!clean(custom.value)){custom.focus();return;}if(!dr.job){say($("evStatus"),"Pick the closest job so the page knows who fits.","warn");return;}
-        addTask(clean(custom.value),dr.job);dr.text="";dr.job="";saveEvent(ev,true);renderEvents();}}),
-      h("p",{class:"sub",text:"The closest job tells the page who fits: people who said yes to it, hold it, or have done that kind of work."}))),
-    h("div",{class:"row",style:"margin-top:14px"},h("button",{type:"button",class:"btn link",text:"Delete this event",onclick:function(e){
+  var phSel=h("select",{"aria-label":"Phase"},PHASES.map(function(p){return h("option",{value:p[0],text:p[1]});}));phSel.value=dr.phase;phSel.addEventListener("change",function(){dr.phase=phSel.value;});
+  var dIn=h("input",{type:"number","aria-label":"Days from the event (minus for before)",placeholder:"Days from event, e.g. -7","data-k":"custom-d",value:dr.d});dIn.addEventListener("input",function(){dr.d=dIn.value;});
+  var pSel=h("select",{"aria-label":"Priority"},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].e+" "+PRI[k].l});}));pSel.value=dr.pri;pSel.addEventListener("change",function(){dr.pri=pSel.value;});
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"Add a task"}),custom,
+    h("div",{class:"two-col"},jobSelect(dr.job,function(v){dr.job=v;},"Closest job for the new task"),phSel),h("div",{class:"two-col"},dIn,pSel),
+    h("button",{type:"button",class:"btn small",text:"Add this task",onclick:function(){
+      if(!clean(custom.value)){custom.focus();return;}if(!dr.job){say($("evStatus"),"Pick the closest job so the page knows who fits.","warn");return;}
+      var d=dr.d===""?null:Number(dr.d);
+      ts.push({id:newId("t"),title:clean(custom.value),job:dr.job,phase:dr.phase,d:d,m:null,pri:dr.pri,size:"M",cp:null,msg:"",group:"",owner:"",offered:false,manual:"",passed:[]});
+      S.evDraft=null;saveEvent(ev,true);renderEvents();}}),
+    h("p",{class:"sub",text:"The closest job tells the page who fits: people who said yes to it, hold it, or have done that kind of work."})));
+  // guests, links, debrief
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"Guests and links"}),
+    h("div",{class:"two-col"},field("Luma event link","url",ev.links.luma,function(v){ev.links.luma=v;},"luma"),field("Feedback form link","url",ev.links.form,function(v){ev.links.form=v;},"form")),
+    field("Crew WhatsApp group link","url",ev.links.group,function(v){ev.links.group=v;},"group"),
+    h("div",{class:"three-col"},field("Registered (Luma)","number",ev.guests.registered,function(v){ev.guests.registered=v;},"reg"),field("Checked in","number",ev.guests.attended,function(v){ev.guests.attended=v;},"att"),field("Feedback replies","number",ev.guests.feedback,function(v){ev.guests.feedback=v;},"fb")),
+    h("div",{class:"row"},["announce","remind","dayof","thanks"].map(function(k){return h("button",{type:"button",class:"btn small",text:"✉️ "+{announce:"Announcement",remind:"Reminder",dayof:"Day-of",thanks:"Thank-you + form"}[k],onclick:function(){S.evMsgs={eid:ev.id,title:"Guest message (paste into Luma, WhatsApp or SMS)",list:[{text:guestMessage(ev,k)}]};renderEvents();window.scrollTo(0,0);}});}))));
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"Debrief"}),
+    field("What worked","textarea",ev.debrief.worked,function(v){ev.debrief.worked=v;},"worked"),
+    field("What did not","textarea",ev.debrief.didnt,function(v){ev.debrief.didnt=v;},"didnt"),
+    field("What we change next time","textarea",ev.debrief.change,function(v){ev.debrief.change=v;},"change"),
+    h("button",{type:"button",class:"btn link",text:"Delete this event",onclick:function(e){
       var b=e.currentTarget;if(b.getAttribute("data-armed")!=="1"){b.setAttribute("data-armed","1");b.textContent="Tap again to delete";return;}
       S.db.doc("events/"+ev.id).delete().then(function(){S.evOpen="";renderEvents();},function(){say($("evStatus"),"Could not delete.","warn");});}})));
+  if(S.run&&S.run.eid===ev.id)renderRunSheet();
+}
+function drawEventList(root){
+  var nameIn=h("input",{type:"text","aria-label":"New event name",placeholder:"Event name, e.g. Lawyers Game Night","data-k":"new-name"});
+  var dateIn=h("input",{type:"date","aria-label":"New event date","data-k":"new-date"});
+  var tSel=h("select",{"aria-label":"Template"},TEMPLATE_ORDER.map(function(k){return h("option",{value:k,text:TEMPLATES[k].name});}),h("option",{value:"",text:"Blank event"}));
+  root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Events"}),h("h2",{class:"q",text:"Plan an event"}),
+    h("p",{class:"sub",text:"Pick a template and a date. Every task, checkpoint and deadline fills in. Then suggest people and send the offers."}),
+    nameIn,h("div",{class:"two-col"},tSel,dateIn),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"＋ Create event",onclick:function(){
+      if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
+      var e=tSel.value?fromTemplate(tSel.value,clean(nameIn.value),dateIn.value):{id:newId("e"),name:clean(nameIn.value)||"New event",type:"",date:dateIn.value,start:"18:30",place:"",lead:"",links:{},guests:{},debrief:{},cps:[],tasks:[],created:nowIso()};
+      S.events.push(e);S.evOpen=e.id;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
+    h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
+  var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
+  if(!list.length)root.append(h("p",{class:"sub",style:"margin-top:14px",text:"No events yet."}));
+  root.append(h("div",{class:"evlist"},list.map(function(e){
+    var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
+    return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
+      h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")+(TEMPLATES[e.type]?" · "+TEMPLATES[e.type].name:"")}),
+      h("span",{class:"evmeta",text:done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · 🔥 "+risk+" at risk":"")}));
+  })));
+}
+function adminTask(ev,t,cur){
+  var st=taskState(ev,t),rank=rankFor(ev,t,eventLoad(ev,t)),owner=t.owner?personById(t.owner):null,due=taskDue(ev,t);
+  var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:rank.length?"Choose someone…":"Nobody fits yet"}),
+    rank.map(function(x,i){return h("option",{value:x.p.id,text:(i===0?"★ ":"")+pname(x.p)+(x.m.why.length?" · "+x.m.why[0].replace(/^\S+ /,""):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"")});}));
+  if(owner&&!rank.some(function(x){return x.p.id===owner.id;}))sel.append(h("option",{value:owner.id,text:pname(owner)}));
+  sel.value=t.owner||"";
+  sel.addEventListener("change",function(){t.owner=sel.value;t.offered=false;t.ots="";t.manual="";saveEvent(ev,true);renderEvents();});
+  var why=owner?taskMatch(owner,t.job,ev.id):null,r=replyOf(ev,t),claims=claimsOf(ev,t);
+  var hands=S.replies.filter(function(x){return x.eid===ev.id&&x.tid===t.id&&x.hand&&x.hand.at&&!(t.handDone&&t.handDone[x.pid+x.hand.at]);});
+  var title=h("input",{type:"text",value:t.title,"aria-label":"Task","data-k":"title-"+t.id});
+  title.addEventListener("input",function(){t.title=title.value;saveEvent(ev);});
+  var more=h("details",{class:"more"},h("summary",{text:"More"}),
+    h("div",{class:"two-col"},jobSelect(t.job,function(v){t.job=v;t.owner="";t.offered=false;t.manual="";saveEvent(ev,true);renderEvents();},"Closest job for "+t.title),
+      (function(){var p=h("select",{"aria-label":"Priority for "+t.title},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].e+" "+PRI[k].l});}));p.value=t.pri||"should";p.addEventListener("change",function(){t.pri=p.value;saveEvent(ev,true);renderEvents();});return p;})()),
+    h("div",{class:"two-col"},
+      (function(){var s=h("select",{"aria-label":"Size for "+t.title},Object.keys(SIZE).map(function(k){return h("option",{value:k,text:"Size: "+SIZE[k]});}));s.value=t.size||"M";s.addEventListener("change",function(){t.size=s.value;saveEvent(ev,true);});return s;})(),
+      (function(){var i=h("input",{type:"text","aria-label":"Outside helper","data-k":"helper-"+t.id,placeholder:"Outside helper's name (not on the page)",value:t.helper||""});i.addEventListener("input",function(){t.helper=i.value;saveEvent(ev);});return i;})()),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"🙋 Add a slot (extra hand)",onclick:function(){addSlot(ev,t);}}),
+      h("button",{type:"button",class:"btn link",text:"Remove task",onclick:function(){ev.tasks=ev.tasks.filter(function(x){return x!==t;});saveEvent(ev,true);renderEvents();}})));
+  var pk="ping"+t.id,lk=h("span",{class:"status"});
+  return h("div",{class:"task","data-s":st,id:"task-"+ev.id+"-"+t.id},
+    h("div",{class:"task-top"},priBadge(t.pri),title,statusPill(st)),
+    h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?"🕒 "+fmtClock(due):"📅 "+fmtWhen(due))+" · "}),st==="done"?h("span",{text:"done "+fmtWhen(doneAt(ev,t))}):clockSpan(due)]:"No date",slotLabel(ev,t)?" · "+slotLabel(ev,t):"",t.helper?" · helper: "+t.helper:""),
+    sel,
+    why&&why.why.length?h("div",{class:"chips"},why.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
+    r&&(r.note||r.comment)?h("p",{class:"sub"},h("b",{text:nameOf(t.owner)+": "}),[r.mood||"",r.comment||r.note].join(" ")):null,
+    r&&r.state==="stuck"&&r.stuck?h("p",{class:"stuck"},"⚠ Stuck: "+r.stuck):null,
+    claims.map(function(c){return h("div",{class:"row claim"},h("span",{text:"🙋 "+nameOf(c.pid)+" can take this"+(c.note?": "+c.note:"")}),h("button",{type:"button",class:"btn small go",text:"Give to "+nameOf(c.pid),onclick:function(){giveTo(ev,t,c.pid);}}));}),
+    hands.map(function(x){return h("div",{class:"row claim"},h("span",{text:"🙋 "+nameOf(x.pid)+" needs an extra hand"+(x.hand.note?": "+x.hand.note:"")}),h("button",{type:"button",class:"btn small go",text:"Add a slot",onclick:function(){addSlot(ev,t,x.pid+x.hand.at);}}));}),
+    h("div",{class:"row"},
+      st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best →",onclick:function(){nextBest(ev,t);}}):null,
+      t.msg?h("button",{type:"button",class:"btn small",text:"✉️ Draft guest message",onclick:function(){S.evMsgs={eid:ev.id,title:"Guest message (paste into Luma, WhatsApp or SMS)",list:[{text:guestMessage(ev,t.msg)}]};renderEvents();window.scrollTo(0,0);}}):null,
+      t.owner&&(st==="draft"||st==="offered")?h("button",{type:"button",class:"btn small",text:"📌 Assign directly",title:"Give it to them without asking",onclick:function(){t.offered=true;t.ots=t.ots||nowIso();t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
+      t.owner?h("button",{type:"button",class:"btn small",text:"📣 Ping",onclick:function(){S.panel[pk]=!S.panel[pk];renderEvents();}}):null,
+      h("button",{type:"button",class:"btn small",text:"🔗 Link",onclick:function(){copyText(taskLink(ev.id,t.id),lk,"Task link copied.");}}),lk,
+      (t.owner||t.helper)&&st!=="done"?h("button",{type:"button",class:"btn small",text:"✔ Mark done",onclick:function(){t.manual="done";t.mts=Object.assign({},t.mts,{done:nowIso()});saveEvent(ev,true);renderEvents();}}):null,
+      st==="done"&&t.manual==="done"?h("button",{type:"button",class:"btn link",text:"Undo done",onclick:function(){t.manual="";saveEvent(ev,true);renderEvents();}}):null,
+      t.owner&&st!=="passed"&&st!=="open"&&st!=="done"?h("button",{type:"button",class:"btn link",text:"Mark passed",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null),
+    S.panel[pk]&&t.owner?pingPanel(t.owner,ev.id,t.id,"please check this task: "+t.title):null,
+    more);
 }
 
-function crewBlocks(ev){
-  var B=[],ts=ev.tasks||[],who={};
-  function nm(pid){var p=S.people.filter(function(x){return x.id===pid;})[0];return p?pname(p):(pid===S.uid&&S.name?clean(S.name):"Someone");}
-  B.push({t:"title",text:(ev.name||"Event")+" - Who is doing what"});
-  B.push({t:"sub",text:"Gold Coast Games. "+fmtDate(ev.date)+(ev.place?" at "+ev.place:"")+". Printed "+new Date().toISOString().slice(0,10)+"."});
-  B.push({t:"h",text:"By task"});
-  ts.forEach(function(t){
-    var st=taskState(ev,t),line;
-    if(st==="taken"){line=nm(t.owner);(who[t.owner]=who[t.owner]||[]).push(t.title);}
-    else if(st==="offered")line=nm(t.owner)+" (not confirmed yet)";
-    else if(st==="draft")line=nm(t.owner)+" (not asked yet)";
-    else line="NOT COVERED YET";
-    B.push({t:"li",text:t.title+": "+line});
-  });
-  var ids=Object.keys(who);
-  if(ids.length){B.push({t:"h",text:"By person"});ids.sort(function(a,b){return nm(a).localeCompare(nm(b));}).forEach(function(pid){B.push({t:"li",text:nm(pid)+": "+who[pid].join("; ")});});}
-  return B;
+/* ---------- Run sheet: the event night on one clock ---------- */
+function renderRunSheet(){
+  var box=$("runBox")||$("runBoxT");if(!box||!S.run)return;
+  var ev=evById(S.run.eid);if(!ev){box.remove();return;}
+  clear(box);
+  var items=(ev.tasks||[]).filter(function(t){return t.phase==="during";}).map(function(t){return {t:t,at:taskDue(ev,t)};}).filter(function(x){return x.at;})
+    .sort(function(a,b){return a.at-b.at;});
+  var now=Date.now(),nowIdx=-1;items.forEach(function(x,i){if(x.at<=now)nowIdx=i;});
+  box.append(h("div",{class:"row",style:"justify-content:space-between"},h("h3",{class:"q",text:"🕒 Run sheet · "+(ev.name||"")}),
+    h("span",{class:"bigclock",id:"liveClock",text:fmtClock(new Date())}),h("button",{type:"button",class:"btn small",text:"Close",onclick:function(){S.run=null;box.remove();}})));
+  if(!items.length){box.append(h("p",{class:"sub",text:"No on-the-day tasks with times yet."}));return;}
+  var seen={};
+  box.append(h("ol",{class:"runlist"},items.map(function(x,i){
+    var who=(ev.tasks||[]).filter(function(y){return (y.group||y.id)===(x.t.group||x.t.id);}).map(function(y){return y.owner?nameOf(y.owner):y.helper||"";}).filter(Boolean);
+    var g=x.t.group||x.t.id;if(seen[g])return null;seen[g]=1;
+    var tag=i===nowIdx?"now":(i===nowIdx+1?"next":"");
+    return h("li",{"data-t":tag},h("span",{class:"rt",text:fmtClock(x.at)}),h("span",null,h("b",{text:x.t.title}),h("span",{class:"sub",text:" · "+(who.join(", ")||"no one yet")})),tag?h("span",{class:"pill","data-s":tag==="now"?"started":"offered",text:tag==="now"?"Now":"Next"}):null);
+  }).filter(Boolean)));
 }
+
+/* ---------- PDFs ---------- */
 function savePdf(name,blocks,st){
   var bytes;try{bytes=buildPdf(blocks);}catch(e){say(st,"Could not make the PDF here.","warn");return;}
   if(S.dl){S.dl.save({filename:name,data:bytes}).then(function(){say(st,"Saved "+name+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the PDF here.","warn");});return;}
   try{var bl=new Blob([bytes],{type:"application/pdf"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved "+name+" to your downloads.","ok");}
   catch(e){say(st,"Could not save the PDF here.","warn");}
 }
-function crewPdf(ev,st){savePdf("GCG-"+((ev.name||"event").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"event")+"-crew.pdf",crewBlocks(ev),st);}
+function slug(s){return (String(s||"event").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"event");}
+function crewBlocks(ev){
+  var B=[],ts=ev.tasks||[],who={};
+  B.push({t:"title",text:(ev.name||"Event")+" - Who is doing what"});
+  B.push({t:"sub",text:"Gold Coast Games. "+fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" at "+ev.place:"")+(ev.lead?". Lead: "+nameOf(ev.lead):"")+". Printed "+new Date().toISOString().slice(0,10)+"."});
+  PHASES.forEach(function(ph){
+    var list=ts.filter(function(t){return (t.phase||"before")===ph[0];});if(!list.length)return;
+    list.sort(function(a,b){return (taskDue(ev,a)||Infinity)-(taskDue(ev,b)||Infinity);});
+    B.push({t:"h",text:ph[1]});
+    list.forEach(function(t){
+      var st=taskState(ev,t),d=taskDue(ev,t),nm=t.owner?nameOf(t.owner):t.helper,line;
+      if(ACTIVE[st]){line=nm+(st==="done"?" (done)":"");if(t.owner)(who[t.owner]=who[t.owner]||[]).push(t.title);}
+      else if(st==="offered")line=nm+" (not confirmed yet)";else if(st==="draft")line=nm+" (not asked yet)";else line="NOT COVERED YET";
+      B.push({t:"li",text:(d?(ph[0]==="during"?fmtClock(d):fmtWhen(d))+" - ":"")+t.title+": "+line});
+    });
+  });
+  var ids=Object.keys(who);
+  if(ids.length){B.push({t:"h",text:"By person"});ids.sort(function(a,b){return nameOf(a).localeCompare(nameOf(b));}).forEach(function(pid){B.push({t:"li",text:nameOf(pid)+": "+who[pid].join("; ")});});}
+  return B;
+}
+function crewPdf(ev,st){savePdf("GCG-"+slug(ev.name)+"-crew.pdf",crewBlocks(ev),st);}
+function daysLate(ev,t){var d=taskDue(ev,t),dn=doneAt(ev,t);if(!d||!dn)return null;return (dn-d)/864e5;}
+function reportBlocks(ev){
+  var B=[],ts=ev.tasks||[],g=ev.guests||{},db=ev.debrief||{};
+  B.push({t:"title",text:(ev.name||"Event")+" - Event report"});
+  B.push({t:"sub",text:"Gold Coast Games. "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name+". ":"")+fmtDate(ev.date)+(ev.place?" at "+ev.place:"")+(ev.lead?". Lead: "+nameOf(ev.lead):"")+". Made "+new Date().toISOString().slice(0,10)+"."});
+  var done=ts.filter(function(t){return taskState(ev,t)==="done";}),lates=done.map(function(t){return daysLate(ev,t);}).filter(function(x){return x!=null;});
+  var onTime=lates.filter(function(x){return x<=0.5;}).length;
+  B.push({t:"h",text:"At a glance"});
+  B.push({t:"li",text:done.length+" of "+ts.length+" tasks done"+(lates.length?"; "+Math.round(onTime/lates.length*100)+"% on time":"")});
+  if(g.registered||g.attended)B.push({t:"li",text:"Guests: "+(g.registered||"?")+" registered, "+(g.attended||"?")+" checked in"+(g.registered&&g.attended?" ("+Math.round(g.attended/g.registered*100)+"% show rate)":"")+(g.feedback?", "+g.feedback+" feedback replies":"")});
+  var people={};ts.forEach(function(t){if(t.owner&&ACTIVE[taskState(ev,t)])people[t.owner]=1;if(t.helper)people["h:"+t.helper]=1;});
+  B.push({t:"li",text:Object.keys(people).length+" people on the crew"});
+  if((ev.cps||[]).length){B.push({t:"h",text:"Checkpoints"});
+    ev.cps.forEach(function(c,i){var due=cpDue(ev,i),cl=cpCleared(ev,i);var late=cl&&due&&cl.getTime()>0?(cl-due)/864e5:null;
+      B.push({t:"li",text:c.name+": due "+fmtWhen(due)+(cl?(cl.getTime()>0?", cleared "+fmtWhen(cl)+(late>0.5?" ("+late.toFixed(1)+" days late)":" (on time)"):", cleared"):", NOT CLEARED")});});}
+  PHASES.forEach(function(ph){
+    var list=ts.filter(function(t){return (t.phase||"before")===ph[0];});if(!list.length)return;
+    B.push({t:"h",text:"Tasks: "+ph[1]});
+    list.forEach(function(t){
+      var st=taskState(ev,t),r=replyOf(ev,t),dl=daysLate(ev,t);
+      var bits=[t.title,(t.owner?nameOf(t.owner):t.helper||"no one"),STATE_LABEL[st].replace(/^\S+ /,"")];
+      if(dl!=null)bits.push(dl>0.5?dl.toFixed(1)+" days late":"on time");
+      if(r&&(r.comment||r.note))bits.push((r.mood?r.mood+" ":"")+'"'+(r.comment||r.note)+'"');
+      if(r&&r.stuck)bits.push("stuck: "+r.stuck);
+      B.push({t:"li",text:bits.join(" - ")});
+    });
+  });
+  if(db.worked||db.didnt||db.change){B.push({t:"h",text:"Debrief"});
+    if(db.worked)B.push({t:"li",text:"Worked: "+db.worked});if(db.didnt)B.push({t:"li",text:"Did not: "+db.didnt});if(db.change)B.push({t:"li",text:"Change next time: "+db.change});}
+  var credit={};ts.forEach(function(t){if(t.owner&&taskState(ev,t)==="done")(credit[t.owner]=credit[t.owner]||[]).push(t.title+" ("+SIZE[t.size||"M"]+")");});
+  if(Object.keys(credit).length){B.push({t:"h",text:"Credit: who did what"});Object.keys(credit).sort(function(a,b){return nameOf(a).localeCompare(nameOf(b));}).forEach(function(pid){B.push({t:"li",text:nameOf(pid)+": "+credit[pid].join("; ")});});}
+  return B;
+}
+function reportPdf(ev,st){savePdf("GCG-"+slug(ev.name)+"-report.pdf",reportBlocks(ev),st);}
 
-/* ---------- My tasks: what each person has been offered ---------- */
+/* ---------- My tasks (everyone) ---------- */
 function myTasks(){
   var out=[];if(!S.uid)return out;
   S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(t){if(t.owner===S.uid&&(t.offered||t.manual))out.push({ev:ev,t:t});});});
   return out;
 }
 function pendingCount(){return myTasks().filter(function(x){return taskState(x.ev,x.t)==="offered";}).length;}
-function answerTask(ev,t,answer,note,st){
-  if(!S.db||!S.uid){say(st,"Answering needs the live page.","warn");return;}
-  var r={eid:ev.id,tid:t.id,pid:S.uid,answer:answer,note:clean(note).slice(0,200),at:new Date().toISOString()};
+function upForGrabs(){
+  var out=[],cut=Date.now()-864e5;
+  S.events.forEach(function(ev){var d=dateAt(ev,0,null);if(d&&d<cut)return;
+    (ev.tasks||[]).forEach(function(t){var st=taskState(ev,t);if((st==="open"||st==="passed")&&!t.helper&&t.owner!==S.uid)out.push({ev:ev,t:t});});});
+  return out;
+}
+function myReply(ev,t){return latestReply(ev.id,t.id,S.uid);}
+function writeReply(ev,t,patch,st){
+  if(!S.db||!S.uid){say(st,"This needs the live page.","warn");return;}
+  var old=myReply(ev,t)||{},ts=Object.assign({},old.ts||{});
+  var r=Object.assign({},old,patch,{eid:ev.id,tid:t.id,pid:S.uid,at:nowIso(),ts:ts});
+  if(patch.answer&&patch.answer!==old.answer)ts.answered=r.at;
+  if(patch.state&&patch.state!==old.state){ts[patch.state]=r.at;if(old.state==="stuck")ts.unstuck=r.at;}
+  if(patch.hand)r.hand=patch.hand;
   S.db.doc("replies/"+ev.id+"__"+t.id+"__"+S.uid).set(r).then(function(){
     S.replies=S.replies.filter(function(x){return !(x.eid===r.eid&&x.tid===r.tid&&x.pid===r.pid);}).concat([r]);
     renderTasks();updateTabs();
-  },function(){say(st,"Could not save your answer. Tell Hinda directly.","warn");});
+  },function(){say(st,"Could not save. Tell Hinda directly.","warn");});
 }
 function renderTasks(){
   var root=$("tasksBody");if(!root)return;
@@ -1782,33 +2178,192 @@ function renderTasks(){
   try{drawTasks(root);}finally{focusRestore(root,keep);}
 }
 function drawTasks(root){
-  var mine=myTasks(),me=S.people.filter(function(x){return x.id===S.uid;})[0]||Object.assign(payload(),{id:S.uid});
-  root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"My tasks"}),h("h2",{class:"q",text:mine.length?"Tasks we would love you to take":"No tasks for you right now"}),
-    h("p",{class:"sub",text:"Each one was picked for you from your player card. Say yes to the ones you want. Saying no is fine."})));
+  pingBanners().forEach(function(b){root.append(b);});
+  var mine=myTasks(),me=personById(S.uid)||Object.assign(payload(),{id:S.uid});
+  var open=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if(x.t.offered||x.t.manual)open.push(x);});});
+  open.sort(function(a,b){return (b.late-a.late)||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o)||((a.due||Infinity)-(b.due||Infinity));});
+  var top=open.filter(function(x){return x.st!=="offered";})[0]||open[0];
+  root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"My tasks"}),h("h2",{class:"q",text:mine.length?"Your tasks":"No tasks for you right now"}),
+    h("p",{class:"sub",text:"Picked for you from your player card. Say yes to the ones you want. Tick them off when they are done, and tell us how it went."}),
+    top?h("div",{class:"topone"},h("span",{class:"k",text:"🎯 Your #1 right now"}),h("b",{text:top.t.title}),h("span",{class:"sub",text:(top.ev.name||"")+(top.due?" · "+fmtWhen(top.due)+" · ":"")}),top.due?clockSpan(top.due):null):null));
   var byEv={};mine.forEach(function(x){(byEv[x.ev.id]=byEv[x.ev.id]||{ev:x.ev,ts:[]}).ts.push(x.t);});
   Object.keys(byEv).map(function(k){return byEv[k];}).sort(function(a,b){return String(a.ev.date||"~").localeCompare(String(b.ev.date||"~"));}).forEach(function(g){
-    var pst=h("p",{class:"status",role:"status","aria-live":"polite"});
-    var crew=(g.ev.tasks||[]).filter(function(t){return taskState(g.ev,t)==="taken";});
+    var ev=g.ev,pst=h("p",{class:"status",role:"status","aria-live":"polite"}),links=ev.links||{};
+    g.ts.sort(function(a,b){return (taskDue(ev,a)||Infinity)-(taskDue(ev,b)||Infinity);});
     root.append(h("div",{class:"card",style:"margin-top:14px"},
-      h("div",null,h("h3",{class:"q",text:g.ev.name||"Event"}),h("p",{class:"sub",text:fmtDate(g.ev.date)+(g.ev.place?" · "+g.ev.place:"")})),
-      h("details",null,h("summary",{text:"👥 The whole crew ("+crew.length+" of "+(g.ev.tasks||[]).length+" tasks taken)"}),
-        h("ul",{class:"crew"},(g.ev.tasks||[]).map(function(t){var st=taskState(g.ev,t),p=S.people.filter(function(x){return x.id===t.owner;})[0];
-          return h("li",null,h("b",{text:t.title+": "}),st==="taken"?(p?pname(p):t.owner===S.uid?"You":"Taken"):st==="offered"?"Waiting":"Not covered yet");})),
-        h("button",{type:"button",class:"btn small",text:"🖨 Who is doing what (PDF)",onclick:function(){crewPdf(g.ev,pst);}}),pst),
-      g.ts.map(function(t){
-        var st=taskState(g.ev,t),m=taskMatch(me,t.job,g.ev.id),r=latestReply(g.ev.id,t.id,S.uid),stat=h("p",{class:"status",role:"status","aria-live":"polite"});
-        var note=h("input",{type:"text",maxlength:"200",placeholder:"Anything to add? (optional)","aria-label":"Note for "+t.title,"data-k":"note-"+g.ev.id+t.id,value:(S.noteDraft&&S.noteDraft[g.ev.id+t.id])||(r&&r.note)||""});
-        note.addEventListener("input",function(){(S.noteDraft=S.noteDraft||{})[g.ev.id+t.id]=note.value;});
-        return h("div",{class:"task","data-s":st},
-          h("div",{class:"task-top"},h("b",{class:"ttl",text:t.title}),statusPill(st)),
-          m&&m.why.length?h("div",{class:"chips"},h("span",{class:"k",text:"Why you:"}),m.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
-          note,
-          h("div",{class:"seg3 two"},
-            h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(st==="taken"),text:"✋ I'll take it",onclick:function(){answerTask(g.ev,t,"take",note.value,stat);}}),
-            h("button",{type:"button",class:"sb","data-c":"no","aria-pressed":String(st==="passed"),text:"🙅 Not this one",onclick:function(){answerTask(g.ev,t,"pass",note.value,stat);}})),
-          stat);
-      })));
+      h("div",null,h("h3",{class:"q",text:ev.name||"Event"}),h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")})),
+      (links.luma||links.group)?h("div",{class:"row"},links.luma?h("a",{class:"btn small",href:links.luma,target:"_blank",rel:"noopener",text:"Luma page"}):null,links.group?h("a",{class:"btn small",href:links.group,target:"_blank",rel:"noopener",text:"Crew group"}):null):null,
+      g.ts.map(function(t){return myTaskCard(ev,t,me);}),
+      h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"🕒 Run sheet",onclick:function(){S.run={eid:ev.id};renderTasks();var b=$("runBoxT");if(b&&b.scrollIntoView)b.scrollIntoView({block:"start"});}}),
+        h("button",{type:"button",class:"btn small",text:"🖨 Who is doing what",onclick:function(){crewPdf(ev,pst);}})),pst,
+      S.run&&S.run.eid===ev.id?h("div",{id:"runBoxT",class:"box"}):null));
   });
+  var grabs=upForGrabs();
+  if(grabs.length){
+    root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"🙋 Up for grabs"}),h("p",{class:"sub",text:"Tasks nobody has yet. Tap to say you can take one, and Hinda confirms."}),
+      grabs.map(function(x){var r=myReply(x.ev,x.t),asked=r&&r.answer==="claim",st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
+        return h("div",{class:"task","data-s":"open"},h("div",{class:"task-top"},priBadge(x.t.pri),h("b",{class:"ttl",text:x.t.title})),
+          h("p",{class:"meta",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")}),
+          h("div",{class:"row"},asked?h("span",{class:"pill","data-s":"offered",text:"Asked ✓ Waiting for Hinda"}):h("button",{type:"button",class:"btn small go",text:"🙋 I can take this",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));})));
+  }
+  if(S.run)renderRunSheet();
+}
+function myTaskCard(ev,t,me){
+  var st=taskState(ev,t),m=taskMatch(me,t.job,ev.id),r=myReply(ev,t),stat=h("p",{class:"status",role:"status","aria-live":"polite"}),due=taskDue(ev,t),key=ev.id+t.id;
+  var dr=(S.noteDraft=S.noteDraft||{})[key]||(S.noteDraft[key]={});
+  function inp(k,ph){var i=h("input",{type:"text",maxlength:"300",placeholder:ph,"aria-label":ph,"data-k":k+"-"+key,value:dr[k]||""});i.addEventListener("input",function(){dr[k]=i.value;});return i;}
+  var panel=S.panel[key]||"",body=[];
+  if(st==="offered"){
+    body.push(m&&m.why.length?h("div",{class:"chips"},h("span",{class:"k",text:"Why you:"}),m.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
+      inp("note","Anything to add? (optional)"),
+      h("div",{class:"seg3 two"},h("button",{type:"button",class:"sb","data-c":"yes",text:"✋ I'll take it",onclick:function(){writeReply(ev,t,{answer:"take",note:clean(dr.note)},stat);}}),
+        h("button",{type:"button",class:"sb","data-c":"no",text:"🙅 Not this one",onclick:function(){writeReply(ev,t,{answer:"pass",note:clean(dr.note)},stat);}})));
+  }else if(st==="taken"||st==="started"||st==="stuck"){
+    body.push(h("div",{class:"row"},
+      st==="taken"?h("button",{type:"button",class:"btn small",text:"▶ Start",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):null,
+      h("button",{type:"button",class:"btn small green",text:"✔ Done",onclick:function(){S.panel[key]=panel==="done"?"":"done";renderTasks();}}),
+      st==="stuck"?h("button",{type:"button",class:"btn small",text:"👍 Unstuck",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):h("button",{type:"button",class:"btn small",text:"⚠ I'm stuck",onclick:function(){S.panel[key]=panel==="stuck"?"":"stuck";renderTasks();}}),
+      h("button",{type:"button",class:"btn small",text:"🙋 Need an extra hand",onclick:function(){S.panel[key]=panel==="hand"?"":"hand";renderTasks();}}),
+      t.msg?h("button",{type:"button",class:"btn small",text:"✉️ Draft guest message",onclick:function(){copyText(guestMessage(ev,t.msg),stat,"Guest message copied. Paste it into Luma, WhatsApp or SMS.");}}):null));
+    if(panel==="done"){
+      var when=dr.when||"today",mood=dr.mood||"";
+      body.push(h("div",{class:"box"},h("b",{text:"When did you finish?"}),
+        h("div",{class:"seg3"},["today","yesterday","earlier"].map(function(w){return h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(when===w),text:w.charAt(0).toUpperCase()+w.slice(1),onclick:function(){dr.when=w;renderTasks();}});})),
+        when==="earlier"?(function(){var d=h("input",{type:"date","aria-label":"Finished on","data-k":"date-"+key,value:dr.date||""});d.addEventListener("input",function(){dr.date=d.value;});return d;})():null,
+        h("b",{text:"How did it go?"}),
+        h("div",{class:"seg3"},["😀","😐","😞"].map(function(e){return h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(mood===e),text:e,"aria-label":{"😀":"Went well","😐":"Okay","😞":"Went badly"}[e],onclick:function(){dr.mood=e;renderTasks();}});})),
+        inp("comment","What went well, what did not, any challenges?"),
+        h("button",{type:"button",class:"btn go small",text:"Save as done",onclick:function(){
+          var at=new Date();if(when==="yesterday")at.setDate(at.getDate()-1);if(when==="earlier"&&dr.date){at=new Date(dr.date+"T17:00:00");}
+          S.panel[key]="";writeReply(ev,t,{state:"done",doneAt:at.toISOString(),mood:dr.mood||"",comment:clean(dr.comment)},stat);}})));
+    }else if(panel==="stuck"){
+      body.push(h("div",{class:"box"},inp("stuck","What is blocking you?"),h("button",{type:"button",class:"btn small",text:"Flag as stuck",onclick:function(){S.panel[key]="";writeReply(ev,t,{state:"stuck",stuck:clean(dr.stuck)},stat);}})));
+    }else if(panel==="hand"){
+      body.push(h("div",{class:"box"},inp("hand","What do you need help with?"),h("button",{type:"button",class:"btn small",text:"Ask for an extra hand",onclick:function(){S.panel[key]="";writeReply(ev,t,{hand:{at:nowIso(),note:clean(dr.hand)}},stat);}})));
+    }
+  }else if(st==="done"){
+    body.push(h("p",{class:"sub",text:"Done "+fmtWhen(doneAt(ev,t))+(r&&r.mood?" "+r.mood:"")+(r&&r.comment?" · "+r.comment:"")}),
+      r&&r.state==="done"?h("button",{type:"button",class:"btn link",text:"Undo",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):null);
+  }
+  return h("div",{class:"task","data-s":st,id:"task-"+ev.id+"-"+t.id},
+    h("div",{class:"task-top"},priBadge(t.pri),h("b",{class:"ttl",text:t.title}),statusPill(st)),
+    h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?"🕒 "+fmtClock(due)+" on the day":"📅 by "+fmtWhen(due))+" · "}),st==="done"?"":clockSpan(due)]:"",slotLabel(ev,t)?" · "+slotLabel(ev,t):""),
+    body,stat);
+}
+
+/* ---------- Pings and links: Hinda nudges a person to a specific thing ---------- */
+S.pings=[];S.acks={};S.allAcks={};S.names={};S.appUrl="";S.goTask=null;
+function taskLink(eid,tid){var base=S.appUrl||String(location.href).split("#")[0];return base+"#task="+eid+"."+tid;}
+function readHash(){var m=String(location.hash||"").match(/task=([^.&]+)\.([^&]+)/);if(m)S.goTask={eid:decodeURIComponent(m[1]),tid:decodeURIComponent(m[2])};}
+function openLinkedTask(){
+  if(!S.goTask||!evById(S.goTask.eid))return;
+  var g=S.goTask;S.goTask=null;
+  var ev=evById(g.eid),t=(ev.tasks||[]).filter(function(x){return x.id===g.tid;})[0];
+  if(S.isAdmin&&!(t&&t.owner===S.uid)){S.evOpen=g.eid;showView("events");}else showView("tasks");
+  setTimeout(function(){var el=$("task-"+g.eid+"-"+g.tid);if(el){el.classList.add("flash");if(el.scrollIntoView)el.scrollIntoView({block:"center"});}},80);
+}
+function myPings(){return (S.pings||[]).filter(function(p){return p.to===S.uid&&!(S.acks&&S.acks[p.id]);}).sort(function(a,b){return String(b.at).localeCompare(String(a.at));});}
+function pingBanners(){
+  return myPings().map(function(p){
+    var ev=p.eid?evById(p.eid):null,t=ev?(ev.tasks||[]).filter(function(x){return x.id===p.tid;})[0]:null;
+    return h("div",{class:"ping"},h("p",null,h("b",{text:"📣 From Hinda: "}),p.text||""),t?h("p",{class:"sub",text:(ev.name||"")+" · "+t.title}):null,
+      h("div",{class:"row"},t?h("button",{type:"button",class:"btn small go",text:"Open it →",onclick:function(){S.goTask={eid:p.eid,tid:p.tid};openLinkedTask();}}):null,
+        h("button",{type:"button",class:"btn small",text:"Got it ✓",onclick:function(){
+          S.acks=Object.assign({},S.acks);S.acks[p.id]=nowIso();
+          if(S.db&&S.uid)S.db.doc("acks/"+S.uid).set({ids:S.acks}).catch(function(){});
+          if(S.view==="flow")render();else renderTasks();}})));
+  });
+}
+function sendPing(pid,text,eid,tid,st){
+  if(!S.db){say(st,"Pings need the live page.","warn");return null;}
+  var id=newId("p"),doc={to:pid,text:clean(text).slice(0,300),eid:eid||"",tid:tid||"",at:nowIso()};
+  S.db.doc("pings/"+id).set(doc).then(function(){say(st,"Pinged "+nameOf(pid)+". They see it next time they open the page.","ok");},function(){say(st,"Could not send the ping.","warn");});
+  var L=["Hi "+nameOf(pid)+", "+doc.text];if(eid&&tid)L.push(taskLink(eid,tid));else if(S.appUrl)L.push(S.appUrl);
+  return L.join("\n");
+}
+function pingPanel(pid,eid,tid,defText){
+  var st=h("p",{class:"status",role:"status","aria-live":"polite"});
+  var sel=pid?null:h("select",{"aria-label":"Who to ping"},h("option",{value:"",text:"Who?"}),S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).map(function(p){return h("option",{value:p.id,text:pname(p)});}));
+  var txt=h("input",{type:"text","aria-label":"Ping message","data-k":"ping-"+(tid||"x"),placeholder:"What do they need to check?",value:defText||""});
+  var key=tid||"x",prev=(S.pingOut=S.pingOut||{})[key]||"";
+  var out=h("pre",{class:"mono",hidden:!prev,text:prev});
+  var copyBtn=h("button",{type:"button",class:"btn small",text:"Copy for WhatsApp",hidden:!prev,onclick:function(){copyText(out.textContent,st,"Copied. Paste it to them on WhatsApp.");}});
+  var send=h("button",{type:"button",class:"btn small go",text:"📣 Send ping",onclick:function(){
+    var who=pid||(sel&&sel.value);if(!who){say(st,"Pick who to ping.","warn");return;}if(!clean(txt.value)){txt.focus();return;}
+    var msg=sendPing(who,txt.value,eid,tid,st);if(msg){S.pingOut[key]=msg;out.textContent=msg;out.hidden=false;copyBtn.hidden=false;}
+  }});
+  return h("div",{class:"box"},sel,txt,h("div",{class:"row"},send,copyBtn),out,st);
+}
+function renderPings(){
+  var root=$("t-pings");if(!root||!S.isAdmin)return;clear(root);
+  var urlIn=h("input",{type:"url","aria-label":"Page link","data-k":"appurl",placeholder:"Paste this page's link so task links open it",value:S.appUrl||""});
+  urlIn.addEventListener("change",function(){S.appUrl=clean(urlIn.value);if(S.db)S.db.doc("settings/app").set({url:S.appUrl}).catch(function(){});});
+  root.append(h("div",{class:"field"},h("label",{text:"This page's link (used in task links)"}),urlIn),pingPanel(null,"","",""));
+  var sent=(S.pings||[]).slice().sort(function(a,b){return String(b.at).localeCompare(String(a.at));}).slice(0,15);
+  if(sent.length)root.append(h("ul",{class:"crew"},sent.map(function(p){var seen=S.allAcks&&S.allAcks[p.to]&&S.allAcks[p.to][p.id];
+    return h("li",null,h("b",{text:nameOf(p.to)+": "}),p.text+" · ",h("span",{class:seen?"ok":"sub",text:seen?"✓ seen":"not seen yet"}));})));
+}
+
+/* ---------- Insights (Hinda): how fast things really get done ---------- */
+function taskRecords(){
+  var out=[];
+  S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(t){
+    var st=taskState(ev,t),r=replyOf(ev,t),due=taskDue(ev,t),dn=doneAt(ev,t),ts=(r&&r.ts)||{};
+    var resp=t.ots&&ts.answered?(new Date(ts.answered)-new Date(t.ots))/36e5:null;
+    var work=ts.answered&&dn?(dn-new Date(ts.answered))/864e5:null;
+    var stuckH=ts.stuck?((ts.unstuck?new Date(ts.unstuck):dn||new Date())-new Date(ts.stuck))/36e5:null;
+    out.push({ev:ev,t:t,st:st,pid:t.owner,due:due,done:dn,late:due&&dn?(dn-due)/864e5:null,resp:resp,work:work,stuck:!!ts.stuck,stuckH:stuckH,mood:r&&r.mood||""});
+  });});
+  return out;
+}
+function avg(a){a=a.filter(function(x){return x!=null&&isFinite(x);});return a.length?a.reduce(function(s,x){return s+x;},0)/a.length:null;}
+function f1(x,u){return x==null?"–":(Math.round(x*10)/10)+(u||"");}
+function pct(a){return a.length?Math.round(a.filter(Boolean).length/a.length*100)+"%":"–";}
+function table(head,rows){return h("div",{class:"mapwrap"},h("table",{class:"map ins"},h("thead",null,h("tr",null,head.map(function(x,i){return h("th",{scope:"col",style:i?"":"text-align:left",text:x});}))),h("tbody",null,rows.map(function(r){return h("tr",null,r.map(function(c,i){return i?h("td",{text:String(c)}):h("th",{scope:"row",text:String(c)});}));}))));}
+function renderInsights(){
+  var root=$("insBody");if(!root||!S.isAdmin)return;clear(root);
+  var recs=taskRecords(),done=recs.filter(function(r){return r.done;});
+  var withDue=done.filter(function(r){return r.late!=null;});
+  root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Insights"}),h("h2",{class:"q",text:"How fast things really get done"}),
+    h("p",{class:"sub",text:"Every tap is timestamped. Treat these as rough until you have 3 to 5 events: timestamps show when people tap, not always when the work happened."}),
+    h("div",{class:"tstats"},
+      [[S.events.length,"events"],[done.length+" / "+recs.length,"tasks done"],[pct(withDue.map(function(r){return r.late<=0.5;})),"done on time"],
+       [f1(avg(recs.map(function(r){return r.resp;})),"h"),"avg time to answer an offer"],[recs.filter(function(r){return r.stuck;}).length,"times someone got stuck"]]
+      .map(function(s){return h("div",{class:"tstat"},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));}))));
+  // suggestions
+  var byTitle={};recs.forEach(function(r){var k=r.t.title.replace(/\s*\(\d+\/\d+\)$/,"");(byTitle[k]=byTitle[k]||[]).push(r);});
+  var sugg=Object.keys(byTitle).map(function(k){var a=avg(byTitle[k].map(function(r){return r.late;}));return {k:k,a:a,n:byTitle[k].filter(function(r){return r.late!=null;}).length};})
+    .filter(function(x){return x.a!=null&&x.a>1;}).sort(function(a,b){return b.a-a.a;});
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"💡 What to change in the templates"}),
+    sugg.length?h("ul",{class:"crew"},sugg.map(function(x){return h("li",{text:"“"+x.k+"” finishes "+f1(x.a)+" days late on average ("+x.n+" time"+(x.n>1?"s":"")+"). Start it "+Math.ceil(x.a)+" day"+(Math.ceil(x.a)>1?"s":"")+" earlier."});})):h("p",{class:"sub",text:"No pattern of lateness yet."})));
+  // checkpoints
+  var cpRows={};S.events.forEach(function(ev){(ev.cps||[]).forEach(function(c,i){var due=cpDue(ev,i),cl=cpCleared(ev,i);if(!due||!cl||!cl.getTime())return;(cpRows[c.name]=cpRows[c.name]||[]).push((cl-due)/864e5);});});
+  var cpk=Object.keys(cpRows);
+  if(cpk.length)root.append(h("div",{class:"sect"},h("h2",{text:"Checkpoints: planned vs cleared"}),table(["Checkpoint","Times","Avg days late"],cpk.map(function(k){return [k,cpRows[k].length,f1(avg(cpRows[k]))];}))));
+  // tasks
+  var tk=Object.keys(byTitle).sort();
+  if(tk.length)root.append(h("div",{class:"sect"},h("h2",{text:"Tasks"}),table(["Task","Times","Done","Answer offer (h)","Taken → done (days)","On time","Avg days late","Stuck"],
+    tk.map(function(k){var a=byTitle[k],d=a.filter(function(r){return r.done;}),w=d.filter(function(r){return r.late!=null;});
+      return [k,a.length,d.length,f1(avg(a.map(function(r){return r.resp;}))),f1(avg(a.map(function(r){return r.work;}))),pct(w.map(function(r){return r.late<=0.5;})),f1(avg(w.map(function(r){return r.late;}))),a.filter(function(r){return r.stuck;}).length];}))));
+  // events
+  if(S.events.length)root.append(h("div",{class:"sect"},h("h2",{text:"Events"}),table(["Event","Date","Tasks done","On time","Registered","Checked in","Show rate"],
+    S.events.slice().sort(function(a,b){return String(a.date).localeCompare(String(b.date));}).map(function(ev){
+      var a=recs.filter(function(r){return r.ev===ev;}),d=a.filter(function(r){return r.done;}),w=d.filter(function(r){return r.late!=null;}),g=ev.guests||{};
+      return [ev.name||"Event",ev.date||"",d.length+" / "+a.length,pct(w.map(function(r){return r.late<=0.5;})),g.registered||"–",g.attended||"–",g.registered&&g.attended?Math.round(g.attended/g.registered*100)+"%":"–"];}))));
+  // people (Hinda only)
+  var byP={};recs.forEach(function(r){if(r.pid&&ACTIVE[r.st])(byP[r.pid]=byP[r.pid]||[]).push(r);});
+  var pk=Object.keys(byP);
+  if(pk.length)root.append(h("div",{class:"sect"},h("h2",{text:"People (only you see this)"}),h("p",{class:"sub",text:"Use it to support people, not to rank them. Someone stuck a lot may need help, not pressure."}),
+    table(["Person","Tasks","Done","On time","Answer offer (h)","Stuck","Credit (S/M/L)"],pk.sort(function(a,b){return nameOf(a).localeCompare(nameOf(b));}).map(function(pid){
+      var a=byP[pid],d=a.filter(function(r){return r.done;}),w=d.filter(function(r){return r.late!=null;});
+      var sz={S:0,M:0,L:0};d.forEach(function(r){sz[r.t.size||"M"]++;});
+      return [nameOf(pid),a.length,d.length,pct(w.map(function(r){return r.late<=0.5;})),f1(avg(a.map(function(r){return r.resp;}))),a.filter(function(r){return r.stuck;}).length,sz.S+"/"+sz.M+"/"+sz.L];}))));
+  var st=h("span",{class:"status"});
+  root.append(h("div",{class:"row",style:"margin-top:14px"},h("button",{type:"button",class:"btn small",text:"Export all task data (CSV)",onclick:function(){
+    var rows=[["Event","Event date","Task","Phase","Priority","Size","Person","Status","Offered","Answered","Started","Done","Due","Days late","Stuck","Mood","Comment"]];
+    recs.forEach(function(x){var r=replyOf(x.ev,x.t),ts=(r&&r.ts)||{};
+      rows.push([x.ev.name,x.ev.date,x.t.title,x.t.phase,x.t.pri,x.t.size,x.pid?nameOf(x.pid):x.t.helper||"",x.st,x.t.ots||"",ts.answered||"",ts.started||"",x.done?x.done.toISOString():"",x.due?x.due.toISOString():"",x.late==null?"":f1(x.late),r&&r.stuck||"",x.mood,r&&(r.comment||r.note)||""]);});
+    saveFile("gcg-task-data.csv",csv(rows),st);}}),st));
 }
 
 /* ---------- Capabilities ---------- */
@@ -1845,15 +2400,27 @@ function initCaps(){
       S.db.collection("events").onSnapshot(function(snap){
         S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=Object.assign({},d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
           .concat(S.events.filter(function(e){return evDirty[e.id]&&!snap.docs.some(function(d){return d.id===e.id;});}));
-        updateTabs();if(S.view==="events")renderEvents();if(S.view==="tasks")renderTasks();if(S.view==="flow")render();
+        updateTabs();if(S.view==="events")renderEvents();if(S.view==="tasks")renderTasks();if(S.view==="insights")renderInsights();if(S.view==="flow")render();
+        openLinkedTask();
       },function(){});
       S.db.collection("replies").onSnapshot(function(snap){
         S.replies=snap.docs.map(function(d){return d.data();}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
-        updateTabs();if(S.view==="events")renderEvents();if(S.view==="tasks")renderTasks();
+        updateTabs();if(S.view==="events")renderEvents();if(S.view==="tasks")renderTasks();if(S.view==="insights")renderInsights();
       },function(){});
-      S.db.collection("responses").onSnapshot(function(snap){
+      S.db.collection("people").onSnapshot(function(snap){
+        S.names={};snap.docs.forEach(function(d){var o=d.data();if(o&&o.name)S.names[d.id]=clean(o.name).slice(0,60);});
+        if(S.view==="tasks")renderTasks();if(S.view==="events")renderEvents();
+      },function(){});
+      S.db.doc("settings/app").onSnapshot(function(snap){if(snap.exists&&snap.data().url)S.appUrl=clean(snap.data().url);},function(){});
+      S.db.collection("pings").onSnapshot(function(snap){
+        S.pings=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;return o;});
+        if(S.view==="flow")render();if(S.view==="tasks")renderTasks();if(S.view==="team")renderPings();
+      },function(){});
+      if(S.uid)S.db.doc("acks/"+S.uid).onSnapshot(function(snap){S.acks=snap.exists?(snap.data().ids||{}):{};if(S.view==="flow")render();if(S.view==="tasks")renderTasks();},function(){});
+      if(S.isAdmin)S.db.collection("acks").onSnapshot(function(snap){S.allAcks={};snap.docs.forEach(function(d){S.allAcks[d.id]=d.data().ids||{};});if(S.view==="team")renderPings();},function(){});
+      if(S.isAdmin)S.db.collection("responses").onSnapshot(function(snap){
         S.people=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;o.q=normQ(o.q);return o;});
-        updateTabs();if(S.view==="team")renderTeam();if(S.view==="crew")renderCrew();if(S.view==="events")renderEvents();
+        updateTabs();if(S.view==="team")renderTeam();if(S.view==="events")renderEvents();
       },function(){});
     });
   }).catch(function(){});
@@ -1878,9 +2445,10 @@ function boot(){
   $("t-publish").addEventListener("click",publishRoles);
   $("t-reset").addEventListener("click",function(){S.overrides={};renderRoles();say($("t-pubStatus"),"Reset to suggestions. Publish to share them.");});
   $("pasteBtn").addEventListener("click",addPasted);
+  readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,taskLink:taskLink,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();
