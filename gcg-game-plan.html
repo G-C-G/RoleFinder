@@ -827,6 +827,11 @@ body.has-nav{padding-bottom:88px}
 .pband .pb-name{font:600 20px/1.2 var(--font-display)}
 .pband .pb-bio{font:500 14px/1.3 var(--font-body);color:var(--gold)}
 .pband .ico{color:var(--on-night);opacity:.7;flex:none}
+
+/* Home: logo bar and identity are one dark banner, full bleed to the top edge */
+body.home-band .brandbar{background:var(--night);color:var(--on-night);margin:-16px -16px 0;padding:14px 16px 6px;width:calc(100% + 32px)}
+body.home-band .brandbar .bt small{color:var(--gold)}
+body.home-band .pband{margin-top:0;padding-top:8px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -3482,6 +3487,7 @@ function drawPlan(root){
 var VIEWS=["home","plan","mevents","crew","me","flow","today","events","team","insights","tasks","mine"];
 function showView(v){
   S.view=v;
+  document.body.classList.toggle("home-band",v==="home"&&!S.isAdmin);
   VIEWS.forEach(function(k){var el=$("view-"+k);if(el)el.hidden=(k!==v);});
   $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="insights"||v==="today");
   if(v==="home")renderHome();if(v==="plan")renderPlan();if(v==="mevents")renderMyEvents();if(v==="crew")renderCrew();if(v==="me")renderProfile();if(v==="flow")render();
