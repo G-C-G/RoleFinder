@@ -739,6 +739,17 @@ input:focus,textarea:focus{border-color:var(--ink);outline:0;box-shadow:0 0 0 3p
 .hero .logo{width:min(240px,64vw);height:auto;border:0;border-radius:0;box-shadow:none;background:none}
 .brandbar .mini{width:auto;height:44px;border:0;border-radius:0;background:none;object-fit:contain}
 .pc2-logo,.pc-top img{width:auto;height:64px;border:0;border-radius:0;background:none;object-fit:contain}
+
+.needs{gap:0}
+.needs li{grid-template-columns:auto minmax(0,1fr) auto;gap:2px 12px;align-items:center;border-left:0;padding:12px 0;border-top:1px solid var(--line)}
+.needs li:first-child{border-top:0;padding-top:2px}
+.needs li>.btn{grid-column:3;grid-row:1;justify-self:end;align-self:center;min-height:38px;padding:0 14px}
+.needs li .sev{font-size:0;gap:0}
+.needs li .sev::before{width:11px;height:11px;margin-top:2px}
+.needs li>div{grid-column:2;display:grid;gap:2px;min-width:0}
+.needs li>div b{font-size:15.5px;line-height:1.3}
+.needs li>div .sub{font-size:13.5px}
+.needs li>div .cd{font-size:12.5px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -2268,6 +2279,7 @@ function atRisk(ev){
   var soon=Date.now()+3*864e5;
   return priorityList(ev).filter(function(x){return x.late||x.st==="open"||x.st==="passed"||x.st==="stuck"||(x.due&&x.due<soon&&!ACTIVE[x.st]);}).slice(0,5);
 }
+function riskWhyShort(x){var w=riskWhy(x);return w==="overdue"?"":w;}
 function riskWhy(x){
   if(x.st==="stuck")return "stuck";if(x.st==="open")return "no one yet";if(x.st==="passed")return "can't do it · back in the pool, needs someone";if(x.late)return "overdue";return "due soon, not taken";
 }
@@ -2440,7 +2452,7 @@ function drawEvents(root){
     h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
       risk.length?h("ol",{class:"needs"},risk.map(function(x){var now=x.late||x.st==="stuck"||x.st==="passed";
         return h("li",{"data-sev":now?"now":"soon"},h("span",{class:"sev",text:now?"Now":"Soon"}),
-          h("div",null,h("b",{text:x.t.title}),h("p",{class:"sub",text:(x.t.owner?nameOf(x.t.owner):x.t.helper||"no one")+" · "+riskWhy(x)+(x.waiting?" · waits on "+x.waiting:"")}),x.due?clockSpan(x.due):null),
+          h("div",null,h("b",{text:x.t.title}),h("p",{class:"sub",text:[(x.t.owner?nameOf(x.t.owner):x.t.helper||"no one"),riskWhyShort(x),x.waiting?"waits on "+x.waiting:""].filter(Boolean).join(" · ")}),x.due?clockSpan(x.due):null),
           h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.panel.alltasks=true;S.goTask={eid:ev.id,tid:x.t.id};renderEvents();openLinkedTask();}}));})):null),
     h("div",{class:"row actions"},
       h("button",{type:"button",class:"btn go",text:"Suggest people",onclick:function(){suggestEvent(ev);}}),
@@ -3233,7 +3245,7 @@ function drawToday(root){
         :n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
         :h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.evOpen=n.ev.id;S.goTask={eid:n.ev.id,tid:n.t.id};showView("events");openLinkedTask();}});
       return h("li",{"data-sev":n.sev},h("span",{class:"sev",text:n.sev==="now"?"Now":"Soon"}),
-        h("div",null,h("b",{text:n.t.title}),h("p",{class:"sub",text:(n.ev.name||"")+" · "+(n.t.owner?nameOf(n.t.owner):"no one")+" · "+n.why}),n.due?clockSpan(n.due):null),act);
+        h("div",null,h("b",{text:n.t.title}),h("p",{class:"sub",text:[(n.ev.name||""),(n.t.owner?nameOf(n.t.owner):"no one"),n.why==="overdue"?"":n.why].filter(Boolean).join(" · ")}),n.due?clockSpan(n.due):null),act);
     })):h("p",{class:"sub",text:"Nothing needs you right now. "}),
     need.length>5?h("p",{class:"sub",text:"+"+(need.length-5)+" more inside the events."}):null));
   if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st);nm.style.marginTop="14px";root.append(nm);}
