@@ -779,6 +779,12 @@ body.has-nav{padding-bottom:88px}
 .hrow .ico{color:var(--muted);flex:none}
 .hrow-d>*:not(summary){margin-top:10px}
 .hrow-d[open]{padding-bottom:14px}
+.hrow .hr-t{display:grid;gap:2px}.hrow .hr-s{font-weight:500;font-size:13.5px;color:var(--muted)}
+.placetop{margin:6px 0 14px;padding:16px 18px;display:grid;gap:10px}
+.pt-head{appearance:none;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:0;padding:0;text-align:left;color:var(--ink);cursor:pointer}
+.placetop .pl-type{font-size:19px}
+.placetop .pl-n{margin:0;font-size:14px;color:var(--muted)}
+.placetop .btn.link{justify-self:start;text-align:left;padding:0;min-height:0;font-size:14px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -3136,8 +3142,15 @@ function nextMoveCard(x,st){
 }
 function drawHome(root){
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),items=myOpenItems(),st=h("p",{class:"status",role:"status","aria-live":"polite"});
-  root.append(h("p",{class:"hello"},S.photo?h("img",{class:"avatar sm",src:S.photo,alt:""}):null,greeting()+", "+(clean(S.name)||"there")),
-    h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):"You're good for now."}));
+  var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
+  var nEv=Object.keys(evCount).length,mp=prof?missingProfile():0;
+  root.append(h("p",{class:"hello"},S.photo?h("img",{class:"avatar sm",src:S.photo,alt:""}):null,greeting()+", "+(clean(S.name)||"there")));
+  if(prof)root.append(h("section",{class:"card place placetop"},
+    h("button",{type:"button",class:"pt-head",onclick:function(){showView("me");}},h("span",{class:"pl-type",text:prof.title}),ico("chevR",18)),
+    h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});}),prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
+    h("p",{class:"pl-n",text:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+nEv+" event"+(nEv===1?"":"s"):"Your trail starts with your first task."}),
+    mp?h("button",{type:"button",class:"btn link",text:"Finish your profile ("+mp+" left) ›",onclick:function(){startExtra();}}):null));
+  root.append(h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):"You're good for now."}));
   pingBanners().forEach(function(b){root.append(b);});
   if(items.length){
     root.append(nextMoveCard(items[0],st));
@@ -3149,38 +3162,20 @@ function drawHome(root){
   }
   var later=laterItems();
   if(later.length)root.append(h("p",{class:"laternote",text:""+later.length+" more task"+(later.length>1?"s":"")+" later in the plan. They open up as the event moves on."}));
-  // The event: one card, with the next crew date inside it
-  var evs=myEvents(),ev=evs[0]||S.events.filter(function(e){var d=dateAt(e,0,null);return d&&d>Date.now();}).sort(function(a,b){return String(a.date).localeCompare(String(b.date));})[0];
+  // More: quiet shortcuts in one list (the event itself lives in Plan and Events)
+  var evs=myEvents();
   var crew=[];evs.forEach(function(e){crewWide(e).forEach(function(t){var d=taskDue(e,t);if(d&&d>Date.now())crew.push({ev:e,t:t,d:d});});});
   crew.sort(function(a,b){return a.d-b.d;});
-  if(ev){
-    var mine=(ev.tasks||[]).filter(function(t){return t.owner===S.uid&&ACTIVE[taskState(ev,t)];});
-    var part=[];mine.forEach(function(t){var n=FN[t.job]?FN[t.job].name:t.title;if(part.indexOf(n)<0)part.push(n);});
-    root.append(h("p",{class:"hgroup",text:"The event"}),h("section",{class:"card hsec hcard"},
-      h("button",{type:"button",class:"evhead",onclick:function(){S.evSel=ev.id;showView("mevents");}},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),
-      h("div",{class:"hfacts"},
-        h("p",null,h("span",{class:"hk",text:"Ready"}),h("b",{text:eventPct(ev)+"%"})),
-        part.length?h("p",null,h("span",{class:"hk",text:"Your part"}),h("b",{text:part.slice(0,3).join(" · ")})):null,
-        crew.length?h("p",null,h("span",{class:"hk",text:"Next crew date"}),h("b",{text:crew[0].t.title+", "+fmtWhen(crew[0].d)})):null),
-      h("button",{type:"button",class:"btn small",text:"See timeline",onclick:function(){showView("plan");}})));
-  }
-  // More: quiet shortcuts in one list
   var calSt=h("span",{class:"status"});
   var upcoming=[];myTasks().forEach(function(x){var s=taskState(x.ev,x.t);if(ACTIVE[s]&&s!=="done"){var c=calItem(x.ev,x.t);if(c&&c.end>new Date())upcoming.push(c);}});
   crew.forEach(function(c){var ci=calItem(c.ev,c.t,true);if(ci)upcoming.push(ci);});
   var grabs=upForGrabs(),rows=[];
-  if(grabs.length)rows.push(h("button",{type:"button",class:"hrow",onclick:function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}},ico("hand",20),h("span",{class:"hr-t",text:grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs"}),ico("chevR",18)));
+  function row(icon,text,sub,fn){return h("button",{type:"button",class:"hrow",onclick:fn},ico(icon,20),h("span",{class:"hr-t"},text,sub?h("span",{class:"hr-s",text:sub}):null),ico("chevR",18));}
+  if(crew.length)rows.push(row("users",crew[0].t.title,fmtWhen(crew[0].d),function(){showView("plan");}));
+  if(grabs.length)rows.push(row("hand",grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs","",function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}));
   if(upcoming.length)rows.push(h("button",{type:"button",class:"hrow",onclick:function(){saveIcs("GCG-upcoming.ics",upcoming,calSt);}},ico("calendar",20),h("span",{class:"hr-t",text:"Add my dates to calendar"}),calSt));
   if(S.uid&&!S.isAdmin)rows.push(ideaBox(true));
   if(rows.length)root.append(h("p",{class:"hgroup",text:"More"}),h("section",{class:"card hlist"},rows));
-  // Your place, last
-  var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
-  if(prof)root.append(h("p",{class:"hgroup",text:"Your place"}),h("section",{class:"card hsec place"},
-    ts.length?h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
-    h("p",{class:"pl-type",text:prof.title}),
-    h("div",{class:"chips"},prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
-    h("p",{class:"pl-n",text:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evCount).length+" event"+(Object.keys(evCount).length===1?"":"s"):"Your trail starts with your first task."}),
-    missingProfile()?h("button",{type:"button",class:"btn small",text:"Finish your profile ("+missingProfile()+" quick question"+(missingProfile()>1?"s":"")+")",onclick:function(){startExtra();}}):null));
 }
 
 /* ---------- Team member Events ---------- */
