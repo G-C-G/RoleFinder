@@ -2,26 +2,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=DM+Sans:wght@400;500;700&display=swap">
 <style>
 /* Look: a warm game board. Cream table, chunky outlined tiles that press down like game pieces,
    the red, gold and green bands from the logo as accents. One thing on screen at a time. */
 :root{
-  --bg:#FBF5E6; --bg-2:#F3E8CF; --card:#FFFFFF; --ink:#1B1611; --muted:#6B6155;
-  --edge:#1B1611; --soft:#E6D9BC; --shadow:#1B1611;
+  --bg:#F6F1E6; --bg-2:#EEE7D7; --card:#FFFDF8; --ink:#1A1611; --muted:#6B6357;
+  --edge:#1A1611; --soft:#EAE2D0; --shadow:#1A1611; --line:#E2D9C6; --edge-soft:#CFC4AC;
   --red:#D7263D; --on-red:#FFFFFF; --red-soft:#FCE1E4;
   --gold:#F6B80F; --on-gold:#1B1611; --gold-soft:#FFF1C4; --gold-ink:#8A6400;
   --green:#12894A; --on-green:#FFFFFF; --green-soft:#D8F1E2;
   --night:#15110C; --on-night:#FBF5E6;
   --warn:#B3261E; --ok:#12894A;
-  --font-display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
-  --font-body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:"Sora","Trebuchet MS",system-ui,sans-serif;
+  --font-body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --bg:#14100B; --bg-2:#1E1912; --card:#241E16; --ink:#F6EEDC; --muted:#B8AC96;
-    --edge:#4A3F31; --soft:#3A3127; --shadow:#000000;
+    --edge:#4A3F31; --soft:#3A3127; --shadow:#000000; --line:#372E23; --edge-soft:#4F4335;
     --red:#F0506A; --on-red:#1B0508; --red-soft:#3D161C;
     --gold:#FFC83D; --on-gold:#1B1611; --gold-soft:#3B2F0F; --gold-ink:#FFC83D;
     --green:#34B872; --on-green:#06180D; --green-soft:#12301F;
@@ -32,7 +32,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#14100B; --bg-2:#1E1912; --card:#241E16; --ink:#F6EEDC; --muted:#B8AC96;
-  --edge:#4A3F31; --soft:#3A3127; --shadow:#000000;
+  --edge:#4A3F31; --soft:#3A3127; --shadow:#000000; --line:#372E23; --edge-soft:#4F4335;
   --red:#F0506A; --on-red:#1B0508; --red-soft:#3D161C;
   --gold:#FFC83D; --on-gold:#1B1611; --gold-soft:#3B2F0F; --gold-ink:#FFC83D;
   --green:#34B872; --on-green:#06180D; --green-soft:#12301F;
@@ -43,8 +43,7 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5;
-  padding:14px 16px 60px;
-  background-image:radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 0);background-size:22px 22px}
+  padding:16px 16px 60px}
 .wrap{max-width:640px;margin-inline:auto}
 .wrap.wide{max-width:980px}
 h1,h2,h3,h4,p{margin:0}
@@ -486,8 +485,10 @@ body.has-nav{padding-bottom:104px}
 .bar.light{background:var(--bg-2);border-color:var(--soft)}
 .bar.light i{background:var(--green)}
 .fold>summary.fold-h{font-family:var(--font-display);font-weight:600;font-size:18px;list-style:none;cursor:pointer}
-.fold>summary.fold-h::after{content:" +";color:var(--muted)}
-.fold[open]>summary.fold-h::after{content:" −"}
+.fold>summary.fold-h::after{content:"";float:right;width:9px;height:9px;margin-top:5px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.fold[open]>summary.fold-h::after{transform:rotate(-135deg);margin-top:9px}
+.card.fold{padding:16px 20px;gap:0}
+.card.fold[open]{gap:14px}
 .actions{margin-top:14px}
 .avatar{border-radius:50%;object-fit:cover;border:3px solid var(--edge);background:var(--bg-2)}
 .avatar.big{width:140px;height:140px;display:grid;place-items:center;font-size:56px}
@@ -525,6 +526,214 @@ body.has-nav{padding-bottom:104px}
 .trail-n{font-weight:800;color:var(--gold-ink)}
 .resume{border:2.5px dashed var(--edge);border-radius:14px;padding:10px 14px;background:var(--gold-soft);font-size:15px}
 @media (prefers-reduced-motion:no-preference){.jp .jpe{transition:transform .15s,background .2s}.jbar i{transition:width .6s ease-out}}
+
+/* ================= Refined look: calm surfaces, chunky only where it matters =================
+   Primary things (next move, player card, main buttons, event stages) keep the game-piece outline.
+   Everything else is quiet: hairline borders, soft shadow, generous space. No emojis anywhere. */
+body{letter-spacing:0;font-weight:400;font-kerning:normal;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,.q,.h-sum,.hm-t,.t2-title,.evhead b,.msec-h{letter-spacing:-.012em}
+.k,.kicker,.part-k,.q-count,.lab{font-family:var(--font-body);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kicker{color:var(--gold-ink)}
+.sub{color:var(--muted)}
+.ico{flex:none;display:block}
+.brandbar .bt{font-family:var(--font-display);font-weight:600;font-size:16px}
+.brandbar .bt small{font-family:var(--font-body);font-weight:700;font-size:11px;letter-spacing:.1em}
+.brandbar .mini,.brandbar .mark{border-width:1.5px;border-radius:12px}
+
+/* cards */
+.card{border:1px solid var(--line);border-radius:22px;box-shadow:0 1px 2px rgba(26,22,17,.04),0 14px 32px -20px rgba(26,22,17,.28);padding:22px 20px;gap:18px}
+.box{border:1px solid var(--line);border-radius:16px;background:var(--bg);padding:16px}
+.person,.evcard,.evcard2,.tstat,.covtile,.titlecard,.grabs-link,.then{border:1px solid var(--line);box-shadow:none}
+.tstat{border-radius:16px}
+.hsec{margin-top:16px}
+
+/* buttons: quiet by default, chunky for the one main action */
+.btn{border:1.5px solid var(--edge-soft);background:var(--card);color:var(--ink);box-shadow:none;border-radius:12px;font-weight:600;font-size:15px;gap:8px;min-height:46px;padding:0 18px}
+.btn:active{transform:translateY(1px);box-shadow:none}
+.btn.small{min-height:40px;font-size:14px;padding:0 14px}
+.btn.go{background:var(--gold);color:var(--on-gold);border:2px solid var(--ink);box-shadow:0 3px 0 var(--ink);font-weight:700}
+.btn.go:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.btn.green{background:var(--green);color:var(--on-green);border:2px solid var(--ink);box-shadow:0 3px 0 var(--ink);font-weight:700}
+.btn.green:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.btn.big{min-height:56px;font-size:17px}
+.btn.link{border:0;background:none;box-shadow:none;color:var(--muted);font-weight:600;text-underline-offset:3px}
+.btn:disabled{box-shadow:none}
+.btn.chat{background:transparent}
+
+/* answer tiles */
+.tile{border:1.5px solid var(--edge-soft);border-radius:16px;background:var(--card);box-shadow:none;font-weight:500;font-size:16px;min-height:58px;padding:12px 16px}
+.tile:active{transform:translateY(1px);box-shadow:none}
+.tile .emo{display:none}
+.tile .tick{width:24px;height:24px;border:1.5px solid var(--edge-soft);background:var(--card);position:relative;font-size:0}
+.tile[aria-pressed="true"]{background:var(--gold-soft);border:2px solid var(--ink);color:var(--ink);font-weight:600;padding:11px 15px}
+.tile[aria-pressed="true"] .tick{background:var(--ink);border-color:var(--ink)}
+.tile[aria-pressed="true"] .tick::after{content:"";position:absolute;left:8px;top:4px;width:6px;height:11px;border:solid var(--gold);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.tile.pick[data-m="most"]{background:var(--green);color:var(--on-green);border-color:var(--ink)}
+.tile.pick[data-m="least"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
+.pick .stamp{font-family:var(--font-body);font-weight:700}
+.hint{font-weight:700;font-size:14px;border-width:1.5px}
+.choice{border:1.5px solid var(--edge-soft);box-shadow:none;font-weight:600}
+.choice:active{transform:translateY(1px);box-shadow:none}
+.choice[data-lv="good"][aria-pressed="true"],.choice[data-lv="curious"][aria-pressed="true"],.choice[data-lv="no"][aria-pressed="true"]{border-color:var(--ink);border-width:2px}
+.choice .emo{display:none}
+.choice{gap:14px}
+.choice::before{content:"";width:12px;height:12px;border-radius:50%;flex:none;border:2px solid var(--edge-soft);background:transparent}
+.choice[data-lv="good"]::before{background:var(--green);border-color:var(--green)}
+.choice[data-lv="curious"]::before{background:var(--gold);border-color:var(--gold)}
+.choice[data-lv="no"]::before{background:var(--red);border-color:var(--red)}
+.choice[aria-pressed="true"]::before{border-color:currentColor;box-shadow:0 0 0 2px var(--card) inset}
+.sb,.ml{border:1.5px solid var(--edge-soft);font-weight:600}
+.sb[aria-pressed="true"]{border-color:var(--ink)}
+
+/* status: quiet pills with a coloured dot, never a coloured slab */
+.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:600;font-size:12.5px;padding:3px 11px 3px 9px;border-radius:999px;white-space:nowrap}
+.pill .dot,.pri .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;flex:none}
+.pill[data-s="taken"] .dot,.pill[data-s="done"] .dot{background:var(--green)}
+.pill[data-s="started"] .dot{background:var(--green)}
+.pill[data-s="offered"] .dot,.pill[data-s="draft"] .dot{background:var(--gold)}
+.pill[data-s="passed"] .dot,.pill[data-s="stuck"] .dot{background:var(--red)}
+.pill[data-s="taken"],.pill[data-s="done"],.pill[data-s="offered"],.pill[data-s="passed"],.pill[data-s="started"],.pill[data-s="stuck"]{background:var(--card);color:var(--ink);border-color:var(--line)}
+.pill:not([data-s]){padding:3px 11px}
+.pri{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);font-weight:700;font-size:12px;padding:2px 9px 2px 8px;border-radius:999px;letter-spacing:.02em}
+.pri[data-p="must"] .dot{background:var(--red)}.pri[data-p="should"] .dot{background:var(--gold)}
+.pri[data-p="must"],.pri[data-p="should"],.pri[data-p="nice"]{border-color:var(--line)}
+.urg{display:flex;align-items:center;gap:8px;font-family:var(--font-body);font-weight:700;font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.urg::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.urg[data-k="bad"]::before{background:var(--red)}.urg[data-k="soon"]::before{background:var(--gold)}
+.urg[data-k="ok"]::before,.urg[data-k="done"]::before{background:var(--green)}
+.sev{font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:7px}
+.sev::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold)}
+.needs li[data-sev="now"] .sev::before{background:var(--red)}
+.needs li{border-left-width:3px}
+
+/* tasks */
+.task{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:14px 16px;box-shadow:inset 4px 0 0 var(--line)}
+.task[data-s="taken"],.task[data-s="started"],.task[data-s="done"]{background:var(--card);box-shadow:inset 4px 0 0 var(--green)}
+.task[data-s="offered"],.task[data-s="draft"]{background:var(--card);box-shadow:inset 4px 0 0 var(--gold)}
+.task[data-s="passed"],.task[data-s="stuck"]{background:var(--card);box-shadow:inset 4px 0 0 var(--red)}
+.task[data-s="open"]{box-shadow:inset 4px 0 0 var(--edge-soft)}
+.task.t2{gap:9px}
+.t2-title{font-family:var(--font-display);font-weight:600;font-size:19px;line-height:1.25}
+.t2-ev{font-weight:500}
+.chip{border:1px solid var(--line);background:var(--bg-2);font-weight:600;font-size:13.5px;padding:5px 12px}
+.chip.good{background:var(--green-soft);border-color:transparent}
+.chip.curious{background:var(--gold-soft);border-color:transparent}
+.chip.no{background:var(--red-soft);border-color:transparent}
+.chip.t0{background:var(--red-soft);color:#7B1622;border-color:transparent}
+.chip.t1{background:var(--gold-soft);color:var(--gold-ink);border-color:transparent}
+.chip.t2{background:var(--green-soft);color:#0B5E33;border-color:transparent}
+.pcard .chip.t0{background:#F3B5BD;color:#4A0D16}.pcard .chip.t1{background:#F7D774;color:#4A3300}.pcard .chip.t2{background:#9ED9B8;color:#083D22}
+.addchip{border:1px solid var(--edge-soft)}
+
+/* the one main card on a screen */
+.hero-move{border:2px solid var(--ink);border-radius:24px;box-shadow:0 5px 0 var(--ink);padding:22px 20px}
+.hero-move .k{letter-spacing:.1em;color:var(--on-gold);opacity:.8}
+.hm-t{font-family:var(--font-display);font-weight:700}
+.hero-move .btn.go{background:var(--ink);color:var(--bg);border-color:var(--ink);box-shadow:none}
+.hero-move .btn.go:active{transform:translateY(1px)}
+.hero-move.clear{border-color:var(--line);box-shadow:none;background:var(--green-soft)}
+.banner{background:var(--green-soft);color:var(--ink);border:1.5px solid var(--green);box-shadow:none;font-weight:700}
+.h-sum{font-family:var(--font-display);font-weight:700;font-size:clamp(1.65rem,7vw,2.15rem);line-height:1.12}
+.hello{gap:10px;font-weight:600;color:var(--muted)}
+
+/* event journey */
+.jr:not(.jv)::before{background:var(--line);height:2px;top:21px}
+.jpe{width:44px;height:44px;border-radius:50%;border:2px solid var(--edge-soft);background:var(--card);color:var(--muted)}
+.jp{font-weight:600;font-size:12.5px;letter-spacing:0}
+.jp[data-s="done"] .jpe{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.jp[data-s="cur"] .jpe{background:var(--gold);border:2px solid var(--ink);box-shadow:0 3px 0 var(--ink);color:var(--ink);transform:none}
+.jp[data-s="late"] .jpe{border-color:var(--red);background:var(--card);color:var(--red)}
+.jp[data-s="cur"]{color:var(--ink)}
+.jpnow{background:var(--ink);color:var(--bg);letter-spacing:.08em}
+.jv .jpnow+.jpyou{grid-row:2;margin-top:4px}
+.jpyou{background:none;border:1px solid var(--edge-soft);color:var(--muted)}
+.jbar{height:10px;border:0;background:var(--bg-2)}
+.jbar i{background:var(--green);border-radius:999px}
+.jpct b{font-family:var(--font-display);font-weight:700}
+.jv .jp[data-s="cur"]{background:var(--gold-soft);border:1px solid var(--gold)}
+.jv .jp[data-s="cur"] .jpe{width:48px;height:48px}
+.jv .jpn{font-weight:600}
+.mk{display:inline-block;width:14px;height:14px;border-radius:50%;border:1.5px solid var(--edge-soft);vertical-align:-2px;margin-right:8px;position:relative}
+.mk[data-s="done"]{background:var(--green);border-color:var(--green)}
+.mk[data-s="done"]::after{content:"";position:absolute;left:4px;top:1px;width:3px;height:7px;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+
+/* bottom navigation */
+.bottomnav{background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-top:1px solid var(--line);gap:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));min-height:66px}
+.navb{color:var(--muted);font-weight:600;font-size:11.5px;letter-spacing:.02em;gap:3px;max-width:none;background:none;box-shadow:none;padding:4px 2px}
+.navb .ni{display:grid;place-items:center;width:56px;height:30px;border-radius:999px;transition:background .15s}
+.navb[aria-current="page"]{background:none;box-shadow:none;color:var(--ink)}
+.navb[aria-current="page"] .ni{background:var(--gold)}
+.navb[aria-current="page"] .nl{font-weight:700}
+.badge-n{top:0;right:calc(50% - 24px);border:2px solid var(--card)}
+
+/* progress and forms */
+.seg{height:8px;border:0;background:var(--bg-2)}
+.hud .lv{font-family:var(--font-display);font-weight:600;font-size:14px}
+.hud .lv b{color:var(--gold-ink)}
+.stars{font-family:var(--font-body);font-weight:700;font-size:13px;color:var(--muted);letter-spacing:.04em}
+.backb{border:1.5px solid var(--edge-soft);box-shadow:none;width:40px;height:40px;display:grid;place-items:center;color:var(--ink)}
+.status:empty{min-height:0;height:0;margin:0;overflow:hidden}
+.hero-move .status:empty,.task .status:empty{display:block}
+.needed{display:inline-block;justify-self:start;border-radius:8px}
+input[type=text],input[type=url],input[type=number],input[type=date],input[type=time],textarea,select{border:1.5px solid var(--edge-soft);border-radius:12px;background:var(--card)}
+input:focus,textarea:focus{border-color:var(--ink);outline:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 55%,transparent)}
+.more>summary,.fold>summary{font-weight:600}
+.more>summary{color:var(--muted)}
+.fold{border-radius:18px}
+.fold>summary.fold-h{font-family:var(--font-display);font-weight:600;font-size:17px}
+.avatar{border-width:1.5px}
+.avatar.empty{background:var(--gold-soft);color:var(--gold-ink);font-family:var(--font-display);font-weight:600;font-size:.9rem;display:grid;place-items:center}
+.avatar.big.empty{font-size:2.2rem}
+.avatar.md.empty{font-size:1.05rem}
+
+/* sharing toggles as switches */
+.shr{border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.shr[aria-pressed="true"]{background:var(--card);border-color:var(--green)}
+.shr.locked{background:var(--bg-2);border-color:var(--line)}
+.shr-e{display:none}
+.shr{grid-template-columns:minmax(0,1fr) auto}
+.shr .pill{background:var(--bg-2)}
+.shr[aria-pressed="true"] .pill{background:var(--green-soft);border-color:transparent}
+
+/* the player card and welcome */
+.pcard{border:2px solid var(--ink);box-shadow:0 6px 0 var(--ink)}
+.hero .logo{border:2px solid var(--ink)}
+.badge{border:1px solid var(--edge-soft);font-weight:600}
+.levels li{border:1px solid var(--line);background:var(--card)}
+.levels .n{border:2px solid var(--ink)}
+.prize{border:1.5px dashed var(--edge-soft);background:var(--gold-soft)}
+.resume{border:1.5px dashed var(--edge-soft)}
+.subtabs{border:1px solid var(--line)}
+.crewhead .chev,.titlehead span[aria-hidden]{color:var(--muted)}
+.laternote{display:flex;align-items:center;gap:8px}
+.laternote::before{content:"";width:14px;height:14px;flex:none;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='10.5' width='14' height='10' rx='2'/%3E%3Cpath d='M8 10.5V8a4 4 0 0 1 8 0v2.5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='10.5' width='14' height='10' rx='2'/%3E%3Cpath d='M8 10.5V8a4 4 0 0 1 8 0v2.5'/%3E%3C/svg%3E") center/contain no-repeat}
+.needed{background:var(--bg-2);font-weight:600;font-size:13px;letter-spacing:.01em;padding:4px 10px;border-radius:999px}
+.hero-move .needed{background:rgba(26,22,17,.08)}
+.jcard{border:2px solid var(--ink);box-shadow:0 5px 0 var(--ink)}
+.jband{border-bottom:2px solid var(--ink);font-family:var(--font-body);font-weight:700;letter-spacing:.09em}
+.jname{font-family:var(--font-display);font-weight:700}
+.area-btn{border:2px solid var(--ink);box-shadow:none}
+.area-btn b{font-family:var(--font-display);font-weight:600}
+
+/* folded sections: a quiet row with a chevron, not a heavy divider */
+.more{margin-top:6px;border-top:1px solid var(--line);padding-top:2px}
+.more.msec{margin-top:10px}
+.more>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:46px;padding:0}
+.more>summary::-webkit-details-marker{display:none}
+.more>summary::after{content:"";flex:none;width:8px;height:8px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg);margin:-3px 4px 0 0;transition:transform .15s}
+.more[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+/* coverage: a quiet tile with the status shown by colour, dots and words */
+.covtile{background:var(--card)!important;border-top:4px solid var(--edge-soft)}
+.covtile[data-l="none"],.covtile[data-l="thin"]{border-top-color:var(--red)}
+.covtile[data-l="ok"]{border-top-color:var(--gold)}
+.covtile[data-l="good"]{border-top-color:var(--green)}
+.covdots{color:var(--edge-soft)}
+.covtile[data-l="none"] .covdots,.covtile[data-l="thin"] .covdots{color:var(--red)}
+.covtile[data-l="ok"] .covdots{color:var(--gold)}
+.covtile[data-l="good"] .covdots{color:var(--green)}
+.covn{font-weight:700;font-size:13px}
+.covbody .chip{background:var(--bg-2);border:1px solid var(--line)}
+.btn.small+.h-sum{margin-top:16px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -560,7 +769,7 @@ body.has-nav{padding-bottom:104px}
     </div>
 
     <div class="sect">
-      <h2>📣 Ping someone</h2>
+      <h2>Ping someone</h2>
       <p class="sub">Send a nudge to one person. They see it the next time they open the page, and you see when they have. Copy the message to WhatsApp too.</p>
       <div id="t-pings"></div>
     </div>
@@ -612,7 +821,7 @@ body.has-nav{padding-bottom:104px}
     </div>
     <div id="team-titles" hidden>
     <div class="sect">
-      <h2>🎖 Titles</h2>
+      <h2>Titles</h2>
       <p class="sub">Bundle jobs into a title and give it to people. It shows on their profile, and tasks under those jobs go to them first.</p>
       <div id="t-titles"></div>
     </div>
@@ -726,27 +935,27 @@ var ASK=[1,5,3,2,8,9,10];
 var NQ=ITEMS.length;
 // [id, label, traits, emoji]
 var LIKE=[
- ["talk","Talking and working with people",["welcome","host","connect"],"🗣️"],
- ["make","Making things: design, video, writing",["visual","write"],"🎨"],
- ["tech","Solving technical problems and working with tools",["fix"],"🛠️"],
- ["plan","Organising, planning and keeping things on track",["organise","lead"],"🗂️"],
- ["num","Working with numbers, records and detail",["numbers","research"],"🔢"],
- ["care","Looking after people, places or things",["welcome","organise"],"🤲"],
- ["deal","Building relationships and persuading people",["sell","connect"],"🤝"]
+ ["talk","Talking and working with people",["welcome","host","connect"],""],
+ ["make","Making things: design, video, writing",["visual","write"],""],
+ ["tech","Solving technical problems and working with tools",["fix"],""],
+ ["plan","Organising, planning and keeping things on track",["organise","lead"],""],
+ ["num","Working with numbers, records and detail",["numbers","research"],""],
+ ["care","Looking after people, places or things",["welcome","organise"],""],
+ ["deal","Building relationships and persuading people",["sell","connect"],""]
 ];
 var EXP=[
- ["host","Hosted or MC'd an event, show or panel",["host"],"🎤"],
- ["welcome","Worked a door, front desk or customer-facing role",["welcome"],"🚪"],
- ["organise","Planned an event or ran a project to a deadline",["organise"],"📋"],
- ["fix","Set up sound, lights or screens, or fixed tech for others",["fix"],"🔌"],
- ["numbers","Managed a budget or kept accounts",["numbers"],"💰"],
- ["write","Written for an audience: posts, articles or proposals",["write"],"✍️"],
- ["visual","Designed, photographed or edited video for others",["visual"],"📸"],
- ["sell","Sold something or closed a client or sponsor deal",["sell"],"🏷️"],
- ["research","Done research or analysis that others relied on",["research"],"🔎"],
- ["connect","Built a community, network or mailing list",["connect"],"🌐"],
- ["lead","Led a team or was responsible for other people's work",["lead"],"🧭"],
- ["teach","Trained, taught or coached people",["teach"],"🧑‍🏫"]
+ ["host","Hosted or MC'd an event, show or panel",["host"],""],
+ ["welcome","Worked a door, front desk or customer-facing role",["welcome"],""],
+ ["organise","Planned an event or ran a project to a deadline",["organise"],""],
+ ["fix","Set up sound, lights or screens, or fixed tech for others",["fix"],""],
+ ["numbers","Managed a budget or kept accounts",["numbers"],""],
+ ["write","Written for an audience: posts, articles or proposals",["write"],""],
+ ["visual","Designed, photographed or edited video for others",["visual"],""],
+ ["sell","Sold something or closed a client or sponsor deal",["sell"],""],
+ ["research","Done research or analysis that others relied on",["research"],""],
+ ["connect","Built a community, network or mailing list",["connect"],""],
+ ["lead","Led a team or was responsible for other people's work",["lead"],""],
+ ["teach","Trained, taught or coached people",["teach"],""]
 ];
 var TRAIT_LABEL={welcome:"Welcoming people",host:"Hosting a room",organise:"Organising",fix:"Fixing tech and problems",numbers:"Numbers and records",write:"Writing",visual:"Design and visuals",sell:"Persuading and negotiating",research:"Researching",connect:"Staying connected",lead:"Leading",teach:"Teaching"};
 var FN_TRAITS={
@@ -796,48 +1005,48 @@ var CRITICAL_DEFAULT=["C1","C2","C3","G1"];
 /* ---------- About-you questions ---------- */
 // [id, label, jobs it points at, emoji]
 var FUTURE=[
- ["own","Owning a whole area, like operations, finance or marketing",[],"🏆"],
- ["front","Up front: hosting, welcoming, being the face of GCG",[],"🎤"],
- ["craft","Growing a specialist craft: design, video, tech, sound or finance",[],"🎨"],
- ["grow","Growing GCG: partners, sponsors, sales and funding",[],"📈"],
- ["people","Building the team and community: training, onboarding, guests",[],"🌱"],
- ["expand","Helping take GCG to other cities",[],"🌍"],
- ["light","Helping out now and then, without a bigger role",[],"⏳"],
- ["unsure","Not sure yet",[],"🤷"]
+ ["own","Owning a whole area, like operations, finance or marketing",[],""],
+ ["front","Up front: hosting, welcoming, being the face of GCG",[],""],
+ ["craft","Growing a specialist craft: design, video, tech, sound or finance",[],""],
+ ["grow","Growing GCG: partners, sponsors, sales and funding",[],""],
+ ["people","Building the team and community: training, onboarding, guests",[],""],
+ ["expand","Helping take GCG to other cities",[],""],
+ ["light","Helping out now and then, without a bigger role",[],""],
+ ["unsure","Not sure yet",[],""]
 ];
 var TEAM=[
- ["solo","On my own, then I share the result",[],"🎧"],
- ["pair","With one or two others",[],"👯"],
- ["crowd","In a busy team",[],"🎉"]
+ ["solo","On my own, then I share the result",[],""],
+ ["pair","With one or two others",[],""],
+ ["crowd","In a busy team",[],""]
 ];
 var STRUCT=[
- ["clear","A clear brief and a checklist",[],"📋"],
- ["guided","A goal with some guidance",[],"🧭"],
- ["free","A goal and the freedom to find my own way",[],"🪁"]
+ ["clear","A clear brief and a checklist",[],""],
+ ["guided","A goal with some guidance",[],""],
+ ["free","A goal and the freedom to find my own way",[],""]
 ];
 var WHY=[
- ["experience","Real experience in a growing company",[],"🚀"],
- ["portfolio","Work I can show on my CV or portfolio",[],"📁"],
- ["skills","Learning new skills",[],"🧠"],
- ["community","Being part of a community",[],"🫶"],
- ["mission","The mission: bringing people together through games",[],"🎲"],
- ["network","Meeting people and growing my network",[],"🌐"],
- ["paid","A path to paid work later",[],"💼"],
- ["fun","It is fun",[],"😄"]
+ ["experience","Real experience in a growing company",[],""],
+ ["portfolio","Work I can show on my CV or portfolio",[],""],
+ ["skills","Learning new skills",[],""],
+ ["community","Being part of a community",[],""],
+ ["mission","The mission: bringing people together through games",[],""],
+ ["network","Meeting people and growing my network",[],""],
+ ["paid","A path to paid work later",[],""],
+ ["fun","It is fun",[],""]
 ];
 var HIDDEN=[
- ["edit","Video or photo editing",["D3","D2","C8"],"🎬"],
- ["design","Design in Canva, Figma or similar",["D5"],"🖌️"],
- ["photo","Photography or filming",["C8","D2"],"📷"],
- ["music","Music, DJ or sound",["C4"],"🎧"],
- ["web","Websites, forms or apps",["J1","J2","E1"],"💻"],
- ["venues","I know venue owners or event spaces",["E6","E2"],"🏠"],
- ["brands","I have contacts at sponsors or brands",["E7","E2"],"🤝"],
- ["reach","A big social media following",["D1","B1"],"📣"],
- ["lang","I speak other languages",["C2","E2"],"🗣️"],
- ["admin","Legal or admin know-how",["G3","G5"],"⚖️"],
- ["set","Decor, crafts or set building",["C5"],"🎪"],
- ["field","Deep knowledge of a field: law, health, fashion, sport and so on",["F7","C7"],"📚"],
+ ["edit","Video or photo editing",["D3","D2","C8"],""],
+ ["design","Design in Canva, Figma or similar",["D5"],""],
+ ["photo","Photography or filming",["C8","D2"],""],
+ ["music","Music, DJ or sound",["C4"],""],
+ ["web","Websites, forms or apps",["J1","J2","E1"],""],
+ ["venues","I know venue owners or event spaces",["E6","E2"],""],
+ ["brands","I have contacts at sponsors or brands",["E7","E2"],""],
+ ["reach","A big social media following",["D1","B1"],""],
+ ["lang","I speak other languages",["C2","E2"],""],
+ ["admin","Legal or admin know-how",["G3","G5"],""],
+ ["set","Decor, crafts or set building",["C5"],""],
+ ["field","Deep knowledge of a field: law, health, fashion, sport and so on",["F7","C7"],""],
  // Asked in version 3 only. Kept so older answers still read.
  ["mc","MC work or strong stage presence",["C1"],""],
  ["write","Writing and copywriting",["D6","D1","B2","H1"],""],
@@ -890,6 +1099,62 @@ function signalFor(story,id){
 function matchFor(q,story,id){var f=fitFor(q,id);return f==null?null:Math.min(1,f+signalFor(story,id));}
 
 /* ---------- Helpers ---------- */
+/* ---------- Icons: one consistent line set, no emojis ---------- */
+var ICONS={
+ home:'<path d="M3.5 11 12 3.5 20.5 11"/><path d="M5.5 9.5V20h4.5v-5.5h4V20h4.5V9.5"/>',
+ flag:'<path d="M5.5 21V4"/><path d="M5.5 4.5h12l-2.5 4 2.5 4h-12"/>',
+ users:'<circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 19.5a6.2 6.2 0 0 1 12.4 0"/><path d="M16.2 5.4a3.2 3.2 0 0 1 0 6.2"/><path d="M18.2 14a6 6 0 0 1 3 5.5"/>',
+ user:'<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/>',
+ chart:'<path d="M5 20V11"/><path d="M12 20V4.5"/><path d="M19 20v-6.5"/>',
+ target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+ compass:'<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
+ clipboard:'<rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M8.5 11h7"/><path d="M8.5 15h5"/>',
+ shield:'<path d="M12 3.2 19.5 6v5.6c0 4.4-3.1 7.6-7.5 9.2-4.4-1.6-7.5-4.8-7.5-9.2V6z"/><path d="m8.6 12 2.6 2.6 4.4-4.9"/>',
+ gamepad:'<rect x="2.5" y="7.5" width="19" height="10" rx="5"/><path d="M7.5 10.5v4"/><path d="M5.5 12.5h4"/><circle cx="15.5" cy="11.5" r=".9" fill="currentColor"/><circle cx="18" cy="13.5" r=".9" fill="currentColor"/>',
+ check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ x:'<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
+ clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ alert:'<path d="M12 3.5 21.5 20h-19z"/><path d="M12 10v4.5"/><path d="M12 17.3v.2"/>',
+ lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+ plus:'<path d="M12 5v14"/><path d="M5 12h14"/>',
+ arrowR:'<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+ arrowL:'<path d="M19 12H5"/><path d="m11 6-6 6 6 6"/>',
+ chevR:'<path d="m9 6 6 6-6 6"/>',
+ camera:'<path d="M3.5 8.5a1.5 1.5 0 0 1 1.5-1.5h2.2l1.4-2.5h7.8l1.4 2.5H19a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="13" r="3.4"/>',
+ share:'<path d="M12 15V3.5"/><path d="m7.5 8 4.5-4.5L16.5 8"/><path d="M5 13.5v5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-5"/>',
+ download:'<path d="M12 3.5V15"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19.5h14"/>',
+ printer:'<path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14.5h10V20.5H7z"/>',
+ link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+ message:'<path d="M4 5.5h16v11H9.5L5 20.5v-4H4z"/>',
+ bell:'<path d="M6 9.5a6 6 0 0 1 12 0c0 5.5 2 7 2 7H4s2-1.5 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+ eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
+ edit:'<path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+ pin:'<path d="M12 17v4.5"/><path d="M8.5 3.5h7l-1 5.5 3 3.5H6.5l3-3.5z"/>',
+ hand:'<path d="M8 12V6.5a1.5 1.5 0 0 1 3 0V11"/><path d="M11 10V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 10.5V6a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1-6 6h-.5a5 5 0 0 1-4-2L4 15a1.5 1.5 0 0 1 2.4-1.7L8 15"/>',
+ sparkle:'<path d="M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2z"/>',
+ list:'<path d="M9 6.5h11"/><path d="M9 12h11"/><path d="M9 17.5h11"/><path d="M4.5 6.5h.01"/><path d="M4.5 12h.01"/><path d="M4.5 17.5h.01"/>',
+ calendar:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M3.5 10h17"/>',
+ send:'<path d="M20.5 3.5 10 14"/><path d="M20.5 3.5 14 20.5l-4-6.5-6.5-4z"/>',
+ trail:'<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/>',
+ star:'<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/>'
+};
+function ico(name,size){
+  var s=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  s.setAttribute("viewBox","0 0 24 24");s.setAttribute("width",String(size||20));s.setAttribute("height",String(size||20));
+  s.setAttribute("fill","none");s.setAttribute("stroke","currentColor");s.setAttribute("stroke-width","1.9");s.setAttribute("stroke-linecap","round");s.setAttribute("stroke-linejoin","round");
+  s.setAttribute("aria-hidden","true");s.setAttribute("focusable","false");s.classList.add("ico");
+  s.innerHTML=ICONS[name]||"";
+  return s;
+}
+
+// Buttons and links get an icon by their label, so call sites stay simple.
+var BTN_ICONS=[[/^Share my card/,"share"],[/^(PDF|Download)/,"download"],[/(photo)$/i,"camera"],[/^(Add upcoming dates|Google|Apple)/,"calendar"],[/^(Ping|Send ping|Due-soon)/,"bell"],[/^Link$/,"link"],
+ [/^Suggest people/,"sparkle"],[/^Send offers/,"send"],[/^Run sheet/,"clock"],[/^Who is doing what/,"printer"],[/^Event report/,"chart"],[/crew chat|^Guest message|^Draft guest/i,"message"],
+ [/^(Plan an event|New event|New title|Create event|Add this task)/,"plus"],[/^Copy for my CV/,"list"],[/^Assign directly/,"pin"],[/^Luma page|^Crew group/,"link"],[/^Update my answers/,"edit"]];
+function btnIcon(text){for(var i=0;i<BTN_ICONS.length;i++)if(BTN_ICONS[i][0].test(text))return BTN_ICONS[i][1];return "";}
+function initials(n){n=String(n||"").trim();if(!n)return "";var p=n.split(/\s+/);return (p[0].charAt(0)+(p.length>1?p[p.length-1].charAt(0):"")).toUpperCase();}
+var MOODS=[["good","Went well"],["ok","Okay"],["bad","Went badly"]];
+function moodText(m){var o={good:"went well",ok:"okay",bad:"went badly"};return o[m]||({"\u{1F600}":"went well","\u{1F610}":"okay","\u{1F61E}":"went badly"})[m]||"";}
 function h(tag,attrs){
   var e=document.createElement(tag);
   if(attrs){Object.keys(attrs).forEach(function(k){
@@ -903,6 +1168,7 @@ function h(tag,attrs){
     if(Array.isArray(c)){c.forEach(function(x){if(x!=null&&x!==false)e.append(x.nodeType?x:document.createTextNode(String(x)));});}
     else e.append(c.nodeType?c:document.createTextNode(String(c)));
   }
+  if(attrs&&(tag==="button"||tag==="a")){var nm=attrs.ico||(attrs.text&&btnIcon(attrs.text));if(nm&&attrs.ico!==false)e.insertBefore(ico(nm,18),e.firstChild);}
   return e;
 }
 // Adding an empty section (null, false) to the page should add nothing, never the word "null".
@@ -1091,7 +1357,7 @@ function toast(text){
 function go(sc){
   clearTimeout(advTimer);
   var from=levelOf(S.screen),to=levelOf(sc);
-  if(from>-1&&to>from&&from<LEVELS.length)toast("★ Level "+(from+1)+" cleared: "+LEVELS[from].name);
+  if(from>-1&&to>from&&from<LEVELS.length)toast(" Level "+(from+1)+" cleared: "+LEVELS[from].name);
   S.screen=sc;S.tmp=null;saveDraft();render();renderNav();
   try{window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"});}catch(e){window.scrollTo(0,0);}
 }
@@ -1110,13 +1376,13 @@ function hud(){
   var sc=S.screen,lv=levelOf(sc),wrap=h("div",{class:"hud"});
   var ex=EXTRA.indexOf(sc);
   if(ex>-1&&S.extraMode){
-    wrap.append(h("div",{class:"hud-top"},h("button",{type:"button",class:"backb","aria-label":"Back",text:"←",onclick:back}),h("span",{class:"lv"},"➕ ",h("b",{text:"Finish your profile"})," · "+(ex+1)+" of "+EXTRA.length)));
+    wrap.append(h("div",{class:"hud-top"},h("button",{type:"button",class:"backb","aria-label":"Back",onclick:back},ico("arrowL",20)),h("span",{class:"lv"},"",h("b",{text:"Finish your profile"})," · "+(ex+1)+" of "+EXTRA.length)));
     var tr=h("div",{class:"track","aria-hidden":"true"});EXTRA.forEach(function(_,i){var f=h("i");f.style.width=(i<ex?100:i===ex?50:0)+"%";tr.append(h("span",{class:"seg"},f));});
     wrap.append(tr);return wrap;
   }
-  var label=lv>=LEVELS.length?h("span",{class:"lv"},"🏆 ",h("b",{text:"Your player card"})):h("span",{class:"lv"},"Level "+(lv+1)+" of "+LEVELS.length+" · ",h("b",{text:LEVELS[lv].name}));
-  wrap.append(h("div",{class:"hud-top"},h("button",{type:"button",class:"backb","aria-label":"Back",text:"←",onclick:back}),label,
-    h("span",{class:"stars","aria-hidden":"true",text:"★".repeat(Math.min(lv,LEVELS.length))+"☆".repeat(Math.max(0,LEVELS.length-lv))})));
+  var label=lv>=LEVELS.length?h("span",{class:"lv"},"",h("b",{text:"Your player card"})):h("span",{class:"lv"},"Level "+(lv+1)+" of "+LEVELS.length+" · ",h("b",{text:LEVELS[lv].name}));
+  wrap.append(h("div",{class:"hud-top"},h("button",{type:"button",class:"backb","aria-label":"Back",onclick:back},ico("arrowL",20)),label,
+    h("span",{class:"stars",text:(lv>=LEVELS.length?LEVELS.length:lv+1)+" / "+LEVELS.length})));
   var track=h("div",{class:"track","aria-hidden":"true",style:"grid-template-columns:repeat("+LEVELS.length+",minmax(0,1fr))"});
   LEVELS.forEach(function(L,i){
     var f=i<lv?1:(i>lv?0:(function(){
@@ -1142,7 +1408,7 @@ function navRow(card,nextLabel,onNext,opts){
 function warn(msg){say($("flowStatus"),msg,"warn");}
 function tile(emo,label,pressed,onclick,cls){
   return h("button",{type:"button",class:"tile"+(cls?" "+cls:""),"aria-pressed":String(!!pressed),onclick:onclick},
-    emo?h("span",{class:"emo","aria-hidden":"true",text:emo}):null,h("span",{class:"tx",text:label}),h("span",{class:"tick","aria-hidden":"true",text:"✓"}));
+    emo?h("span",{class:"emo","aria-hidden":"true",text:emo}):null,h("span",{class:"tx",text:label}),h("span",{class:"tick","aria-hidden":"true",text:""}));
 }
 // A group of single-choice tiles.
 function singleGroup(list,get,set,compact){
@@ -1185,10 +1451,10 @@ var BUILD={
     var hd=h("h1",{tabindex:"-1",text:"Find where you fit"});
     card.append(h("div",{class:"hero"},logo,hd,
       h("p",{class:"lead",text:"We want a clear picture of everyone: what you are good at, what you have done before, and where you could fit at GCG."}),
-      h("div",{class:"badges"},h("span",{class:"badge",text:"⏱ About 10 minutes · stop anytime"}),h("span",{class:"badge",text:"🎯 No wrong answers"}),h("span",{class:"badge",text:"🤝 Not a commitment"}))));
+      h("div",{class:"badges"},h("span",{class:"badge",text:"About 10 minutes · stop anytime"}),h("span",{class:"badge",text:"No wrong answers"}),h("span",{class:"badge",text:"Not a commitment"}))));
     var steps=[["You","What kind of work pulls you in"],["Situations","7 quick ones: pick what is most and least like you"],["Jobs","Jobs that might suit you. Pick as many as you like"],["Your profile","What you've done, your CV and a photo if you like"]];
     card.append(h("ol",{class:"levels","aria-label":"The four levels"},steps.map(function(s,i){return h("li",null,h("span",{class:"n","aria-hidden":"true",text:String(i+1)}),h("div",null,h("b",{text:s[0]}),h("span",{text:s[1]})));})));
-    card.append(h("div",{class:"prize"},h("b",{text:"🏆 At the end: your player card"}),
+    card.append(h("div",{class:"prize"},h("b",{text:"At the end: your player card"}),
       h("span",{text:"Your player card, your profile, and your own Game Plan: what to do next, your events and your place at GCG. Hinda sees your answers. The crew sees your About, plus anything you choose to share."})));
     var inp=h("input",{type:"text",id:"name",autocomplete:"name",placeholder:"First name is fine",value:S.name});
     inp.addEventListener("input",function(){S.name=inp.value;saveDraft();});
@@ -1198,7 +1464,7 @@ var BUILD={
     var started=PATH.indexOf(S.screen)>0||answeredAsk(S.q)>0;
     if(started){var pc=Math.round(Math.max(PATH.indexOf(S.screen),1+answeredAsk(S.q))/(PATH.length-1)*100);
       card.append(h("div",{class:"resume"},h("b",{text:"You're "+Math.min(pc,95)+"% through setting up."}),h("span",{text:" Everything so far is saved. Pick up where you left off."})));}
-    navRow(card,started?"Continue ▶":"Let's play ▶",function(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}if(started&&PATH.indexOf(S.screen)>0){render();return;}var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});if(started&&answeredAsk(S.q)>0)go(k>-1?"s"+k:"deck");else next();},{big:true});
+    navRow(card,started?"Continue →":"Let's play →",function(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}if(started&&PATH.indexOf(S.screen)>0){render();return;}var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});if(started&&answeredAsk(S.q)>0)go(k>-1?"s"+k:"deck");else next();},{big:true});
     return hd;
   },
   like:function(card){
@@ -1219,9 +1485,9 @@ var BUILD={
         b.setAttribute("data-m",m);
         b.setAttribute("aria-label",it[1][idx][0]+(m?" ("+(m==="most"?"most like me":"least like me")+")":""));
       });
-      if(cur.m==null){hint.setAttribute("data-k","m");hint.textContent="👆 Tap the one MOST like you";}
-      else if(cur.l==null){hint.setAttribute("data-k","l");hint.textContent="👇 Now tap the one LEAST like you";}
-      else{hint.setAttribute("data-k","ok");hint.textContent="✓ Got it";}
+      if(cur.m==null){hint.setAttribute("data-k","m");hint.textContent="Tap the one MOST like you";}
+      else if(cur.l==null){hint.setAttribute("data-k","l");hint.textContent="Now tap the one LEAST like you";}
+      else{hint.setAttribute("data-k","ok");hint.textContent="Got it";}
     }
     it[1].forEach(function(o,idx){
       var b=h("button",{type:"button",class:"tile pick",onclick:function(){
@@ -1270,12 +1536,12 @@ var BUILD={
   photo:function(card){
     var hd=shell(card,"Your profile","Add a photo of yourself","Optional. It shows on your player card and in the crew list, as part of your About.");
     var st=h("p",{class:"status",role:"status","aria-live":"polite"});
-    var prev=S.photo?h("img",{class:"avatar big",src:S.photo,alt:"Your photo"}):h("div",{class:"avatar big empty","aria-hidden":"true",text:"🙂"});
+    var prev=S.photo?h("img",{class:"avatar big",src:S.photo,alt:"Your photo"}):h("div",{class:"avatar big empty","aria-hidden":"true",text:initials(S.name)||"You"});
     var file=h("input",{type:"file",accept:"image/*",id:"photoIn",class:"sr"});
     file.addEventListener("change",function(){var f=file.files&&file.files[0];if(!f)return;say(st,"Preparing your photo…");
       shrinkPhoto(f,function(url){if(!url){say(st,"That image could not be used. Try another.","warn");return;}S.photo=url;saveDraft();render();});});
     card.append(h("div",{class:"photobox"},prev,file,
-      h("label",{for:"photoIn",class:"btn go"},S.photo?"📷 Change photo":"📷 Choose a photo"),
+      h("label",{for:"photoIn",class:"btn go"},S.photo?"Change photo":"Choose a photo"),
       S.photo?h("button",{type:"button",class:"btn link",text:"Remove photo",onclick:function(){S.photo="";saveDraft();render();}}):null),st);
     navRow(card,S.photo?"Next →":"Skip for now →",null);
     return hd;
@@ -1292,9 +1558,9 @@ var BUILD={
     if(n>=T){
       var g=grouped(S),yes=g.top.concat(g.good);
       var hd=shell(card,"Jobs","Nice picks.",yes.length||g.curious.length?"Here is what you said yes and maybe to. Want to look at more?":"Nothing caught your eye yet. That is fine. Have a look at the full list, or carry on.");
-      if(yes.length||g.curious.length)card.append(h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:"👍 "+FN[i].name});}),g.curious.map(function(i){return h("span",{class:"chip curious",text:"🤔 "+FN[i].name});})));
-      card.append(h("button",{type:"button",class:"btn",text:"🗂 See all "+FNS.filter(function(f){return f.when!=="Later";}).length+" jobs (optional)",onclick:function(){S.returnTo="deck";go("all");}}));
-      navRow(card,"Reveal my card 🏆",function(){
+      if(yes.length||g.curious.length)card.append(h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:""+FN[i].name});}),g.curious.map(function(i){return h("span",{class:"chip curious",text:""+FN[i].name});})));
+      card.append(h("button",{type:"button",class:"btn",text:"See all "+FNS.filter(function(f){return f.when!=="Later";}).length+" jobs (optional)",onclick:function(){S.returnTo="deck";go("all");}}));
+      navRow(card,"Reveal my card ",function(){
         if(answeredAsk(S.q)<ASK.length){var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});go("s"+k);setTimeout(function(){warn("One situation still needs an answer.");},50);return;}
         next();},{big:true});
       return hd;
@@ -1315,7 +1581,7 @@ var BUILD={
     card.append(h("article",{class:"jcard"},
       h("div",{class:"jband","data-c":String(a.i%3)},h("span",{text:a.short}),h("span",{text:f.when==="Now"?"Needed now":"Needed soon"})),
       h("div",{class:"jbody"},h("h3",{class:"jname",text:f.name}),h("p",{class:"jcov",text:f.covers}),h("p",{class:"jfit"},h("b",{text:"Good fit if: "}),f.fit),
-        h("div",{class:"choices",role:"group","aria-label":"How do you feel about "+f.name},ch("good","👍","Yes, that's me"),ch("curious","🤔","Maybe"),ch("no","👎","Not for me")))));
+        h("div",{class:"choices",role:"group","aria-label":"How do you feel about "+f.name},ch("good","","Yes, that's me"),ch("curious","","Maybe"),ch("no","","Not for me")))));
     navRow(card,"Skip",function(){clearTimeout(deckTimer);S.deckAt=n+1;saveDraft();render();});
     return hd2;
   },
@@ -1334,7 +1600,7 @@ var BUILD={
           row.querySelectorAll(".sb").forEach(function(b){b.setAttribute("aria-pressed",String(S.levels[f.id]===b.getAttribute("data-lv")));});
           saveDraft();
         }});}
-        row.append(h("p",{class:"t",text:f.name}),h("p",{class:"c",text:f.covers}),h("div",{class:"seg3"},sb("good","👍 Yes"),sb("curious","🤔 Maybe"),sb("no","👎 No")));
+        row.append(h("p",{class:"t",text:f.name}),h("p",{class:"c",text:f.covers}),h("div",{class:"seg3"},sb("good","Yes"),sb("curious","Maybe"),sb("no","No")));
         body.append(row);
       });
       var btn=h("button",{type:"button",class:"area-btn","aria-expanded":String(open),"aria-controls":"body-"+a.id,onclick:function(){
@@ -1344,7 +1610,7 @@ var BUILD={
       areas.append(h("section",{class:"area","data-c":String(a.i%3),id:"area-"+a.id},btn,body));
     });
     card.append(areas);
-    navRow(card,"Done ✓",function(){go(S.returnTo||"deck");});
+    navRow(card,"Done ",function(){go(S.returnTo||"deck");});
     return hd;
   },
   work:function(card){
@@ -1358,7 +1624,7 @@ var BUILD={
     var hd=shell(card,"About you","Why are you here?","Pick up to 3.");
     card.append(multiGroup(WHY,function(){return S.story.why;},3,true,"two"),
       h("div",{class:"qgroup"},h("h3",{text:"Where do you see yourself at GCG in a few years?"}),singleGroup(FUTURE,function(){return S.story.future;},function(v){S.story.future=v;},true)));
-    navRow(card,S.extraMode?"Save ✓":"Next →",function(){
+    navRow(card,S.extraMode?"Save ":"Next →",function(){
       if(!S.story.why.length){warn("Pick at least one reason.");return;}
       if(!S.story.future){warn("Pick where you see yourself. Not sure yet is fine.");return;}
       next();
@@ -1368,7 +1634,7 @@ var BUILD={
   share:function(card){
     var hd=shell(card,"Your profile","What do you want the crew to see?","Your About is always visible, so newcomers can see who does what. The rest is your choice. You can change it any time under Me.");
     card.append(shareToggles());
-    navRow(card,"Save and open my Game Plan ▶",next,{big:true});
+    navRow(card,"Save and open my Game Plan →",next,{big:true});
     return hd;
   },
   profile:function(card){
@@ -1383,7 +1649,7 @@ var BUILD={
     var noteField=h("div",{class:"field",hidden:!(S.confirm==="partly"||S.confirm==="no")},h("label",{for:"cnote",text:"Tell us what we missed"}),note);
     var cb=h("div",{class:"seg3 conf",role:"group","aria-label":"Does this sound like you?"});
     Object.keys(CONFIRM).forEach(function(k){
-      cb.append(h("button",{type:"button",class:"sb","data-c":k,"aria-pressed":String(S.confirm===k),text:(k==="yes"?"🎯 ":k==="partly"?"〰️ ":"🙅 ")+CONFIRM[k],onclick:function(){
+      cb.append(h("button",{type:"button",class:"sb","data-c":k,"aria-pressed":String(S.confirm===k),text:(k==="yes"?"":k==="partly"?"〰 ":"")+CONFIRM[k],onclick:function(){
         S.confirm=S.confirm===k?"":k;cb.querySelectorAll(".sb").forEach(function(b){b.setAttribute("aria-pressed",String(b.getAttribute("data-c")===S.confirm));});
         noteField.hidden=!(S.confirm==="partly"||S.confirm==="no");saveDraft();
       }}));
@@ -1391,12 +1657,12 @@ var BUILD={
     card.append(h("div",{class:"box"},h("h3",{text:"Does this sound like you?"}),cb,noteField));
     var st=h("p",{class:"status",id:"submitStatus",role:"status","aria-live":"polite"});
     var canSend=!!(S.db&&S.uid&&S.canWrite!==false);
-    card.append(!canSend?h("button",{type:"button",class:"btn go big wide",text:"Next: build my profile ▶",onclick:function(){go("done");}}):canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile ▶",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});}})
+    card.append(!canSend?h("button",{type:"button",class:"btn go big wide",text:"Next: build my profile →",onclick:function(){go("done");}}):canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile →",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});}})
         :null,st,
       h("p",{class:"sub center",text:canSend?"Hinda sees your answers. The crew sees your About; you choose the rest.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
       h("details",{class:"more"},h("summary",{text:"More: share, PDF, all jobs"}),
-        h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"📤 Share my card",onclick:function(){downloadPdf(true);}}),h("button",{type:"button",class:"btn small",text:"⬇ PDF",onclick:function(){downloadPdf(false);}}),
-          h("button",{type:"button",class:"btn small",text:"🗂 See all jobs",onclick:function(){S.returnTo="profile";go("all");}}),
+        h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Share my card",onclick:function(){downloadPdf(true);}}),h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false);}}),
+          h("button",{type:"button",class:"btn small",text:"See all jobs",onclick:function(){S.returnTo="profile";go("all");}}),
           canSend?h("button",{type:"button",class:"btn small",text:"Copy my results",onclick:function(){copyText(shareText(),st,"Copied. Send it to Hinda.");}}):null),
         h("textarea",{id:"msg",class:"mono",rows:"6",readonly:true,"aria-label":"Your results as text"},shareText())));
     return hd;
@@ -1435,14 +1701,14 @@ function submit(){
   say(st,"Sending…");
   S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
   S.db.doc("responses/"+S.uid).set(p).then(function(){
-    var first=!S.sentAt;S.sentAt=p.updated;say(st,"Saved. 🎉 Opening your Game Plan…","ok");
-    setTimeout(function(){if(S.view==="flow")showView(homeView());if(first)toast("🎉 Welcome to your Game Plan");},900);
+    var first=!S.sentAt;S.sentAt=p.updated;say(st,"Saved. Opening your Game Plan…","ok");
+    setTimeout(function(){if(S.view==="flow")showView(homeView());if(first)toast("Welcome to your Game Plan");},900);
   },function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});
 }
 
 /* ---------- PDF: a small hand-built PDF, no library, works offline ---------- */
 function pdfAscii(t){
-  t=String(t==null?"":t).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/•/g,"-").replace(/…/g,"...").replace(/★/g,"*").replace(/\s+/g," ");
+  t=String(t==null?"":t).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/•/g,"-").replace(/…/g,"...").replace(/\s+/g," ");
   var out="";
   for(var i=0;i<t.length;i++){
     var c=t.charCodeAt(i);
@@ -1605,7 +1871,7 @@ function renderPeople(){
     });
     root.append(h("div",{class:"person"},
       h("h3",{class:"ph-row"},cleanPhoto(p.photo)?h("img",{class:"avatar sm",src:cleanPhoto(p.photo),alt:""}):null,pname(p)),
-      titlesOf(p.id).length?h("div",{class:"chips"},titlesOf(p.id).map(function(x){return h("span",{class:"chip t1",text:"🎖 "+x.name});})):null,
+      titlesOf(p.id).length?h("div",{class:"chips"},titlesOf(p.id).map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
       prof?h("p",{class:"ttl",text:prof.title}):h("p",{class:"meta",text:"Situations not answered."}),
       prof?h("div",{class:"chips"},prof.chips.map(function(c,i){return h("span",{class:"chip t"+i,text:c});})):null,
       h("p",{class:"meta",text:[p.source==="pasted"?"Added by paste":"Sent from the page",p.confirm?"Card: "+CONFIRM[p.confirm]:"Card not checked"].join(" · ")}),
@@ -1648,7 +1914,7 @@ function renderCov(){
       var fits=n?[]:bestFits(f.id,2);
       return h("div",{class:"cov-row"},
         h("span",{class:"nm"},h("span",{class:"code",text:f.id}),f.name,h("span",{class:"tag",text:f.when}),isCritical(f.id)?h("span",{class:"must",text:"Must fill"}):null),
-        n?h("div",{class:"chips"},yes.map(function(p){return h("span",{class:"chip good",text:"👍 "+pname(p)});}),may.map(function(p){return h("span",{class:"chip curious",text:"🤔 "+pname(p)});})):
+        n?h("div",{class:"chips"},yes.map(function(p){return h("span",{class:"chip good",text:""+pname(p)});}),may.map(function(p){return h("span",{class:"chip curious",text:""+pname(p)});})):
           h("span",{class:"none",text:"Nobody picked this."+(fits.length?" Might suit, from their answers: "+fits.map(function(x){return pname(x.p);}).join(", ")+". Ask them.":"")}));
     }).filter(Boolean);
     if(rows.length)root.append(h("div",{class:"cov-area"},h("h3",{text:a.name}),rows));
@@ -1777,7 +2043,7 @@ function addPasted(){
 }
 
 /* ---------- Events: templates, checkpoints, priorities, a clock, and every step timestamped ---------- */
-var PRI={must:{l:"Must",e:"🔴",o:0},should:{l:"Should",e:"🟡",o:1},nice:{l:"Nice",e:"⚪",o:2}};
+var PRI={must:{l:"Must",o:0},should:{l:"Should",o:1},nice:{l:"Nice",o:2}};
 var SIZE={S:"Small",M:"Medium",L:"Large"};
 var PHASES=[["before","Before"],["during","On the day"],["after","After"]];
 // A template task: title, job, phase, day offset from the event date, minutes from start time (on-the-day tasks only),
@@ -1912,7 +2178,7 @@ var MUST_KEEP=["Quality check the game: fits the audience and the room, every an
   "Day 1: floor manager","Day 1: host the games","Day 1: first aid on site","Day 2: host the games"];
 TEMPLATE_ORDER.forEach(function(k){TEMPLATES[k].tasks.forEach(function(x){if(x.pri==="must"&&MUST_KEEP.indexOf(x.title)<0)x.pri="should";});});
 function mustShare(ev){var g={},m={};(ev.tasks||[]).forEach(function(t){var k=t.group||t.id;g[k]=1;if(t.pri==="must")m[k]=1;});var n=Object.keys(g).length;return {must:Object.keys(m).length,all:n};}
-var STATE_LABEL={open:"No one yet",draft:"Not sent",offered:"⏳ Waiting",taken:"✅ Taken",started:"▶ In progress",stuck:"⚠ Stuck",done:"✔ Done",passed:"🙅 Can't do it"};
+var STATE_LABEL={open:"No one yet",draft:"Not sent",offered:"Waiting",taken:"Taken",started:"In progress",stuck:"Stuck",done:"Done",passed:"Can't do it"};
 var ACTIVE={taken:1,started:1,stuck:1,done:1};
 S.events=[];S.replies=[];S.evOpen="";S.evMsgs=null;S.evDraft=null;S.run=null;S.panel={};
 function newId(p){return p+Date.now().toString(36)+Math.floor(Math.random()*46656).toString(36);}
@@ -2006,17 +2272,17 @@ function taskMatch(p,job,skipEid){
   if(!FN[job])return null;
   var s=scoreOf(p,job);if(s<0)return null;
   var pts=0,why=[],tr=FN_TRAITS[job]||[],st=sanitizeStory(p.story),mask=Number(p.q&&p.q[NQ])||0;
-  if(s>=SCORE.good){pts+=3;why.push("👍 Said yes to "+FN[job].name);}else if(s===SCORE.curious){pts+=1;why.push("🤔 Said maybe to "+FN[job].name);}
-  if(p.id&&typeof titleCovers==="function"&&titleCovers(p.id,job)){pts+=3;why.push("🎖 Your title covers this");}
-  else if(S.roles&&S.roles.assign&&S.roles.assign[job]===p.id){pts+=2;why.push("🎖 Holds this role");}
+  if(s>=SCORE.good){pts+=3;why.push("Said yes to "+FN[job].name);}else if(s===SCORE.curious){pts+=1;why.push("Said maybe to "+FN[job].name);}
+  if(p.id&&typeof titleCovers==="function"&&titleCovers(p.id,job)){pts+=3;why.push("Your title covers this");}
+  else if(S.roles&&S.roles.assign&&S.roles.assign[job]===p.id){pts+=2;why.push("Holds this role");}
   var done=EXP.filter(function(e,k){return (mask&(1<<k))&&e[2].some(function(t){return tr.indexOf(t)>-1;});});
-  if(done.length){pts+=2;why.push("✅ Has "+lc1(done[0][1]));}
+  if(done.length){pts+=2;why.push("Has "+lc1(done[0][1]));}
   var br=HIDDEN.filter(function(r){return st.hidden.indexOf(r[0])>-1&&(r[2]||[]).indexOf(job)>-1;});
-  if(br.length){pts+=2;why.push("🧰 Brings: "+br[0][1]);}
+  if(br.length){pts+=2;why.push("Brings: "+br[0][1]);}
   var past=p.id?gcgCount(p.id,job,skipEid):0;
-  if(past){pts+=1.5;why.push("⭐ Did this at "+past+" GCG event"+(past>1?"s":""));}
+  if(past){pts+=1.5;why.push("Did this at "+past+" GCG event"+(past>1?"s":""));}
   var fit=fitFor(p.q,job);
-  if(fit!=null){pts+=1.5*fit;if(fit>=0.65)why.push("💪 Strong in "+tr.map(function(t){return TRAIT_LABEL[t].toLowerCase();}).join(" and "));}
+  if(fit!=null){pts+=1.5*fit;if(fit>=0.65)why.push("Strong in "+tr.map(function(t){return TRAIT_LABEL[t].toLowerCase();}).join(" and "));}
   return {pts:pts,why:why};
 }
 function rankFor(ev,t,load){
@@ -2105,25 +2371,25 @@ function dueSoonText(ev){
   priorityList(ev).forEach(function(x){if(!x.due||x.due>lim)return;
     var line=x.t.title+" ("+(x.late?"OVERDUE, was ":"")+fmtWhen(x.due)+")";
     if(x.t.owner&&ACTIVE[x.st])(by[x.t.owner]=by[x.t.owner]||[]).push(line);else none.push(line);});
-  var L=["⏰ "+(ev.name||"Event")+" · due in the next 7 days"];
+  var L=[""+(ev.name||"Event")+" · due in the next 7 days"];
   Object.keys(by).forEach(function(pid){L.push("","• "+nameOf(pid)+":");by[pid].forEach(function(l){L.push("  - "+l);});});
-  if(none.length){L.push("","🙋 Still needs someone:");none.forEach(function(l){L.push("  - "+l);});}
-  if(L.length===1)L.push("Nothing due this week. 🎉");
+  if(none.length){L.push("","Still needs someone:");none.forEach(function(l){L.push("  - "+l);});}
+  if(L.length===1)L.push("Nothing due this week. ");
   return L.join("\n");
 }
 // Guest-facing drafts for Luma blasts, WhatsApp or SMS.
 function guestMessage(ev,kind){
   var when=fmtDate(ev.date)+(ev.start?", "+ev.start:""),where=ev.place?" at "+ev.place:"",luma=ev.links&&ev.links.luma?"\n"+ev.links.luma:"",form=ev.links&&ev.links.form?"\n"+ev.links.form:"";
-  if(kind==="announce")return "🎲 "+(ev.name||"Game night")+"\n"+when+where+"\nAn evening of games, teams and good company with Gold Coast Games. Spots are limited, so register early."+luma;
+  if(kind==="announce")return ""+(ev.name||"Game night")+"\n"+when+where+"\nAn evening of games, teams and good company with Gold Coast Games. Spots are limited, so register early."+luma;
   if(kind==="remind")return "Reminder: "+(ev.name||"our game night")+" is on "+when+where+". Bring your energy, and a friend if you like. Details:"+luma;
-  if(kind==="dayof")return "Tonight! "+(ev.name||"Game night")+" starts at "+(ev.start||"")+where+". See you there. 🎲"+luma;
+  if(kind==="dayof")return "Tonight! "+(ev.name||"Game night")+" starts at "+(ev.start||"")+where+". See you there. "+luma;
   if(kind==="thanks")return "Thank you for coming to "+(ev.name||"game night")+"! Tell us how it went, it takes two minutes:"+form+"\nPhotos are coming soon.";
   return "";
 }
 
 /* ---------- Events view (Hinda) ---------- */
-function statusPill(st){return h("span",{class:"pill","data-s":st,text:STATE_LABEL[st]});}
-function priBadge(p){p=PRI[p]?p:"should";return h("span",{class:"pri","data-p":p,title:PRI[p].l,text:PRI[p].e+" "+PRI[p].l});}
+function statusPill(st){return h("span",{class:"pill","data-s":st},h("i",{class:"dot","aria-hidden":"true"}),STATE_LABEL[st]);}
+function priBadge(p){p=PRI[p]?p:"should";return h("span",{class:"pri","data-p":p,title:PRI[p].l+" priority"},h("i",{class:"dot","aria-hidden":"true"}),PRI[p].l);}
 function jobSelect(val,onchange,label){
   var sel=h("select",{"aria-label":label||"Closest job"},h("option",{value:"",text:"Closest job…"}),
     AREAS.map(function(a){return h("optgroup",{label:a.short},FNS.filter(function(f){return f.area===a.id;}).map(function(f){return h("option",{value:f.id,text:f.name});}));}));
@@ -2166,27 +2432,27 @@ function drawEvents(root){
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):h("p",{class:"sub",text:"Add a one-line goal under Event details."}),
     h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     h("section",{class:"card hsec"},journey(ev,{vertical:true,rerender:renderEvents})),
-    h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"🔥 Needs attention ("+risk.length+")":"✅ Nothing needs attention"}),
+    h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
       risk.length?h("ol",{class:"needs"},risk.map(function(x){var now=x.late||x.st==="stuck"||x.st==="passed";
-        return h("li",{"data-sev":now?"now":"soon"},h("span",{class:"sev",text:now?"🔴 Now":"🟡 Soon"}),
+        return h("li",{"data-sev":now?"now":"soon"},h("span",{class:"sev",text:now?"Now":"Soon"}),
           h("div",null,h("b",{text:x.t.title}),h("p",{class:"sub",text:(x.t.owner?nameOf(x.t.owner):x.t.helper||"no one")+" · "+riskWhy(x)+(x.waiting?" · waits on "+x.waiting:"")}),x.due?clockSpan(x.due):null),
           h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.panel.alltasks=true;S.goTask={eid:ev.id,tid:x.t.id};renderEvents();openLinkedTask();}}));})):null),
     h("div",{class:"row actions"},
-      h("button",{type:"button",class:"btn go",text:"✨ Suggest people",onclick:function(){suggestEvent(ev);}}),
-      h("button",{type:"button",class:"btn green",text:"📣 Send offers",onclick:function(){sendOffers(ev);}})),
+      h("button",{type:"button",class:"btn go",text:"Suggest people",onclick:function(){suggestEvent(ev);}}),
+      h("button",{type:"button",class:"btn green",text:"Send offers",onclick:function(){sendOffers(ev);}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"}),
     h("details",{class:"more"},h("summary",{text:"More actions: due-soon message, run sheet, PDFs"}),
       h("div",{class:"row"},
-        h("button",{type:"button",class:"btn small",text:"⏰ Due-soon message",onclick:function(){S.evMsgs={eid:ev.id,title:"Due soon (paste in the team group)",list:[{text:dueSoonText(ev)}]};renderEvents();}}),
-        h("button",{type:"button",class:"btn small",text:"🕒 Run sheet",onclick:function(){S.run={eid:ev.id};renderEvents();}}),
-        h("button",{type:"button",class:"btn small",text:"🖨 Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
-        h("button",{type:"button",class:"btn small",text:"📊 Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}}))),
+        h("button",{type:"button",class:"btn small",text:"Due-soon message",onclick:function(){S.evMsgs={eid:ev.id,title:"Due soon (paste in the team group)",list:[{text:dueSoonText(ev)}]};renderEvents();}}),
+        h("button",{type:"button",class:"btn small",text:"Run sheet",onclick:function(){S.run={eid:ev.id};renderEvents();}}),
+        h("button",{type:"button",class:"btn small",text:"Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
+        h("button",{type:"button",class:"btn small",text:"Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}}))),
     h("details",{class:"more",open:S.panel.evdetails?true:null,ontoggle:function(e){S.panel.evdetails=e.currentTarget.open;}},h("summary",{text:"Event details: name, date, place, lead"}),
       field("Event name","text",ev.name,function(v){ev.name=v;},"name"),
       field("Goal: what we are trying to make happen","text",ev.goal,function(v){ev.goal=v;},"goal"),
       h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time","time",ev.start,function(v){ev.start=v;},"start")),
       h("div",{class:"two-col"},field("Place","text",ev.place,function(v){ev.place=v;},"place"),h("div",{class:"field"},h("label",{text:"Event lead (chases the list)"}),leadSel)),
-      ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:"⚠ "+ms.must+" of "+ms.all+" tasks are Must. Keep it to about a third."}):null));
+      ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:""+ms.must+" of "+ms.all+" tasks are Must. Keep it to about a third."}):null));
   if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length)root.append(h("div",{style:"margin-top:14px"},msgBox(S.evMsgs.title,S.evMsgs.list)));
   if(S.run&&S.run.eid===ev.id)root.append(h("div",{id:"runBox",class:"card",style:"margin-top:14px"}));
   var cc=crewCredits(ev);if(cc)root.append(cc);
@@ -2201,7 +2467,7 @@ function drawEvents(root){
     list.forEach(function(t){
       if(ph[0]==="before"&&t.cp!=null&&t.cp!==lastCp&&ev.cps[t.cp]){
         lastCp=t.cp;var cl=cpCleared(ev,t.cp);
-        tl.append(h("div",{class:"cphead","data-c":cl?"done":t.cp===cur?"cur":""},h("span",{text:(cl?"✔ ":t.cp===cur?"▶ ":"⏸ ")+"Checkpoint: "+ev.cps[t.cp].name}),cl?h("span",{class:"sub",text:"cleared"}):clockSpan(cpDue(ev,t.cp))));
+        tl.append(h("div",{class:"cphead","data-c":cl?"done":t.cp===cur?"cur":""},h("span",{text:(cl?"":t.cp===cur?"→ ":"")+"Checkpoint: "+ev.cps[t.cp].name}),cl?h("span",{class:"sub",text:"cleared"}):clockSpan(cpDue(ev,t.cp))));
       }
       tl.append(adminTask(ev,t,cur));
     });
@@ -2213,8 +2479,8 @@ function drawEvents(root){
   custom.addEventListener("input",function(){dr.text=custom.value;});
   var phSel=h("select",{"aria-label":"Phase"},PHASES.map(function(p){return h("option",{value:p[0],text:p[1]});}));phSel.value=dr.phase;phSel.addEventListener("change",function(){dr.phase=phSel.value;});
   var dIn=h("input",{type:"number","aria-label":"Days from the event (minus for before)",placeholder:"Days from event, e.g. -7","data-k":"custom-d",value:dr.d});dIn.addEventListener("input",function(){dr.d=dIn.value;});
-  var pSel=h("select",{"aria-label":"Priority"},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].e+" "+PRI[k].l});}));pSel.value=dr.pri;pSel.addEventListener("change",function(){dr.pri=pSel.value;});
-  root.append(h("details",{class:"card fold",style:"margin-top:14px"},h("summary",{class:"fold-h",text:"＋ Add a task"}),custom,
+  var pSel=h("select",{"aria-label":"Priority"},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].l});}));pSel.value=dr.pri;pSel.addEventListener("change",function(){dr.pri=pSel.value;});
+  root.append(h("details",{class:"card fold",style:"margin-top:14px"},h("summary",{class:"fold-h",text:"Add a task"}),custom,
     h("div",{class:"two-col"},jobSelect(dr.job,function(v){dr.job=v;},"Closest job for the new task"),phSel),h("div",{class:"two-col"},dIn,pSel),
     h("button",{type:"button",class:"btn small",text:"Add this task",onclick:function(){
       if(!clean(custom.value)){custom.focus();return;}if(!dr.job){say($("evStatus"),"Pick the closest job so the page knows who fits.","warn");return;}
@@ -2227,7 +2493,7 @@ function drawEvents(root){
     h("div",{class:"two-col"},field("Luma event link","url",ev.links.luma,function(v){ev.links.luma=v;},"luma"),field("Feedback form link","url",ev.links.form,function(v){ev.links.form=v;},"form")),
     field("Crew WhatsApp group link","url",ev.links.group,function(v){ev.links.group=v;},"group"),
     h("div",{class:"three-col"},field("Registered (Luma)","number",ev.guests.registered,function(v){ev.guests.registered=v;},"reg"),field("Checked in","number",ev.guests.attended,function(v){ev.guests.attended=v;},"att"),field("Feedback replies","number",ev.guests.feedback,function(v){ev.guests.feedback=v;},"fb")),
-    h("div",{class:"row"},["announce","remind","dayof","thanks"].map(function(k){return h("button",{type:"button",class:"btn small",text:"✉️ "+{announce:"Announcement",remind:"Reminder",dayof:"Day-of",thanks:"Thank-you + form"}[k],onclick:function(){S.evMsgs={eid:ev.id,title:"Guest message (paste into Luma, WhatsApp or SMS)",list:[{text:guestMessage(ev,k)}]};renderEvents();window.scrollTo(0,0);}});}))));
+    h("div",{class:"row"},["announce","remind","dayof","thanks"].map(function(k){return h("button",{type:"button",class:"btn small",text:""+{announce:"Announcement",remind:"Reminder",dayof:"Day-of",thanks:"Thank-you + form"}[k],onclick:function(){S.evMsgs={eid:ev.id,title:"Guest message (paste into Luma, WhatsApp or SMS)",list:[{text:guestMessage(ev,k)}]};renderEvents();window.scrollTo(0,0);}});}))));
   root.append(h("details",{class:"card fold",style:"margin-top:14px"},h("summary",{class:"fold-h",text:"Debrief (after the event)"}),
     field("What worked","textarea",ev.debrief.worked,function(v){ev.debrief.worked=v;},"worked"),
     field("What did not","textarea",ev.debrief.didnt,function(v){ev.debrief.didnt=v;},"didnt"),
@@ -2244,7 +2510,7 @@ function drawEventList(root){
   root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Events"}),h("h2",{class:"q",text:"Plan an event"}),
     h("p",{class:"sub",text:"Pick a template and a date. Every task, checkpoint and deadline fills in. Then suggest people and send the offers."}),
     nameIn,h("div",{class:"two-col"},tSel,dateIn),
-    h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"＋ Create event",onclick:function(){
+    h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Create event",onclick:function(){
       if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
       var e=tSel.value?fromTemplate(tSel.value,clean(nameIn.value),dateIn.value):{id:newId("e"),name:clean(nameIn.value)||"New event",type:"",date:dateIn.value,start:"18:30",place:"",lead:"",links:{},guests:{},debrief:{},cps:[],tasks:[],created:nowIso()};
       S.events.push(e);S.evOpen=e.id;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
@@ -2255,13 +2521,13 @@ function drawEventList(root){
     var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
     return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
       h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")+(TEMPLATES[e.type]?" · "+TEMPLATES[e.type].name:"")}),
-      h("span",{class:"evmeta",text:done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · 🔥 "+risk+" at risk":"")}));
+      h("span",{class:"evmeta",text:done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")}));
   })));
 }
 function adminTask(ev,t,cur){
   var st=taskState(ev,t),rank=rankFor(ev,t,eventLoad(ev,t)),owner=t.owner?personById(t.owner):null,due=taskDue(ev,t);
   var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:rank.length?"Choose someone…":"Nobody fits yet"}),
-    rank.map(function(x,i){return h("option",{value:x.p.id,text:(i===0?"★ ":"")+pname(x.p)+(x.m.why.length?" · "+x.m.why[0].replace(/^\S+ /,""):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"")});}));
+    rank.map(function(x,i){return h("option",{value:x.p.id,text:(i===0?" ":"")+pname(x.p)+(x.m.why.length?" · "+x.m.why[0].replace(/^\S+ /,""):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"")});}));
   if(owner&&!rank.some(function(x){return x.p.id===owner.id;}))sel.append(h("option",{value:owner.id,text:pname(owner)}));
   sel.value=t.owner||"";
   sel.addEventListener("change",function(){t.owner=sel.value;t.offered=false;t.ots="";t.manual="";saveEvent(ev,true);renderEvents();});
@@ -2271,30 +2537,30 @@ function adminTask(ev,t,cur){
   title.addEventListener("input",function(){t.title=title.value;saveEvent(ev);});
   var more=h("details",{class:"more"},h("summary",{text:"More"}),
     h("div",{class:"two-col"},jobSelect(t.job,function(v){t.job=v;t.owner="";t.offered=false;t.manual="";saveEvent(ev,true);renderEvents();},"Closest job for "+t.title),
-      (function(){var p=h("select",{"aria-label":"Priority for "+t.title},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].e+" "+PRI[k].l});}));p.value=t.pri||"should";p.addEventListener("change",function(){t.pri=p.value;saveEvent(ev,true);renderEvents();});return p;})()),
+      (function(){var p=h("select",{"aria-label":"Priority for "+t.title},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].l});}));p.value=t.pri||"should";p.addEventListener("change",function(){t.pri=p.value;saveEvent(ev,true);renderEvents();});return p;})()),
     h("div",{class:"two-col"},
       (function(){var s=h("select",{"aria-label":"Size for "+t.title},Object.keys(SIZE).map(function(k){return h("option",{value:k,text:"Size: "+SIZE[k]});}));s.value=t.size||"M";s.addEventListener("change",function(){t.size=s.value;saveEvent(ev,true);});return s;})(),
       (function(){var i=h("input",{type:"text","aria-label":"Outside helper","data-k":"helper-"+t.id,placeholder:"Outside helper's name (not on the page)",value:t.helper||""});i.addEventListener("input",function(){t.helper=i.value;saveEvent(ev);});return i;})()),
-    h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"🙋 Add a slot (extra hand)",onclick:function(){addSlot(ev,t);}}),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Add a slot (extra hand)",onclick:function(){addSlot(ev,t);}}),
       h("button",{type:"button",class:"btn link",text:"Remove task",onclick:function(){ev.tasks=ev.tasks.filter(function(x){return x!==t;});saveEvent(ev,true);renderEvents();}})));
   var pk="ping"+t.id,lk=h("span",{class:"status"});
   return h("div",{class:"task","data-s":st,id:"task-"+ev.id+"-"+t.id},
     h("div",{class:"task-top"},priBadge(t.pri),title,statusPill(st)),
-    h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?"🕒 "+fmtClock(due):"📅 "+fmtWhen(due))+" · "}),st==="done"?h("span",{text:"done "+fmtWhen(doneAt(ev,t))}):clockSpan(due)]:"No date",slotLabel(ev,t)?" · "+slotLabel(ev,t):"",t.helper?" · helper: "+t.helper:"",
-      r&&r.plan&&st!=="done"?" · 🗓 plans "+fmtDate(r.plan):"",t.all?" · 👥 whole crew takes part, "+(t.owner?nameOf(t.owner):"someone")+" runs it":""),
+    h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?""+fmtClock(due):""+fmtWhen(due))+" · "}),st==="done"?h("span",{text:"done "+fmtWhen(doneAt(ev,t))}):clockSpan(due)]:"No date",slotLabel(ev,t)?" · "+slotLabel(ev,t):"",t.helper?" · helper: "+t.helper:"",
+      r&&r.plan&&st!=="done"?" · plans "+fmtDate(r.plan):"",t.all?" · whole crew takes part, "+(t.owner?nameOf(t.owner):"someone")+" runs it":""),
     sel,
     why&&why.why.length?h("div",{class:"chips"},why.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
-    r&&(r.note||r.comment)?h("p",{class:"sub"},h("b",{text:nameOf(t.owner)+": "}),[r.mood||"",r.comment||r.note].join(" ")):null,
-    r&&r.state==="stuck"&&r.stuck?h("p",{class:"stuck"},"⚠ Stuck: "+r.stuck):null,
-    claims.map(function(c){return h("div",{class:"row claim"},h("span",{text:"🙋 "+nameOf(c.pid)+" can take this"+(c.note?": "+c.note:"")}),h("button",{type:"button",class:"btn small go",text:"Give to "+nameOf(c.pid),onclick:function(){giveTo(ev,t,c.pid);}}));}),
-    hands.map(function(x){return h("div",{class:"row claim"},h("span",{text:"🙋 "+nameOf(x.pid)+" needs an extra hand"+(x.hand.note?": "+x.hand.note:"")}),h("button",{type:"button",class:"btn small go",text:"Add a slot",onclick:function(){addSlot(ev,t,x.pid+x.hand.at);}}));}),
+    r&&(r.note||r.comment)?h("p",{class:"sub"},h("b",{text:nameOf(t.owner)+": "}),[r.mood?moodText(r.mood)+".":"",r.comment||r.note].join(" ")):null,
+    r&&r.state==="stuck"&&r.stuck?h("p",{class:"stuck"},"Stuck: "+r.stuck):null,
+    claims.map(function(c){return h("div",{class:"row claim"},h("span",{text:""+nameOf(c.pid)+" can take this"+(c.note?": "+c.note:"")}),h("button",{type:"button",class:"btn small go",text:"Give to "+nameOf(c.pid),onclick:function(){giveTo(ev,t,c.pid);}}));}),
+    hands.map(function(x){return h("div",{class:"row claim"},h("span",{text:""+nameOf(x.pid)+" needs an extra hand"+(x.hand.note?": "+x.hand.note:"")}),h("button",{type:"button",class:"btn small go",text:"Add a slot",onclick:function(){addSlot(ev,t,x.pid+x.hand.at);}}));}),
     h("div",{class:"row"},
       st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best →",onclick:function(){nextBest(ev,t);}}):null,
-      t.msg?h("button",{type:"button",class:"btn small",text:"✉️ Draft guest message",onclick:function(){S.evMsgs={eid:ev.id,title:"Guest message (paste into Luma, WhatsApp or SMS)",list:[{text:guestMessage(ev,t.msg)}]};renderEvents();window.scrollTo(0,0);}}):null,
-      t.owner&&(st==="draft"||st==="offered")?h("button",{type:"button",class:"btn small",text:"📌 Assign directly",title:"Give it to them without asking",onclick:function(){t.offered=true;t.ots=t.ots||nowIso();t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
-      t.owner?h("button",{type:"button",class:"btn small",text:"📣 Ping",onclick:function(){S.panel[pk]=!S.panel[pk];renderEvents();}}):null,
-      h("button",{type:"button",class:"btn small",text:"🔗 Link",onclick:function(){copyText(taskLink(ev.id,t.id),lk,"Task link copied.");}}),lk,
-      (t.owner||t.helper)&&st!=="done"?h("button",{type:"button",class:"btn small",text:"✔ Mark done",onclick:function(){t.manual="done";t.mts=Object.assign({},t.mts,{done:nowIso()});saveEvent(ev,true);renderEvents();}}):null,
+      t.msg?h("button",{type:"button",class:"btn small",text:"Draft guest message",onclick:function(){S.evMsgs={eid:ev.id,title:"Guest message (paste into Luma, WhatsApp or SMS)",list:[{text:guestMessage(ev,t.msg)}]};renderEvents();window.scrollTo(0,0);}}):null,
+      t.owner&&(st==="draft"||st==="offered")?h("button",{type:"button",class:"btn small",text:"Assign directly",title:"Give it to them without asking",onclick:function(){t.offered=true;t.ots=t.ots||nowIso();t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
+      t.owner?h("button",{type:"button",class:"btn small",text:"Ping",onclick:function(){S.panel[pk]=!S.panel[pk];renderEvents();}}):null,
+      h("button",{type:"button",class:"btn small",text:"Link",onclick:function(){copyText(taskLink(ev.id,t.id),lk,"Task link copied.");}}),lk,
+      (t.owner||t.helper)&&st!=="done"?h("button",{type:"button",class:"btn small",text:"Mark done",onclick:function(){t.manual="done";t.mts=Object.assign({},t.mts,{done:nowIso()});saveEvent(ev,true);renderEvents();}}):null,
       st==="done"&&t.manual==="done"?h("button",{type:"button",class:"btn link",text:"Undo done",onclick:function(){t.manual="";saveEvent(ev,true);renderEvents();}}):null,
       t.owner&&st!=="passed"&&st!=="open"&&st!=="done"?h("button",{type:"button",class:"btn link",text:"Mark can't do it",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null),
     S.panel[pk]&&t.owner?pingPanel(t.owner,ev.id,t.id,"please check this task: "+t.title):null,
@@ -2333,13 +2599,13 @@ function progressTimeline(ev,rerender){
       var key=ev.id+":"+s.i,open=!!S.tlOpen[key];
       var btn=h("button",{type:"button",class:"tl-stage","data-s":state,"aria-expanded":String(open),onclick:function(){S.tlOpen[key]=!open;rerender();}},
         h("span",{class:"tl-n",text:String(k+1)}),h("span",{class:"tl-name",text:s.name}),
-        h("span",{class:"tl-meta",text:(s.cleared?"✔ cleared":(s.due?fmtWhen(s.due):""))+" · "+dn.length+"/"+s.tasks.length}));
+        h("span",{class:"tl-meta",text:(s.cleared?"cleared":(s.due?fmtWhen(s.due):""))+" · "+dn.length+"/"+s.tasks.length}));
       var li=h("li",null,btn);
       if(open)li.append(h("ul",{class:"tl-who"},s.tasks.map(function(t){var st=taskState(ev,t),d=st==="done"?doneAt(ev,t):null;
-        return h("li",{"data-s":st},st==="done"?"✔ ":"◻ ",h("b",{text:t.title}),st==="done"?" — "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):(t.owner||t.helper?" — "+(t.owner?nameOf(t.owner):t.helper)+" ("+STATE_LABEL[st].replace(/^\S+ /,"").toLowerCase()+")":" — up for grabs"));})));
+        return h("li",{"data-s":st},h("i",{class:"mk","data-s":st==="done"?"done":""}),h("b",{text:t.title}),st==="done"?" — "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):(t.owner||t.helper?" — "+(t.owner?nameOf(t.owner):t.helper)+" ("+STATE_LABEL[st].replace(/^\S+ /,"").toLowerCase()+")":" — up for grabs"));})));
       return li;
     })),
-    feed.length?h("div",{class:"tl-feed"},h("span",{class:"lab",text:"🎉 Latest"}),feed.slice(0,4).map(function(x){return h("p",null,h("b",{text:nameOf(x.t.owner)}),", "+x.t.title+" · "+timeAgo(x.d));})):null);
+    feed.length?h("div",{class:"tl-feed"},h("span",{class:"lab",text:"Latest"}),feed.slice(0,4).map(function(x){return h("p",null,h("b",{text:nameOf(x.t.owner)}),", "+x.t.title+" · "+timeAgo(x.d));})):null);
   return box;
 }
 
@@ -2351,7 +2617,7 @@ function renderRunSheet(){
   var items=(ev.tasks||[]).filter(function(t){return t.phase==="during";}).map(function(t){return {t:t,at:taskDue(ev,t)};}).filter(function(x){return x.at;})
     .sort(function(a,b){return a.at-b.at;});
   var now=Date.now(),nowIdx=-1;items.forEach(function(x,i){if(x.at<=now)nowIdx=i;});
-  box.append(h("div",{class:"row",style:"justify-content:space-between"},h("h3",{class:"q",text:"🕒 Run sheet · "+(ev.name||"")}),
+  box.append(h("div",{class:"row",style:"justify-content:space-between"},h("h3",{class:"q",text:"Run sheet · "+(ev.name||"")}),
     h("span",{class:"bigclock",id:"liveClock",text:fmtClock(new Date())}),h("button",{type:"button",class:"btn small",text:"Close",onclick:function(){S.run=null;box.remove();}})));
   if(!items.length){box.append(h("p",{class:"sub",text:"No on-the-day tasks with times yet."}));return;}
   var seen={};
@@ -2413,7 +2679,7 @@ function reportBlocks(ev){
       var st=taskState(ev,t),r=replyOf(ev,t),dl=daysLate(ev,t);
       var bits=[t.title,(t.owner?nameOf(t.owner):t.helper||"no one"),STATE_LABEL[st].replace(/^\S+ /,"")];
       if(dl!=null)bits.push(dl>0.5?dl.toFixed(1)+" days late":"on time");
-      if(r&&(r.comment||r.note))bits.push((r.mood?r.mood+" ":"")+'"'+(r.comment||r.note)+'"');
+      if(r&&(r.comment||r.note))bits.push((r.mood?moodText(r.mood)+" ":"")+'"'+(r.comment||r.note)+'"');
       if(r&&r.stuck)bits.push("stuck: "+r.stuck);
       B.push({t:"li",text:bits.join(" - ")});
     });
@@ -2467,9 +2733,9 @@ function myPings(){return (S.pings||[]).filter(function(p){return p.to===S.uid&&
 function pingBanners(){
   return myPings().map(function(p){
     var ev=p.eid?evById(p.eid):null,t=ev?(ev.tasks||[]).filter(function(x){return x.id===p.tid;})[0]:null;
-    return h("div",{class:"ping"},h("p",null,h("b",{text:"📣 From Hinda: "}),p.text||""),t?h("p",{class:"sub",text:(ev.name||"")+" · "+t.title}):null,
+    return h("div",{class:"ping"},h("p",null,h("b",{text:"From Hinda: "}),p.text||""),t?h("p",{class:"sub",text:(ev.name||"")+" · "+t.title}):null,
       h("div",{class:"row"},t?h("button",{type:"button",class:"btn small go",text:"Open it →",onclick:function(){S.goTask={eid:p.eid,tid:p.tid};openLinkedTask();}}):null,
-        h("button",{type:"button",class:"btn small",text:"Got it ✓",onclick:function(){
+        h("button",{type:"button",class:"btn small",text:"Got it ",onclick:function(){
           S.acks=Object.assign({},S.acks);S.acks[p.id]=nowIso();
           if(S.db&&S.uid)S.db.doc("acks/"+S.uid).set({ids:S.acks}).catch(function(){});
           refresh();}})));
@@ -2489,7 +2755,7 @@ function pingPanel(pid,eid,tid,defText){
   var key=tid||"x",prev=(S.pingOut=S.pingOut||{})[key]||"";
   var out=h("pre",{class:"mono",hidden:!prev,text:prev});
   var copyBtn=h("button",{type:"button",class:"btn small",text:"Copy for WhatsApp",hidden:!prev,onclick:function(){copyText(out.textContent,st,"Copied. Paste it to them on WhatsApp.");}});
-  var send=h("button",{type:"button",class:"btn small go",text:"📣 Send ping",onclick:function(){
+  var send=h("button",{type:"button",class:"btn small go",text:"Send ping",onclick:function(){
     var who=pid||(sel&&sel.value);if(!who){say(st,"Pick who to ping.","warn");return;}if(!clean(txt.value)){txt.focus();return;}
     var msg=sendPing(who,txt.value,eid,tid,st);if(msg){S.pingOut[key]=msg;out.textContent=msg;out.hidden=false;copyBtn.hidden=false;}
   }});
@@ -2502,7 +2768,7 @@ function renderPings(){
   root.append(h("div",{class:"field"},h("label",{text:"This page's link (used in task links)"}),urlIn),pingPanel(null,"","",""));
   var sent=(S.pings||[]).slice().sort(function(a,b){return String(b.at).localeCompare(String(a.at));}).slice(0,15);
   if(sent.length)root.append(h("ul",{class:"crew"},sent.map(function(p){var seen=S.allAcks&&S.allAcks[p.to]&&S.allAcks[p.to][p.id];
-    return h("li",null,h("b",{text:nameOf(p.to)+": "}),p.text+" · ",h("span",{class:seen?"ok":"sub",text:seen?"✓ seen":"not seen yet"}));})));
+    return h("li",null,h("b",{text:nameOf(p.to)+": "}),p.text+" · ",h("span",{class:seen?"ok":"sub",text:seen?"seen":"not seen yet"}));})));
 }
 
 /* ---------- Titles: Hinda bundles jobs into a title and gives it to people ---------- */
@@ -2534,7 +2800,7 @@ function renderTitles(){
 }
 function drawTitles(root){
   var st=h("p",{class:"status",id:"t-titleStatus",role:"status","aria-live":"polite"});
-  root.append(h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"＋ New title",onclick:function(){
+  root.append(h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"New title",onclick:function(){
     if(!S.db){say(st,"Titles need the live page.","warn");return;}
     var tt={id:newId("ti"),name:"New title",desc:"",jobs:[],holders:[]};S.titles.push(tt);S.titleOpen=tt.id;saveTitle(tt,true);renderTitles();}}),st));
   if(!S.titles.length)root.append(h("p",{class:"sub",text:"No titles yet. For now people help across many jobs. When you decide, bundle jobs into a title (for example Head of Operations: running operations, project management, logistics, equipment) and give it to someone. It then shows on their profile, and tasks under those jobs go to them first."}));
@@ -2550,13 +2816,13 @@ function drawTitles(root){
         var js=FNS.filter(function(f){return f.area===a.id;}),n=js.filter(function(f){return (tt.jobs||[]).indexOf(f.id)>-1;}).length;
         return h("details",{class:"more",open:n?true:null},h("summary",{text:a.name+(n?" ("+n+")":"")}),
           h("div",{class:"chips"},js.map(function(f){var on=(tt.jobs||[]).indexOf(f.id)>-1;
-            return h("button",{type:"button",class:"chip addchip"+(on?" good":""),"aria-pressed":String(on),text:(on?"✓ ":"")+f.name,onclick:function(){
+            return h("button",{type:"button",class:"chip addchip"+(on?" good":""),"aria-pressed":String(on),text:(on?"":"")+f.name,onclick:function(){
               tt.jobs=tt.jobs||[];var i=tt.jobs.indexOf(f.id);if(i>-1)tt.jobs.splice(i,1);else tt.jobs.push(f.id);saveTitle(tt,true);renderTitles();}});})));
       }));
       var fits=S.people.map(function(p){return {p:p,v:titleFit(p,tt)};}).filter(function(x){return x.v!=null;}).sort(function(a,b){return b.v-a.v;});
       var holders=h("div",{class:"chips"},S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).map(function(p){
         var on=(tt.holders||[]).indexOf(p.id)>-1,rank=fits.findIndex(function(x){return x.p.id===p.id;});
-        return h("button",{type:"button",class:"chip addchip"+(on?" good":""),"aria-pressed":String(on),text:(on?"✓ ":"")+pname(p)+(rank===0&&(tt.jobs||[]).length?" ★ best fit":""),onclick:function(){
+        return h("button",{type:"button",class:"chip addchip"+(on?" good":""),"aria-pressed":String(on),text:(on?"":"")+pname(p)+(rank===0&&(tt.jobs||[]).length?"  best fit":""),onclick:function(){
           tt.holders=tt.holders||[];var i=tt.holders.indexOf(p.id);if(i>-1)tt.holders.splice(i,1);else tt.holders.push(p.id);saveTitle(tt,true);renderTitles();}});}));
       card.append(h("div",{class:"titlebody"},h("div",{class:"field"},h("label",{text:"Title"}),nm),h("div",{class:"field"},h("label",{text:"What it covers"}),ds),
         h("p",{class:"lab",text:"Jobs under this title"}),jobs,
@@ -2580,10 +2846,10 @@ function historyOf(pid){
 function crewWide(ev){return (ev.tasks||[]).filter(function(t){return t.all&&taskState(ev,t)!=="done";});}
 function crewDates(ev){
   var list=crewWide(ev);if(!list.length)return null;
-  return h("div",{class:"box crewdates"},h("h3",{text:"👥 Whole crew"}),list.map(function(t){
+  return h("div",{class:"box crewdates"},h("h3",{text:"Whole crew"}),list.map(function(t){
     var d=taskDue(ev,t),st=h("span",{class:"status"}),x=calItem(ev,t,true);
     return h("div",{class:"msgrow"},h("b",{text:t.title}),h("p",{class:"meta",text:(d?fmtWhen(d)+" · ":"")+(t.owner?"run by "+nameOf(t.owner):"host to be confirmed")}),
-      x?h("div",{class:"row calrow"},h("a",{class:"btn small",href:googleCal(x),target:"_blank",rel:"noopener",text:"📅 Google"}),h("button",{type:"button",class:"btn small",text:"📅 Apple / Outlook",onclick:function(){saveIcs("GCG-"+slug(t.title)+".ics",[x],st);}}),st):null);
+      x?h("div",{class:"row calrow"},h("a",{class:"btn small",href:googleCal(x),target:"_blank",rel:"noopener",text:"Google"}),h("button",{type:"button",class:"btn small",text:"Apple / Outlook",onclick:function(){saveIcs("GCG-"+slug(t.title)+".ics",[x],st);}}),st):null);
   }));
 }
 function calItem(ev,t,crew){
@@ -2621,7 +2887,7 @@ function saveIcs(name,items,st){
 }
 function calButtons(ev,t,stat){
   var x=calItem(ev,t);if(!x)return null;
-  return h("div",{class:"row calrow"},h("span",{class:"k",text:"📅 Add to calendar:"}),
+  return h("div",{class:"row calrow"},h("span",{class:"k",text:"Add to calendar:"}),
     h("a",{class:"btn small",href:googleCal(x),target:"_blank",rel:"noopener",text:"Google"}),
     h("button",{type:"button",class:"btn small",text:"Apple / Outlook",onclick:function(){saveIcs("GCG-"+slug(t.title)+".ics",[x],stat);}}));
 }
@@ -2634,7 +2900,7 @@ function taskRecords(){
     var resp=t.ots&&ts.answered?(new Date(ts.answered)-new Date(t.ots))/36e5:null;
     var work=ts.answered&&dn?(dn-new Date(ts.answered))/864e5:null;
     var stuckH=ts.stuck?((ts.unstuck?new Date(ts.unstuck):dn||new Date())-new Date(ts.stuck))/36e5:null;
-    out.push({ev:ev,t:t,st:st,pid:t.owner,due:due,done:dn,late:due&&dn?(dn-due)/864e5:null,resp:resp,work:work,stuck:!!ts.stuck,stuckH:stuckH,mood:r&&r.mood||""});
+    out.push({ev:ev,t:t,st:st,pid:t.owner,due:due,done:dn,late:due&&dn?(dn-due)/864e5:null,resp:resp,work:work,stuck:!!ts.stuck,stuckH:stuckH,mood:r&&r.mood?moodText(r.mood):""});
   });});
   return out;
 }
@@ -2656,7 +2922,7 @@ function renderInsights(){
   var byTitle={};recs.forEach(function(r){var k=r.t.title.replace(/\s*\(\d+\/\d+\)$/,"");(byTitle[k]=byTitle[k]||[]).push(r);});
   var sugg=Object.keys(byTitle).map(function(k){var a=avg(byTitle[k].map(function(r){return r.late;}));return {k:k,a:a,n:byTitle[k].filter(function(r){return r.late!=null;}).length};})
     .filter(function(x){return x.a!=null&&x.a>1;}).sort(function(a,b){return b.a-a.a;});
-  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"💡 What to change in the templates"}),
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"What to change in the templates"}),
     sugg.length?h("ul",{class:"crew"},sugg.map(function(x){return h("li",{text:"“"+x.k+"” finishes "+f1(x.a)+" days late on average ("+x.n+" time"+(x.n>1?"s":"")+"). Start it "+Math.ceil(x.a)+" day"+(Math.ceil(x.a)>1?"s":"")+" earlier."});})):h("p",{class:"sub",text:"No pattern of lateness yet."})));
   // checkpoints
   var cpRows={};S.events.forEach(function(ev){(ev.cps||[]).forEach(function(c,i){var due=cpDue(ev,i),cl=cpCleared(ev,i);if(!due||!cl||!cl.getTime())return;(cpRows[c.name]=cpRows[c.name]||[]).push((cl-due)/864e5);});});
@@ -2689,8 +2955,8 @@ function renderInsights(){
 }
 
 /* ---------- Game Plan navigation: Home · Events · Me for the team; Today · Events · Team · Insights · Me for Hinda ---------- */
-var NAV_MEMBER=[["home","🏠","Home"],["mevents","🎲","Events"],["crew","👥","Crew"],["me","🙂","Me"]];
-var NAV_ADMIN=[["today","🔥","Today"],["events","🎲","Events"],["team","👥","Team"],["insights","📊","Insights"],["me","🙂","Me"]];
+var NAV_MEMBER=[["home","home","Home"],["mevents","flag","Events"],["crew","users","Crew"],["me","user","Me"]];
+var NAV_ADMIN=[["today","target","Today"],["events","flag","Events"],["team","users","Team"],["insights","chart","Insights"],["me","user","Me"]];
 S.evSel="";S.teamTab="people";
 function onboarded(){return !!S.sentAt;}
 function navItems(){return S.isAdmin?NAV_ADMIN:NAV_MEMBER;}
@@ -2702,7 +2968,7 @@ function renderNav(){
   navItems().forEach(function(n){
     var cur=S.view===n[0]||(n[0]==="me"&&S.view==="flow");
     nav.append(h("button",{type:"button",class:"navb","aria-current":cur?"page":null,onclick:function(){go2(n[0]);}},
-      h("span",{class:"ni","aria-hidden":"true",text:n[1]}),h("span",{class:"nl",text:n[2]}),
+      h("span",{class:"ni","aria-hidden":"true"},ico(n[1],24)),h("span",{class:"nl",text:n[2]}),
       n[0]==="home"&&np?h("span",{class:"badge-n",text:String(np)}):null));
   });
 }
@@ -2714,7 +2980,7 @@ function go2(v){
 function greeting(){var hr=new Date().getHours();return hr<12?"Good morning":hr<17?"Good afternoon":"Good evening";}
 
 /* ---------- The event journey: every event as five stages ---------- */
-var STAGES=[["plan","🎯","Plan"],["prep","🎒","Prep"],["check","🧩","Check"],["play","🎮","Play"],["report","🏆","Report"]];
+var STAGES=[["plan","compass","Plan"],["prep","clipboard","Prep"],["check","shield","Check"],["play","gamepad","Play"],["report","flag","Report"]];
 function stageOfCp(ev,i){
   var cps=ev.cps||[],c=cps[i];if(!c)return "prep";
   var g=cps.findIndex(function(x){return /check/i.test(x.name);});
@@ -2751,7 +3017,7 @@ function journey(ev,opts){
     var b=h("button",{type:"button",class:"jp","data-s":state,"aria-expanded":opts.compact?null:String(open),
       "aria-label":s.name+": "+(s.done?"done":s.cur?"happening now":s.late?"behind":"to come"),
       onclick:opts.compact?(opts.onOpen||null):function(){S.tlOpen[key]=!open;(opts.rerender||function(){})();}},
-      h("span",{class:"jpe","aria-hidden":"true",text:s.done?"✓":s.emo}),h("span",{class:"jpn",text:s.name}),
+      h("span",{class:"jpe","aria-hidden":"true"},ico(s.done?"check":s.emo,22)),h("span",{class:"jpn",text:s.name}),
       opts.vertical?h("span",{class:"jpm",text:s.done?"done":s.due?(s.late?"was due ":"by ")+fmtWhen(s.due):""}):null,
       s.cur?h("span",{class:"jpnow",text:"NOW"}):null,you?h("span",{class:"jpyou",text:"YOU"}):null);
     row.append(h("li",null,b));
@@ -2763,11 +3029,11 @@ function journey(ev,opts){
     st.forEach(function(s){
       if(!S.tlOpen[ev.id+":"+s.key])return;
       box.append(h("div",{class:"jdetail"},h("b",{text:s.emo+" "+s.name}),h("ul",{class:"tl-who"},s.tasks.map(function(t){var ts=taskState(ev,t),d=ts==="done"?doneAt(ev,t):null;
-        return h("li",{"data-s":ts},ts==="done"?"✔ ":"◻ ",h("b",{text:t.title}),ts==="done"?" · "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):(t.owner||t.helper?" · "+(t.owner?nameOf(t.owner):t.helper):" · up for grabs"));}))));
+        return h("li",{"data-s":ts},h("i",{class:"mk","data-s":ts==="done"?"done":""}),h("b",{text:t.title}),ts==="done"?" · "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):(t.owner||t.helper?" · "+(t.owner?nameOf(t.owner):t.helper):" · up for grabs"));}))));
     });
     var feed=[];(ev.tasks||[]).forEach(function(t){if(taskState(ev,t)==="done"&&t.owner){var d=doneAt(ev,t);if(d)feed.push({t:t,d:d});}});
     feed.sort(function(a,b){return b.d-a.d;});
-    if(feed.length)box.append(h("div",{class:"tl-feed"},feed.slice(0,3).map(function(x){return h("p",null,"🎉 ",h("b",{text:nameOf(x.t.owner)}),", "+x.t.title+" · "+timeAgo(x.d));})));
+    if(feed.length)box.append(h("div",{class:"tl-feed"},feed.slice(0,3).map(function(x){return h("p",null,"",h("b",{text:nameOf(x.t.owner)}),", "+x.t.title+" · "+timeAgo(x.d));})));
   }
   return box;
 }
@@ -2801,14 +3067,14 @@ function renderHome(){
 function nextMoveCard(x,st){
   var ev=x.ev,t=x.t,due=x.due;
   var btns=x.st==="offered"?[
-      h("button",{type:"button",class:"btn go big",text:"✋ I'll take it",onclick:function(){writeReply(ev,t,{answer:"take"},st);}}),
+      h("button",{type:"button",class:"btn go big",text:"I'll take it",onclick:function(){writeReply(ev,t,{answer:"take"},st);}}),
       h("button",{type:"button",class:"btn",text:"Can't do it",onclick:function(){writeReply(ev,t,{answer:"pass"},st);}})]
     :[h("button",{type:"button",class:"btn go big",text:"Go to this task →",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}})];
-  return h("div",{class:"hero-move"},h("p",{class:"k",text:"🎯 Your next move"}),h("h2",{class:"hm-t",text:t.title}),
-    h("p",{class:"hm-m"},(ev.name||"")+" · ",due?(x.late?["🔴 ",clockSpan(due)]:["⏰ "+fmtWhen(due)+" · ",clockSpan(due)]):"no deadline"),
+  return h("div",{class:"hero-move"},h("p",{class:"k",text:"Your next move"}),h("h2",{class:"hm-t",text:t.title}),
+    h("p",{class:"hm-m"},(ev.name||"")+" · ",due?(x.late?["",clockSpan(due)]:[""+fmtWhen(due)+" · ",clockSpan(due)]):"no deadline"),
     (function(){var me=personById(S.uid)||Object.assign(payload(),{id:S.uid}),m=taskMatch(me,t.job,ev.id);if(!m||!m.why.length)return null;
       return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),lc1(m.why[0].replace(/^\S+\s/,"")));})(),
-    t.pri==="must"&&t.cp!=null&&ev.cps&&ev.cps[t.cp]?h("p",{class:"needed",text:"🔒 Needed for: "+ev.cps[t.cp].name}):null,
+    t.pri==="must"&&t.cp!=null&&ev.cps&&ev.cps[t.cp]?h("p",{class:"needed",text:"Needed for: "+ev.cps[t.cp].name}):null,
     h("div",{class:"row"},btns),st);
 }
 function drawHome(root){
@@ -2821,29 +3087,29 @@ function drawHome(root){
     if(items.length>1)root.append(h("button",{type:"button",class:"then",onclick:function(){S.evSel=items[1].ev.id;showView("mevents");}},h("span",{class:"k",text:"Then"}),h("b",{text:items[1].t.title}),items.length>2?h("span",{class:"sub",text:"+"+(items.length-2)+" more now ›"}):null));
   }else{
     var ev0=myEvents()[0],doneHere=ev0?(ev0.tasks||[]).filter(function(t){return t.owner===S.uid&&taskState(ev0,t)==="done";}).length:0;
-    root.append(h("div",{class:"hero-move clear"},h("p",{class:"k",text:"🎉 You're good"}),h("h2",{class:"hm-t",text:"Nothing needs you right now."}),
+    root.append(h("div",{class:"hero-move clear"},h("p",{class:"k",text:"You're good"}),h("h2",{class:"hm-t",text:"Nothing needs you right now."}),
       ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+" is "+eventPct(ev0)+"% ready."+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
   }
   var later=laterItems();
-  if(later.length)root.append(h("p",{class:"laternote",text:"🔒 "+later.length+" more task"+(later.length>1?"s":"")+" later in the plan. They open up as the event moves on."}));
+  if(later.length)root.append(h("p",{class:"laternote",text:""+later.length+" more task"+(later.length>1?"s":"")+" later in the plan. They open up as the event moves on."}));
   // GCG right now
   var evs=myEvents(),ev=evs[0]||S.events.filter(function(e){var d=dateAt(e,0,null);return d&&d>Date.now();}).sort(function(a,b){return String(a.date).localeCompare(String(b.date));})[0];
   if(ev){
     var mine=(ev.tasks||[]).filter(function(t){return t.owner===S.uid&&ACTIVE[taskState(ev,t)];});
     var part=[];mine.forEach(function(t){var n=FN[t.job]?FN[t.job].name:t.title;if(part.indexOf(n)<0)part.push(n);});
-    root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"🎲 GCG right now"}),
+    root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"GCG right now"}),
       h("button",{type:"button",class:"evhead",onclick:function(){S.evSel=ev.id;showView("mevents");}},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(ev.place?" · "+ev.place:"")+" ›"})),
       journey(ev,{compact:true,me:S.uid,onOpen:function(){S.evSel=ev.id;showView("mevents");}}),
       part.length?h("p",{class:"yourpart"},h("b",{text:"Your part: "}),part.slice(0,3).join(" · ")):null));
   }
   // your place
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
-  if(prof)root.append(h("section",{class:"card hsec place"},h("p",{class:"k",text:"🙂 Your place"}),
-    ts.length?h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:"🎖 "+x.name});})):null,
+  if(prof)root.append(h("section",{class:"card hsec place"},h("p",{class:"k",text:"Your place"}),
+    ts.length?h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
     h("p",{class:"pl-type",text:prof.title}),
     h("div",{class:"chips"},prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
     h("p",{class:"pl-n",text:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evCount).length+" event"+(Object.keys(evCount).length===1?"":"s"):"Your trail starts with your first task."}),
-    missingProfile()?h("button",{type:"button",class:"btn small",text:"➕ Finish your profile ("+missingProfile()+" quick question"+(missingProfile()>1?"s":"")+")",onclick:function(){startExtra();}}):null));
+    missingProfile()?h("button",{type:"button",class:"btn small",text:"Finish your profile ("+missingProfile()+" quick question"+(missingProfile()>1?"s":"")+")",onclick:function(){startExtra();}}):null));
   // next crew date + calendar
   var crew=[];evs.forEach(function(e){crewWide(e).forEach(function(t){var d=taskDue(e,t);if(d&&d>Date.now())crew.push({ev:e,t:t,d:d});});});
   crew.sort(function(a,b){return a.d-b.d;});
@@ -2851,10 +3117,10 @@ function drawHome(root){
   var upcoming=[];myTasks().forEach(function(x){var s=taskState(x.ev,x.t);if(ACTIVE[s]&&s!=="done"){var c=calItem(x.ev,x.t);if(c&&c.end>new Date())upcoming.push(c);}});
   crew.forEach(function(c){var ci=calItem(c.ev,c.t,true);if(ci)upcoming.push(ci);});
   if(crew.length||upcoming.length)root.append(h("section",{class:"card hsec"},
-    crew.length?[h("p",{class:"k",text:"👥 Next crew date"}),h("p",null,h("b",{text:crew[0].t.title}),h("br"),fmtWhen(crew[0].d)+" · "+(crew[0].ev.name||""))]:null,
-    upcoming.length?h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"📅 Add upcoming dates to my calendar",onclick:function(){saveIcs("GCG-upcoming.ics",upcoming,calSt);}}),calSt):null));
+    crew.length?[h("p",{class:"k",text:"Next crew date"}),h("p",null,h("b",{text:crew[0].t.title}),h("br"),fmtWhen(crew[0].d)+" · "+(crew[0].ev.name||""))]:null,
+    upcoming.length?h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Add upcoming dates to my calendar",onclick:function(){saveIcs("GCG-upcoming.ics",upcoming,calSt);}}),calSt):null));
   var grabs=upForGrabs();
-  if(grabs.length)root.append(h("button",{type:"button",class:"grabs-link",onclick:function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}},"🙋 "+grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs ›"));
+  if(grabs.length)root.append(h("button",{type:"button",class:"grabs-link",onclick:function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}},""+grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs ›"));
 }
 
 /* ---------- Team member Events ---------- */
@@ -2879,11 +3145,11 @@ function drawMyEvents(root){
   });
   var grabs=upForGrabs();
   if(grabs.length){
-    root.append(h("section",{class:"card",id:"grabs",style:"margin-top:14px"},h("h3",{class:"q",text:"🙋 Up for grabs"}),h("p",{class:"sub",text:"Nobody has these yet. Tap to offer, and Hinda confirms."}),
+    root.append(h("section",{class:"card",id:"grabs",style:"margin-top:14px"},h("h3",{class:"q",text:"Up for grabs"}),h("p",{class:"sub",text:"Nobody has these yet. Tap to offer, and Hinda confirms."}),
       grabs.map(function(x){var r=myReply(x.ev,x.t),asked=r&&r.answer==="claim",st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
         return h("div",{class:"task","data-s":"open"},h("div",{class:"task-top"},priBadge(x.t.pri),h("b",{class:"ttl",text:x.t.title})),
           h("p",{class:"meta",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")}),
-          h("div",{class:"row"},asked?h("span",{class:"pill","data-s":"offered",text:"Offered ✓ waiting for Hinda"}):h("button",{type:"button",class:"btn small go",text:"🙋 I can take this",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));})));
+          h("div",{class:"row"},asked?h("span",{class:"pill","data-s":"offered",text:"Offered waiting for Hinda"}):h("button",{type:"button",class:"btn small go",text:"I can take this",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));})));
   }
 }
 function drawMemberEvent(root,ev){
@@ -2893,7 +3159,7 @@ function drawMemberEvent(root,ev){
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
     h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
-    safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"💬 Crew chat (WhatsApp) →"}):null,
+    safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
     h("section",{class:"card hsec"},journey(ev,{vertical:true,me:S.uid,rerender:renderMyEvents})),
     crewDates(ev)||h("span"),
     yourPart(ev,mine,me),
@@ -2901,8 +3167,8 @@ function drawMemberEvent(root,ev){
     h("div",{class:"row",style:"margin-top:12px"},
       (safeUrl(links.luma)?h("a",{class:"btn small",href:safeUrl(links.luma),target:"_blank",rel:"noopener",text:"Luma page"}):null),
       (safeUrl(links.group)?h("a",{class:"btn small",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew group"}):null),
-      h("button",{type:"button",class:"btn small",text:"🕒 Run sheet",onclick:function(){S.run={eid:ev.id};renderMyEvents();var b=$("runBoxT");if(b&&b.scrollIntoView)b.scrollIntoView({block:"start"});}}),
-      h("button",{type:"button",class:"btn small",text:"🖨 Who is doing what",onclick:function(){crewPdf(ev,pst);}})),pst,
+      h("button",{type:"button",class:"btn small",text:"Run sheet",onclick:function(){S.run={eid:ev.id};renderMyEvents();var b=$("runBoxT");if(b&&b.scrollIntoView)b.scrollIntoView({block:"start"});}}),
+      h("button",{type:"button",class:"btn small",text:"Who is doing what",onclick:function(){crewPdf(ev,pst);}})),pst,
     S.run&&S.run.eid===ev.id?h("div",{id:"runBoxT",class:"box"}):h("span"));
   if(S.run)renderRunSheet();
 }
@@ -2913,16 +3179,16 @@ function yourPart(ev,mine,me){
   now.sort(function(a,b){var la=taskDue(ev,a),lb=taskDue(ev,b);return (PRI[a.pri||"should"].o-PRI[b.pri||"should"].o)||((la||Infinity)-(lb||Infinity));});
   var key="more:"+ev.id,showAll=!!S.panel[key],cs=curStageIdx(ev);
   var box=h("section",{class:"card hsec"},h("p",{class:"k",text:"Your part · now: "+stageName(cs)}),
-    now.length?now.slice(0,showAll?now.length:3).map(function(t){return myTaskCard(ev,t,me);}):h("p",{class:"sub",text:"Nothing needed from you in this stage. 🎉"}),
+    now.length?now.slice(0,showAll?now.length:3).map(function(t){return myTaskCard(ev,t,me);}):h("p",{class:"sub",text:"Nothing needed from you in this stage. "}),
     now.length>3&&!showAll?h("button",{type:"button",class:"btn link",text:"Show "+(now.length-3)+" more for now",onclick:function(){S.panel[key]=true;renderMyEvents();}}):null);
   if(later.length){
     var byStage={};later.forEach(function(t){var i=taskStageIdx(ev,t);(byStage[i]=byStage[i]||[]).push(t);});
-    box.append(h("details",{class:"more later",open:S.panel["later:"+ev.id]?true:null,ontoggle:function(e){S.panel["later:"+ev.id]=e.currentTarget.open;}},h("summary",{text:"🔒 Later in the plan ("+later.length+")"}),
+    box.append(h("details",{class:"more later",open:S.panel["later:"+ev.id]?true:null,ontoggle:function(e){S.panel["later:"+ev.id]=e.currentTarget.open;}},h("summary",{text:"Later in the plan ("+later.length+")"}),
       h("p",{class:"sub",text:"These open up when the event gets there. No need to think about them yet."}),
       Object.keys(byStage).sort().map(function(i){return h("div",{class:"laterstage"},h("b",{text:stageName(Number(i))}),
         byStage[i].map(function(t){return myTaskCard(ev,t,me);}));})));
   }
-  if(done.length)box.append(h("details",{class:"more"},h("summary",{text:"✔ Done or passed ("+done.length+")"}),done.map(function(t){return myTaskCard(ev,t,me);})));
+  if(done.length)box.append(h("details",{class:"more"},h("summary",{text:"Done or passed ("+done.length+")"}),done.map(function(t){return myTaskCard(ev,t,me);})));
   return box;
 }
 
@@ -2955,21 +3221,21 @@ function drawToday(root){
   root.append(h("p",{class:"hello",text:greeting()+", "+(clean(S.name)||"Hinda")}),h("h1",{class:"h-sum",text:"GCG today"}),
     h("div",{class:"tstats"},[[evs.length,"active events","events"],[need.length,"need attention",""],[waiting,"waiting for an answer","events"],[gaps,"wings with 0–1 people","team"]].map(function(s){
       return h("button",{type:"button",class:"tstat"+(s[1]==="need attention"&&s[0]?" bad":""),onclick:s[2]?function(){showView(s[2]);if(s[2]==="team"){S.teamTab="coverage";renderTeam();}}:null},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));})));
-  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"🔥 Needs you"}),
+  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Needs you"}),
     need.length?h("ol",{class:"needs"},need.slice(0,5).map(function(n){
       var act=n.st==="claim"?h("button",{type:"button",class:"btn small go",text:"Give to "+nameOf(n.pid),onclick:function(){giveTo(n.ev,n.t,n.pid);renderToday();}})
         :n.st==="hand"?h("button",{type:"button",class:"btn small go",text:"Add a slot",onclick:function(){addSlot(n.ev,n.t,n.pid+(S.replies.filter(function(r){return r.eid===n.ev.id&&r.tid===n.t.id&&r.pid===n.pid;})[0]||{hand:{}}).hand.at);renderToday();}})
         :n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
         :h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.evOpen=n.ev.id;S.goTask={eid:n.ev.id,tid:n.t.id};showView("events");openLinkedTask();}});
-      return h("li",{"data-sev":n.sev},h("span",{class:"sev",text:n.sev==="now"?"🔴 Now":"🟡 Soon"}),
+      return h("li",{"data-sev":n.sev},h("span",{class:"sev",text:n.sev==="now"?"Now":"Soon"}),
         h("div",null,h("b",{text:n.t.title}),h("p",{class:"sub",text:(n.ev.name||"")+" · "+(n.t.owner?nameOf(n.t.owner):"no one")+" · "+n.why}),n.due?clockSpan(n.due):null),act);
-    })):h("p",{class:"sub",text:"Nothing needs you right now. 🎉"}),
+    })):h("p",{class:"sub",text:"Nothing needs you right now. "}),
     need.length>5?h("p",{class:"sub",text:"+"+(need.length-5)+" more inside the events."}):null));
   if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st);nm.style.marginTop="14px";root.append(nm);}
-  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"🎲 Events"}),
+  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Events"}),
     evs.length?evs.map(function(ev){return h("button",{type:"button",class:"evrow",onclick:function(){S.evOpen=ev.id;showView("events");}},
       h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+" ›"})),journey(ev,{compact:true}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
-    h("button",{type:"button",class:"btn small go",text:"＋ Plan an event",onclick:function(){S.evOpen="";showView("events");}})));
+    h("button",{type:"button",class:"btn small go",text:"Plan an event",onclick:function(){S.evOpen="";showView("events");}})));
 }
 
 /* ---------- Team: People · Coverage · Titles ---------- */
@@ -2977,13 +3243,13 @@ function drawCoverage(){
   var root=$("t-coverage");if(!root)return;clear(root);
   if(!S.people.length){root.append(h("p",{class:"sub",text:"Coverage shows once people have finished their cards."}));return;}
   var cov=coverage();
-  var LBL={none:["🔴","No one"],thin:["🔴","Only 1 person · needs backup"],ok:["🟡","2 people"],good:["🟢",""]};
+  var LBL={none:["","No one"],thin:["","Only 1 person · needs backup"],ok:["","2 people"],good:["",""]};
   root.append(h("div",{class:"covgrid"},cov.map(function(c){
     var key="cov:"+c.a.id,open=!!S.tlOpen[key],l=LBL[c.level];
     return h("div",{class:"covtile","data-l":c.level},
       h("button",{type:"button",class:"covbtn","aria-expanded":String(open),onclick:function(){S.tlOpen[key]=!open;drawCoverage();}},
         h("b",{text:c.a.short}),h("span",{class:"covdots","aria-hidden":"true",text:c.people.length?"●".repeat(Math.min(c.people.length,8))+(c.people.length>8?"+":""):"○"}),
-        h("span",{class:"covn",text:l[0]+" "+(l[1]||c.people.length+" people")}),
+        h("span",{class:"covn",text:(l[1]||c.people.length+" people")}),
         c.gaps.length?h("span",{class:"sub",text:c.gaps.length+" urgent job"+(c.gaps.length>1?"s":"")+" with no one"}):null),
       open?h("div",{class:"covbody"},
         c.people.length?h("div",{class:"chips"},c.people.map(function(p){return h("span",{class:"chip good",text:pname(p)});})):null,
@@ -3026,12 +3292,12 @@ function saveResponse(done,fail){
 }
 function finishOnboarding(){
   if(!S.db||!S.uid){S.screen="profile";saveDraft();render();setTimeout(function(){say($("submitStatus"),"Sending from this page is not set up for you. Use Copy my results and send them to Hinda.","warn");},60);return;}
-  saveResponse(function(){S.screen="profile";saveDraft();showView(homeView());toast("🎉 Welcome to your Game Plan");},
+  saveResponse(function(){S.screen="profile";saveDraft();showView(homeView());toast("Welcome to your Game Plan");},
     function(){warn("Could not save here. Go back to your card and use Copy my results.");});
 }
 function finishExtra(){
   S.extraMode=false;
-  if(S.db&&S.uid){var p=payload();S.db.doc("responses/"+S.uid).set(p).then(function(){S.sentAt=p.updated;toast("✓ Profile updated");},function(){});}
+  if(S.db&&S.uid){var p=payload();S.db.doc("responses/"+S.uid).set(p).then(function(){S.sentAt=p.updated;toast("Profile updated");},function(){});}
   S.screen="profile";saveDraft();showView("me");
 }
 
@@ -3045,21 +3311,21 @@ function playerCard(p,prof,opts){
       h("p",{class:"pc-kick",text:"Gold Coast Games · Player card"}),
       h("p",{class:"pc2-name",text:p.name||"You"}),
       prof?h("p",{class:"pc2-type"},h("span",{text:"The "+prof.chips[0]}),h("br"),h("span",{class:"plus",text:"+ "+prof.chips[1]})):h("p",{class:"pc2-type",text:"Card coming soon"}),
-      ts.length?h("div",{class:"chips center"},ts.map(function(x){return h("span",{class:"chip t1",text:"🎖 "+x.name});})):null,
+      ts.length?h("div",{class:"chips center"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
       prof?h("ul",{class:"pc2-str"},prof.top.map(function(t){return h("li",{text:TRAIT_LABEL[t]});})):null,
       opts.counts?h("p",{class:"pc2-n",text:opts.counts}):null));
 }
 
 /* ---------- Task card: readable in two seconds ---------- */
 function urgency(due,st){
-  if(st==="done")return {k:"done",t:"✔ DONE"};
-  if(!due)return {k:"",t:"NO DEADLINE"};
+  if(st==="done")return {k:"done",t:"Done"};
+  if(!due)return {k:"",t:"No deadline"};
   var ms=due-Date.now(),days=Math.floor(ms/864e5),today=new Date().toDateString()===due.toDateString();
-  if(ms<0){var c=countdown(due);return {k:"bad",t:"🔴 OVERDUE · "+c.text.replace("overdue by ","")};}
-  if(today)return {k:"bad",t:"🔴 DUE TODAY"+(due.getHours()!==18||due.getMinutes()!==0?" · "+fmtClock(due):"")};
-  if(days<1)return {k:"bad",t:"🔴 DUE TOMORROW"};
-  if(days<3)return {k:"soon",t:"🟡 DUE "+due.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()};
-  return {k:"ok",t:"🟢 DUE "+due.toLocaleDateString(undefined,{day:"numeric",month:"short"}).toUpperCase()};
+  if(ms<0){var c=countdown(due);return {k:"bad",t:"Overdue · "+c.text.replace("overdue by ","")};}
+  if(today)return {k:"bad",t:"Due today"+(due.getHours()!==18||due.getMinutes()!==0?" · "+fmtClock(due):"")};
+  if(days<1)return {k:"bad",t:"Due tomorrow"};
+  if(days<3)return {k:"soon",t:"Due "+due.toLocaleDateString(undefined,{weekday:"long"})};
+  return {k:"ok",t:"Due "+due.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
 }
 function myTaskCard(ev,t,me){
   var st=taskState(ev,t),m=taskMatch(me,t.job,ev.id),r=myReply(ev,t),stat=h("p",{class:"status",role:"status","aria-live":"polite"}),due=taskDue(ev,t),key=ev.id+t.id;
@@ -3069,7 +3335,7 @@ function myTaskCard(ev,t,me){
   var why=m&&m.why.length?m.why.slice(0,2).map(function(w){return lc1(w.replace(/^\S+\s/,""));}).join(" + "):"";
   if(st==="offered"){
     body.push(why?h("p",{class:"whyyou"},h("b",{text:"Why you: "}),why):null,
-      h("button",{type:"button",class:"btn go big wide",text:"✋ Take it",onclick:function(){writeReply(ev,t,{answer:"take"},stat);}}),
+      h("button",{type:"button",class:"btn go big wide",text:"Take it",onclick:function(){writeReply(ev,t,{answer:"take"},stat);}}),
       h("div",{class:"row"},h("button",{type:"button",class:"btn link",text:"Can't do it",onclick:function(){writeReply(ev,t,{answer:"pass"},stat);}}),
         FN[t.job]?h("button",{type:"button",class:"btn link",text:"Not really me",title:"Fewer tasks like this",onclick:function(){notMe(ev,t,stat);}}):null));
   }else if(st==="passed"&&r&&r.answer==="pass"){
@@ -3077,42 +3343,42 @@ function myTaskCard(ev,t,me){
       h("div",{class:"chips"},["Not available","Not my thing","Need help"].map(function(x){return h("button",{type:"button",class:"chip addchip"+(r.reason===x?" good":""),"aria-pressed":String(r.reason===x),text:x,onclick:function(){writeReply(ev,t,{reason:x},stat);}});})),
       h("button",{type:"button",class:"btn link",text:"Actually, I'll take it",onclick:function(){writeReply(ev,t,{answer:"take"},stat);}}));
   }else if(st==="taken"||st==="started"||st==="stuck"){
-    if(st==="stuck"&&r&&r.stuck)body.push(h("p",{class:"stuck",text:"⚠ Stuck: "+r.stuck}));
+    if(st==="stuck"&&r&&r.stuck)body.push(h("p",{class:"stuck",text:"Stuck: "+r.stuck}));
     if(panel==="done"){
       var when=dr.when||"today",mood=dr.mood||"";
       body.push(h("div",{class:"box"},h("b",{text:"When did you finish?"}),
         h("div",{class:"seg3"},["today","yesterday","earlier"].map(function(w){return h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(when===w),text:w.charAt(0).toUpperCase()+w.slice(1),onclick:function(){dr.when=w;renderTasks();}});})),
         when==="earlier"?(function(){var d=h("input",{type:"date","aria-label":"Finished on","data-k":"date-"+key,value:dr.date||""});d.addEventListener("input",function(){dr.date=d.value;});return d;})():null,
         h("b",{text:"How did it go?"}),
-        h("div",{class:"seg3"},["😀","😐","😞"].map(function(e){return h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(mood===e),text:e,"aria-label":{"😀":"Went well","😐":"Okay","😞":"Went badly"}[e],onclick:function(){dr.mood=e;renderTasks();}});})),
+        h("div",{class:"seg3"},MOODS.map(function(m){return h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(mood===m[0]),text:m[1],onclick:function(){dr.mood=m[0];renderTasks();}});})),
         inp("comment","Anything worth knowing? (optional)"),
-        h("button",{type:"button",class:"btn go wide",text:"Save as done ✔",onclick:function(){
+        h("button",{type:"button",class:"btn go wide",text:"Save as done ",onclick:function(){
           var at=new Date();if(when==="yesterday")at.setDate(at.getDate()-1);if(when==="earlier"&&dr.date){at=new Date(dr.date+"T17:00:00");}
           S.panel[key]="";writeReply(ev,t,{state:"done",doneAt:at.toISOString(),mood:dr.mood||"",comment:clean(dr.comment)},stat);}})));
-    }else body.push(h("button",{type:"button",class:"btn green big wide",text:"✔ Done",onclick:function(){S.panel[key]="done";renderTasks();}}));
+    }else body.push(h("button",{type:"button",class:"btn green big wide",text:"Done",onclick:function(){S.panel[key]="done";renderTasks();}}));
     var planIn=h("input",{type:"date","aria-label":"My plan for "+t.title,"data-k":"plan-"+key,value:(r&&r.plan)||""});
     planIn.addEventListener("change",function(){writeReply(ev,t,{plan:planIn.value},stat);});
     var planLate=r&&r.plan&&due&&new Date(r.plan+"T10:00:00")>due;
     var more=h("details",{class:"more",open:panel==="stuck"||panel==="hand"?true:null},h("summary",{text:"More: plan, calendar, stuck, help"}),
-      h("div",{class:"plan"},h("label",{text:"🗓 When will you do it?"}),planIn,planLate?h("span",{class:"stuck",text:"That is after the deadline."}):null),
+      h("div",{class:"plan"},h("label",{text:"When will you do it?"}),planIn,planLate?h("span",{class:"stuck",text:"That is after the deadline."}):null),
       calButtons(ev,t,stat),
       h("div",{class:"row"},
-        st==="taken"?h("button",{type:"button",class:"btn small",text:"▶ I've started",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):null,
-        st==="stuck"?h("button",{type:"button",class:"btn small",text:"👍 Unstuck",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):h("button",{type:"button",class:"btn small",text:"⚠ I'm stuck",onclick:function(){S.panel[key]=panel==="stuck"?"":"stuck";renderTasks();}}),
-        h("button",{type:"button",class:"btn small",text:"🙋 Need an extra hand",onclick:function(){S.panel[key]=panel==="hand"?"":"hand";renderTasks();}}),
-        ev.links&&safeUrl(ev.links.group)?h("a",{class:"btn small",href:safeUrl(ev.links.group),target:"_blank",rel:"noopener",text:"💬 Ask in crew chat"}):null,
-        t.msg?h("button",{type:"button",class:"btn small",text:"✉️ Guest message",onclick:function(){copyText(guestMessage(ev,t.msg),stat,"Guest message copied. Paste it into Luma, WhatsApp or SMS.");}}):null),
+        st==="taken"?h("button",{type:"button",class:"btn small",text:"→ I've started",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):null,
+        st==="stuck"?h("button",{type:"button",class:"btn small",text:"Unstuck",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):h("button",{type:"button",class:"btn small",text:"I'm stuck",onclick:function(){S.panel[key]=panel==="stuck"?"":"stuck";renderTasks();}}),
+        h("button",{type:"button",class:"btn small",text:"Need an extra hand",onclick:function(){S.panel[key]=panel==="hand"?"":"hand";renderTasks();}}),
+        ev.links&&safeUrl(ev.links.group)?h("a",{class:"btn small",href:safeUrl(ev.links.group),target:"_blank",rel:"noopener",text:"Ask in crew chat"}):null,
+        t.msg?h("button",{type:"button",class:"btn small",text:"Guest message",onclick:function(){copyText(guestMessage(ev,t.msg),stat,"Guest message copied. Paste it into Luma, WhatsApp or SMS.");}}):null),
       panel==="stuck"?h("div",{class:"box"},inp("stuck","What is blocking you?"),h("button",{type:"button",class:"btn small",text:"Flag as stuck",onclick:function(){S.panel[key]="";writeReply(ev,t,{state:"stuck",stuck:clean(dr.stuck)},stat);}})):null,
       panel==="hand"?h("div",{class:"box"},inp("hand","What do you need help with?"),h("button",{type:"button",class:"btn small",text:"Ask for an extra hand",onclick:function(){S.panel[key]="";writeReply(ev,t,{hand:{at:nowIso(),note:clean(dr.hand)}},stat);}})):null);
     body.push(more);
   }else if(st==="done"){
-    body.push(h("p",{class:"sub",text:"Done "+fmtWhen(doneAt(ev,t))+(r&&r.mood?" "+r.mood:"")+(r&&r.comment?" · "+r.comment:"")}),
+    body.push(h("p",{class:"sub",text:"Done "+fmtWhen(doneAt(ev,t))+(r&&r.mood?" · "+moodText(r.mood):"")+(r&&r.comment?" · "+r.comment:"")}),
       r&&r.state==="done"?h("button",{type:"button",class:"btn link",text:"Undo",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):null);
   }
   return h("div",{class:"task t2","data-s":st,id:"task-"+ev.id+"-"+t.id},
     h("p",{class:"urg","data-k":u.k,text:u.t+(r&&r.plan&&st!=="done"&&st!=="offered"?" · your plan "+fmtDate(r.plan):"")}),
     h("h3",{class:"t2-title",text:t.title}),
-    t.pri==="must"&&t.cp!=null&&ev.cps&&ev.cps[t.cp]&&st!=="done"?h("p",{class:"needed",text:"🔒 Needed for: "+ev.cps[t.cp].name}):null,
+    t.pri==="must"&&t.cp!=null&&ev.cps&&ev.cps[t.cp]&&st!=="done"?h("p",{class:"needed",text:"Needed for: "+ev.cps[t.cp].name}):null,
     h("p",{class:"t2-ev",text:(ev.name||"")+(t.phase==="during"&&due?" · on the day at "+fmtClock(due):"")+(slotLabel(ev,t)?" · "+slotLabel(ev,t):"")}),
     body,stat);
 }
@@ -3121,7 +3387,7 @@ function myTaskCard(ev,t,me){
 function crewCredits(ev){
   var by={};(ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="done")return;var who=t.owner?nameOf(t.owner):t.helper;if(!who)return;(by[who]=by[who]||[]).push(t.title);});
   var names=Object.keys(by).sort();if(!names.length)return null;
-  return h("section",{class:"card hsec"},h("h3",{class:"q",text:"🙌 Crew contributions"}),
+  return h("section",{class:"card hsec"},h("h3",{class:"q",text:"Crew contributions"}),
     h("ul",{class:"credits"},names.map(function(n){return h("li",null,h("b",{text:n}),": "+by[n].slice(0,4).join(", ")+(by[n].length>4?" and "+(by[n].length-4)+" more":""));})));
 }
 // "Not really me": the person tells the page to stop sending this kind of task, and their card updates.
@@ -3140,34 +3406,34 @@ function drawMe(root){
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),g=grouped(S),yes=g.top.concat(g.good),st=sanitizeStory(p.story),ts=titlesOf(S.uid);
   if(!prof){
     root.append(h("div",{class:"card"},h("h2",{class:"q",text:"Make your player card"}),h("p",{class:"sub",text:"About 6 minutes. It is how the page knows which tasks suit you."}),
-      h("button",{type:"button",class:"btn go big",text:"Let's play ▶",onclick:function(){S.screen="intro";showView("flow");}})));
+      h("button",{type:"button",class:"btn go big",text:"Let's play →",onclick:function(){S.screen="intro";showView("flow");}})));
     return;
   }
   var hist=historyOf(S.uid),evc={};hist.forEach(function(x){evc[x.ev.id]=1;});
   root.append(playerCard(p,prof,{counts:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evc).length+" event"+(Object.keys(evc).length===1?"":"s"):"New to the crew"}));
   var pst=h("p",{class:"status",role:"status","aria-live":"polite"});
   root.append(h("div",{class:"row center",style:"margin-top:12px"},
-    h("button",{type:"button",class:"btn small",text:"📤 Share my card",onclick:function(){downloadPdf(true,pst);}}),
-    h("button",{type:"button",class:"btn small",text:"⬇ PDF",onclick:function(){downloadPdf(false,pst);}}),
-    h("button",{type:"button",class:"btn small",text:S.photo?"📷 Change photo":"📷 Add a photo",onclick:function(){startExtra("photo");}})),pst);
+    h("button",{type:"button",class:"btn small",text:"Share my card",onclick:function(){downloadPdf(true,pst);}}),
+    h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false,pst);}}),
+    h("button",{type:"button",class:"btn small",text:S.photo?"Change photo":"Add a photo",onclick:function(){startExtra("photo");}})),pst);
   var miss=EXTRA.filter(extraMissing).length;
-  if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"➕ Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
-  root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"👁 Who sees what"}),shareToggles(function(){saveResponse();})));
+  if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
+  root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"Who sees what"}),shareToggles(function(){saveResponse();})));
   // title
-  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"🎖 My title"}),
+  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"My title"}),
     ts.length?ts.map(function(x){return h("div",{class:"box"},h("b",{text:x.name}),x.desc?h("p",{text:x.desc}):null,
       h("details",{class:"more"},h("summary",{text:"What falls under it ("+sanitizeIds(x.jobs).length+")"}),h("ul",{class:"crew"},sanitizeIds(x.jobs).map(function(j){return h("li",null,h("b",{text:FN[j].name+": "}),FN[j].covers);}))));})
       :h("p",{class:"sub",text:"For now you help across several jobs. When Hinda gives you a title, it shows here."})));
   // likes
   root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"What I like and don't"}),
-    yes.length?h("p",{class:"lab",text:"👍 Up for"}):null,yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name});})):null,
-    g.curious.length?h("p",{class:"lab",text:"🤔 Would try"}):null,g.curious.length?h("div",{class:"chips"},g.curious.map(function(i){return h("span",{class:"chip curious",text:FN[i].name});})):null,
-    g.no.length?h("p",{class:"lab",text:"👎 Rather not"}):null,g.no.length?h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:FN[i].name});})):null,
+    yes.length?h("p",{class:"lab",text:"Up for"}):null,yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name});})):null,
+    g.curious.length?h("p",{class:"lab",text:"Would try"}):null,g.curious.length?h("div",{class:"chips"},g.curious.map(function(i){return h("span",{class:"chip curious",text:FN[i].name});})):null,
+    g.no.length?h("p",{class:"lab",text:"Rather not"}):null,g.no.length?h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:FN[i].name});})):null,
     workStyle(st)?h("p",{class:"sub",text:"Works best: "+workStyle(st)}):null));
   // the GCG trail: everything you've helped make happen
   var byEv={};hist.forEach(function(x){(byEv[x.ev.id]=byEv[x.ev.id]||{ev:x.ev,ts:[]}).ts.push(x.t.title);});
   var sz={S:0,M:0,L:0};hist.forEach(function(x){sz[x.t.size||"M"]++;});
-  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"🧭 Your GCG trail"}),
+  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"Your GCG trail"}),
     hist.length?[h("p",{class:"trail-n",text:Object.keys(byEv).length+" event"+(Object.keys(byEv).length===1?"":"s")+" · "+hist.length+" task"+(hist.length===1?"":"s")+" · "+sz.L+" big, "+sz.M+" medium, "+sz.S+" small"}),
       h("ul",{class:"credits"},Object.keys(byEv).map(function(k){var g=byEv[k];return h("li",null,"You helped make ",h("b",{text:g.ev.name||"an event"})," happen: "+g.ts.slice(0,3).join(", ")+(g.ts.length>3?" and "+(g.ts.length-3)+" more":"")+".");}))]
       :h("p",{class:"sub",text:"Everything you finish is recorded here, event by event, so your contribution is seen and remembered."})));
@@ -3176,15 +3442,15 @@ function drawMe(root){
   root.append(h("details",{class:"more msec",open:S.panel["me-about"]?true:null,ontoggle:function(e){S.panel["me-about"]=e.currentTarget.open;}},h("summary",{text:"About me"}),prof.lines.map(function(l){return h("p",{text:l});}),
       st.proud?h("p",null,h("b",{text:"Proudest work: "}),st.proud):null,
       h("div",{class:"stats"},prof.stats.map(function(s){return h("div",{class:"stat"},h("span",{text:s.label}),h("span",{class:"bar light","aria-hidden":"true"},h("i",{style:"width:"+Math.round(s.v*100)+"%"})));}))),
-    h("details",{class:"more msec",open:S.panel["me-cv"]?true:null,ontoggle:function(e){S.panel["me-cv"]=e.currentTarget.open;}},h("summary",{text:"📄 Strengths for my CV"}),
+    h("details",{class:"more msec",open:S.panel["me-cv"]?true:null,ontoggle:function(e){S.panel["me-cv"]=e.currentTarget.open;}},h("summary",{text:"Strengths for my CV"}),
       cv.map(function(s){return h("div",{class:"cvsec"},h("h4",{text:s[0]}),h("ul",null,s[1].map(function(x){return h("li",{text:x});})));}),
       h("button",{type:"button",class:"btn small",text:"Copy for my CV",onclick:function(){copyText(cvText(cv),cvSt,"Copied. Paste it into your CV or LinkedIn.");}}),cvSt),
-    h("div",{class:"row",style:"margin-top:12px"},h("button",{type:"button",class:"btn link",text:"✏️ Update my answers",onclick:function(){S.screen="like";showView("flow");}})));
+    h("div",{class:"row",style:"margin-top:12px"},h("button",{type:"button",class:"btn link",text:"Update my answers",onclick:function(){S.screen="like";showView("flow");}})));
 }
 
 /* ---------- Sharing: everyone's About is visible to the crew; the rest is each person's choice ---------- */
 // Never shareable: jobs you'd rather not do, why you are here, card corrections. Those stay between you and Hinda.
-var SHARE_OPTS=[["up","👍","Jobs I'm up for"],["did","✅","What I've done"],["brings","🧰","What I bring"],["proud","⭐","My proudest work"],["works","🧭","How I work best"],["cv","📄","My CV or link"]];
+var SHARE_OPTS=[["up","","Jobs I'm up for"],["did","","What I've done"],["brings","","What I bring"],["proud","","My proudest work"],["works","","How I work best"],["cv","","My CV or link"]];
 S.share={up:false,did:false,brings:false,proud:false,works:false,cv:false};S.crew={};
 function sanitizeShare(s){var o={};SHARE_OPTS.forEach(function(x){o[x[0]]=!!(s&&s[x[0]]);});return o;}
 // The public card: the About always, plus only the sections this person switched on.
@@ -3207,7 +3473,7 @@ function publishCrew(){
 }
 function shareToggles(onChange){
   var box=h("div",{class:"sharebox"});
-  box.append(h("div",{class:"shr locked"},h("span",{class:"shr-e","aria-hidden":"true",text:"🙂"}),h("span",{class:"shr-t"},h("b",{text:"Your About"}),h("span",{class:"sub",text:"Name, photo, type, strengths and title. Always visible to the crew, so newcomers can see who does what."})),h("span",{class:"pill","data-s":"taken",text:"Shared"})));
+  box.append(h("div",{class:"shr locked"},h("span",{class:"shr-e","aria-hidden":"true",text:""}),h("span",{class:"shr-t"},h("b",{text:"Your About"}),h("span",{class:"sub",text:"Name, photo, type, strengths and title. Always visible to the crew, so newcomers can see who does what."})),h("span",{class:"pill","data-s":"taken",text:"Shared"})));
   SHARE_OPTS.forEach(function(o){
     var on=!!S.share[o[0]];
     var b=h("button",{type:"button",class:"shr","aria-pressed":String(on),onclick:function(){S.share[o[0]]=!S.share[o[0]];b.setAttribute("aria-pressed",String(!!S.share[o[0]]));b.querySelector(".pill").textContent=S.share[o[0]]?"Shared":"Private";b.querySelector(".pill").setAttribute("data-s",S.share[o[0]]?"taken":"draft");saveDraft();if(onChange)onChange();}},
@@ -3227,7 +3493,7 @@ function drawCrew(root){
   var ids=Object.keys(S.crew||{});
   root.append(h("h1",{class:"h-sum",text:"The crew"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Everyone at GCG, and what they do. Tap a person to see what they have chosen to share."}));
   var tts=S.titles.filter(function(x){return (x.holders||[]).length;});
-  if(tts.length)root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"🎖 Who does what"}),
+  if(tts.length)root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"Who does what"}),
     tts.map(function(x){return h("div",{class:"crewtitle"},h("b",{text:x.name}),h("span",{class:"sub",text:(x.holders||[]).map(nameOf).join(", ")}),x.desc?h("span",{class:"sub",text:x.desc}):null);})));
   if(!ids.length){root.append(h("p",{class:"sub",text:"The crew shows up here as people finish their profiles."}));return;}
   ids.sort(function(a,b){if(a===S.uid)return -1;if(b===S.uid)return 1;return String(S.crew[a].name).localeCompare(String(S.crew[b].name));});
@@ -3235,17 +3501,17 @@ function drawCrew(root){
     var c=S.crew[id],key="crew:"+id,open=!!S.tlOpen[key],secs=c.sections||{},ts=titlesOf(id),n=Object.keys(secs).length;
     var ph=cleanPhoto(c.photo);
     var head=h("button",{type:"button",class:"crewhead","aria-expanded":String(open),onclick:function(){S.tlOpen[key]=!open;renderCrew();}},
-      ph?h("img",{class:"avatar md",src:ph,alt:""}):h("div",{class:"avatar md empty","aria-hidden":"true",text:"🙂"}),
+      ph?h("img",{class:"avatar md",src:ph,alt:""}):h("div",{class:"avatar md empty","aria-hidden":"true",text:initials(c.name)||"?"}),
       h("span",{class:"crew-who"},h("b",{text:(c.name||"Someone")+(id===S.uid?" (you)":"")}),
-        ts.length?h("span",{class:"chip t1",text:"🎖 "+ts.map(function(x){return x.name;}).join(", ")}):null,
+        ts.length?h("span",{class:"chip t1",text:""+ts.map(function(x){return x.name;}).join(", ")}):null,
         h("span",{class:"sub",text:c.type||""})),
       h("span",{class:"chev","aria-hidden":"true",text:open?"−":"+"}));
     var card=h("section",{class:"card crewcard"},head);
     if(open){
       card.append(h("div",{class:"chips"},(c.strengths||[]).map(function(s,i){return h("span",{class:"chip t"+i,text:s});})));
       function sec(label,val){return val&&(!Array.isArray(val)||val.length)?h("div",{class:"crewsec"},h("p",{class:"lab",text:label}),Array.isArray(val)?h("div",{class:"chips"},val.map(function(v){return h("span",{class:"chip",text:v});})):h("p",{text:val})):null;}
-      card.append(sec("👍 Up for",secs.up),sec("✅ Has done",secs.did),sec("🧰 Brings",secs.brings),sec("⭐ Proudest work",secs.proud),sec("🧭 Works best",secs.works),
-        secs.cv?h("div",{class:"crewsec"},h("p",{class:"lab",text:"📄 CV or link"}),safeUrl(secs.cv)&&!/\s/.test(clean(secs.cv))?h("a",{href:safeUrl(secs.cv),target:"_blank",rel:"noopener",text:clean(secs.cv)}):h("p",{text:secs.cv})):null,
+      card.append(sec("Up for",secs.up),sec("Has done",secs.did),sec("Brings",secs.brings),sec("Proudest work",secs.proud),sec("Works best",secs.works),
+        secs.cv?h("div",{class:"crewsec"},h("p",{class:"lab",text:"CV or link"}),safeUrl(secs.cv)&&!/\s/.test(clean(secs.cv))?h("a",{href:safeUrl(secs.cv),target:"_blank",rel:"noopener",text:clean(secs.cv)}):h("p",{text:secs.cv})):null,
         n?null:h("p",{class:"sub",text:(id===S.uid?"You have":c.name+" has")+" not shared more yet."}));
     }
     root.append(card);
