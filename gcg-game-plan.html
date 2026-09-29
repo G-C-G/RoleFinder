@@ -750,6 +750,12 @@ input:focus,textarea:focus{border-color:var(--ink);outline:0;box-shadow:0 0 0 3p
 .needs li>div b{font-size:15.5px;line-height:1.3}
 .needs li>div .sub{font-size:13.5px}
 .needs li>div .cd{font-size:12.5px}
+.plan-head{display:grid;gap:2px;margin-bottom:10px}
+.plan-name{font-family:Sora,system-ui,sans-serif;font-size:1.15rem}
+.plan-when{color:var(--muted,#6b6155);font-size:.9rem}
+.plan-days{font-weight:700;font-size:.95rem}
+.plan-line{margin:10px 0 2px;font-weight:600}
+.plan-line[data-k="bad"]{color:var(--bad,#b3261e)}
 </style>
 
 <div class="wrap" id="wrap">
@@ -762,6 +768,7 @@ input:focus,textarea:focus{border-color:var(--ink);outline:0;box-shadow:0 0 0 3p
   <main id="view-flow"><div id="flow"></div></main>
   <section id="view-home" hidden><div id="homeBody"></div></section>
   <section id="view-mevents" hidden><div id="meventsBody"></div></section>
+  <section id="view-plan" hidden><div id="planBody"></div></section>
   <section id="view-crew" hidden><div id="crewBody"></div></section>
   <section id="view-me" hidden><div id="profileBody"></div></section>
   <section id="view-today" hidden><div id="todayBody"></div></section>
@@ -2214,14 +2221,19 @@ function dateAt(ev,d,m){
 }
 function taskDue(ev,t){return dateAt(ev,t.d,t.m);}
 function cpDue(ev,i){var c=(ev.cps||[])[i];if(!c)return null;return c.d===0||(ev.cps[i+1]&&ev.cps[i+1].d===c.d+1&&c.d>=0)?dateAt(ev,c.d,0):dateAt(ev,c.d,null);}
+function daysTo(date){
+  if(!date)return "";var a=new Date(date+"T00:00:00"),b=new Date();if(isNaN(a))return "";b.setHours(0,0,0,0);
+  var n=Math.round((a-b)/864e5);
+  return n===0?"Today":n===1?"Tomorrow":n>1?n+" days to go":n===-1?"Yesterday":(-n)+" days ago";
+}
 function fmtDate(d){if(!d)return "Date not set";try{return new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});}catch(e){return d;}}
 function fmtWhen(dt){if(!dt)return "";return dt.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})+(dt.getHours()===18&&dt.getMinutes()===0?"":" "+fmtClock(dt));}
 function fmtClock(dt){return ("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2);}
 function countdown(due){
   if(!due)return {text:"",k:""};
   var ms=due-Date.now(),a=Math.abs(ms),d=Math.floor(a/864e5),hh=Math.floor(a%864e5/36e5),mm=Math.floor(a%36e5/6e4);
-  var span=d?d+"d "+hh+"h":hh?hh+"h "+mm+"m":mm+"m";
-  return ms<0?{text:"overdue by "+span,k:"bad"}:{text:"in "+span,k:ms<48*36e5?"soon":""};
+  var span=d?d+(d>1?" days":" day"):hh?hh+"h "+mm+"m":mm+"m";
+  return ms<0?{text:span+" overdue",k:"bad"}:{text:"in "+span,k:ms<48*36e5?"soon":""};
 }
 function clockSpan(due){var c=countdown(due);return h("span",{class:"cd","data-due":due?String(due.getTime()):"","data-k":c.k,text:c.text});}
 function tickClocks(){
@@ -2447,7 +2459,7 @@ function drawEvents(root){
   root.append(h("button",{type:"button",class:"btn small",text:"← All events",onclick:function(){S.evOpen="";S.evMsgs=null;S.run=null;renderEvents();}}),
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):h("p",{class:"sub",text:"Add a one-line goal under Event details."}),
-    h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
+    h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     h("section",{class:"card hsec"},journey(ev,{vertical:true,rerender:renderEvents})),
     h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
       risk.length?h("ol",{class:"needs"},risk.map(function(x){var now=x.late||x.st==="stuck"||x.st==="passed";
@@ -2972,8 +2984,8 @@ function renderInsights(){
 }
 
 /* ---------- Game Plan navigation: Home · Events · Me for the team; Today · Events · Team · Insights · Me for Hinda ---------- */
-var NAV_MEMBER=[["home","home","Home"],["mevents","flag","Events"],["crew","users","Crew"],["me","user","Me"]];
-var NAV_ADMIN=[["today","target","Today"],["events","flag","Events"],["team","users","Team"],["insights","chart","Insights"],["me","user","Me"]];
+var NAV_MEMBER=[["home","home","Home"],["plan","compass","Plan"],["mevents","flag","Events"],["crew","users","Crew"],["me","user","Me"]];
+var NAV_ADMIN=[["today","target","Today"],["plan","compass","Plan"],["events","flag","Events"],["team","users","Team"],["insights","chart","Insights"],["me","user","Me"]];
 S.evSel="";S.teamTab="people";
 function onboarded(){return !!S.sentAt;}
 function navItems(){return S.isAdmin?NAV_ADMIN:NAV_MEMBER;}
@@ -3035,7 +3047,7 @@ function journey(ev,opts){
       "aria-label":s.name+": "+(s.done?"done":s.cur?"happening now":s.late?"behind":"to come"),
       onclick:opts.compact?(opts.onOpen||null):function(){S.tlOpen[key]=!open;(opts.rerender||function(){})();}},
       h("span",{class:"jpe","aria-hidden":"true"},ico(s.done?"check":s.emo,22)),h("span",{class:"jpn",text:s.name}),
-      opts.vertical?h("span",{class:"jpm",text:s.done?"done":s.due?(s.late?"was due ":"by ")+fmtWhen(s.due):""}):null,
+      opts.vertical?h("span",{class:"jpm",text:s.done?"done":s.due?(s.late?"was due ":"due ")+fmtWhen(s.due):""}):null,
       s.cur?h("span",{class:"jpnow",text:"NOW"}):null,you?h("span",{class:"jpyou",text:"YOU"}):null);
     row.append(h("li",null,b));
   });
@@ -3066,9 +3078,11 @@ function isNow(ev,t){var due=taskDue(ev,t);if(due&&due<Date.now()+7*864e5)return
 function laterItems(){var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if((x.t.offered||x.t.manual)&&!isNow(ev,x.t))out.push(x);});});return out;}
 
 /* ---------- Team member Home ---------- */
+// Chronology: what is behind first, then what is due soonest; priority only breaks ties.
+function byTime(a,b){var da=a.due?a.due.getTime():Infinity,db=b.due?b.due.getTime():Infinity;return (b.late-a.late)||(da-db)||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o);}
 function myOpenItems(){
   var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if((x.t.offered||x.t.manual)&&isNow(ev,x.t))out.push(x);});});
-  return out.sort(function(a,b){var ao=a.st==="offered"?0:1,bo=b.st==="offered"?0:1;return (b.late-a.late)||(ao-bo)||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o)||((a.due||Infinity)-(b.due||Infinity));});
+  return out.sort(byTime);
 }
 function myEvents(){
   var cut=Date.now()-10*864e5;
@@ -3115,7 +3129,7 @@ function drawHome(root){
     var mine=(ev.tasks||[]).filter(function(t){return t.owner===S.uid&&ACTIVE[taskState(ev,t)];});
     var part=[];mine.forEach(function(t){var n=FN[t.job]?FN[t.job].name:t.title;if(part.indexOf(n)<0)part.push(n);});
     root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"GCG right now"}),
-      h("button",{type:"button",class:"evhead",onclick:function(){S.evSel=ev.id;showView("mevents");}},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(ev.place?" · "+ev.place:"")+" ›"})),
+      h("button",{type:"button",class:"evhead",onclick:function(){S.evSel=ev.id;showView("mevents");}},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),
       journey(ev,{compact:true,me:S.uid,onOpen:function(){S.evSel=ev.id;showView("mevents");}}),
       part.length?h("p",{class:"yourpart"},h("b",{text:"Your part: "}),part.slice(0,3).join(" · ")):null));
   }
@@ -3156,7 +3170,7 @@ function drawMyEvents(root){
     var nxt=priorityList(e,S.uid).filter(function(x){return (x.t.offered||x.t.manual)&&isNow(e,x.t);})[0];
     open=open.filter(function(t){return isNow(e,t);});
     root.append(h("button",{type:"button",class:"card evcard2",onclick:function(){S.evSel=e.id;renderMyEvents();window.scrollTo(0,0);}},
-      h("div",{class:"evhead"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:fmtDate(e.date)+" ›"})),
+      h("div",{class:"evhead"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:fmtDate(e.date)+(daysTo(e.date)?" · "+daysTo(e.date):"")+" ›"})),
       journey(e,{compact:true,me:S.uid}),
       h("p",{class:"sub",text:(open.length?open.length+" to do now":"Nothing needed from you right now")+(nxt?" · next: "+nxt.t.title:"")})));
   });
@@ -3175,7 +3189,7 @@ function drawMemberEvent(root,ev){
   root.append(h("button",{type:"button",class:"btn small",text:"← Your events",onclick:function(){S.evSel="";renderMyEvents();}}),
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
-    h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
+    h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
     h("section",{class:"card hsec"},journey(ev,{vertical:true,me:S.uid,rerender:renderMyEvents})),
     crewDates(ev)||h("span"),
@@ -3193,7 +3207,7 @@ function drawMemberEvent(root,ev){
 function yourPart(ev,mine,me){
   var now=[],later=[],done=[];
   mine.forEach(function(t){var s=taskState(ev,t);if(s==="done"||s==="passed")done.push(t);else if(isNow(ev,t))now.push(t);else later.push(t);});
-  now.sort(function(a,b){var la=taskDue(ev,a),lb=taskDue(ev,b);return (PRI[a.pri||"should"].o-PRI[b.pri||"should"].o)||((la||Infinity)-(lb||Infinity));});
+  now.sort(function(a,b){var da=taskDue(ev,a),db=taskDue(ev,b),n=Date.now();return byTime({due:da,late:!!(da&&da<n),t:a},{due:db,late:!!(db&&db<n),t:b});});
   var key="more:"+ev.id,showAll=!!S.panel[key],cs=curStageIdx(ev);
   var box=h("section",{class:"card hsec"},h("p",{class:"k",text:"Your part · now: "+stageName(cs)}),
     now.length?now.slice(0,showAll?now.length:3).map(function(t){return myTaskCard(ev,t,me);}):h("p",{class:"sub",text:"Nothing needed from you in this stage. "}),
@@ -3251,7 +3265,7 @@ function drawToday(root){
   if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st);nm.style.marginTop="14px";root.append(nm);}
   root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Events"}),
     evs.length?evs.map(function(ev){return h("button",{type:"button",class:"evrow",onclick:function(){S.evOpen=ev.id;showView("events");}},
-      h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+" ›"})),journey(ev,{compact:true}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
+      h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),journey(ev,{compact:true}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
     h("button",{type:"button",class:"btn small go",text:"Plan an event",onclick:function(){S.evOpen="";showView("events");}})));
 }
 
@@ -3277,13 +3291,38 @@ function drawCoverage(){
 }
 
 
+/* ---------- Plan: where each event is, how ready it is, and where it is heading ---------- */
+function renderPlan(){
+  var root=$("planBody");if(!root)return;var keep=focusKeep(root);clear(root);
+  try{drawPlan(root);}finally{focusRestore(root,keep);}
+}
+function drawPlan(root){
+  root.append(h("h1",{class:"h-sum",text:"The plan"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Where each event is, how ready it is, and where it is heading."}));
+  var evs=S.isAdmin?activeEvents():myEvents();
+  if(!evs.length)evs=activeEvents().filter(function(e){var d=dateAt(e,0,null);return d&&d>Date.now();}).slice(0,1);
+  if(!evs.length){root.append(h("p",{class:"sub",text:"No events yet. When one is planned, its timeline shows here."}));return;}
+  evs.forEach(function(ev){
+    var st=stageData(ev),pct=eventPct(ev),cur=st.filter(function(s){return s.cur;})[0],late=st.filter(function(s){return s.late;})[0];
+    var next=cur?st[st.indexOf(cur)+1]:null;
+    var line=late?late.name+" is behind: was due "+fmtWhen(late.due):pct>=100?"All stages complete":"";
+    var head=h("div",{class:"plan-head"},h("b",{class:"plan-name",text:ev.name||"Event"}),
+      h("span",{class:"plan-when",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")}),
+      h("span",{class:"plan-days",text:daysTo(ev.date)}));
+    var card=h("section",{class:"card hsec plan-card"},head,journey(ev,{vertical:true,rerender:renderPlan}),
+      line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
+      next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
+      h("button",{type:"button",class:"btn small",text:S.isAdmin?"Open event":"Open my part",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}));
+    root.append(card);
+  });
+}
+
 /* ---------- Views and refresh ---------- */
-var VIEWS=["home","mevents","crew","me","flow","today","events","team","insights","tasks","mine"];
+var VIEWS=["home","plan","mevents","crew","me","flow","today","events","team","insights","tasks","mine"];
 function showView(v){
   S.view=v;
   VIEWS.forEach(function(k){var el=$("view-"+k);if(el)el.hidden=(k!==v);});
   $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="insights"||v==="today");
-  if(v==="home")renderHome();if(v==="mevents")renderMyEvents();if(v==="crew")renderCrew();if(v==="me")renderProfile();if(v==="flow")render();
+  if(v==="home")renderHome();if(v==="plan")renderPlan();if(v==="mevents")renderMyEvents();if(v==="crew")renderCrew();if(v==="me")renderProfile();if(v==="flow")render();
   if(v==="today")renderToday();if(v==="team")renderTeam();if(v==="events")renderEvents();if(v==="insights")renderInsights();if(v==="mine")renderMine();
   renderNav();window.scrollTo(0,0);
 }
@@ -3291,7 +3330,7 @@ function updateTabs(){renderNav();}
 function renderTasks(){if(S.view==="home")renderHome();else if(S.view==="mevents")renderMyEvents();renderNav();}
 function refresh(){
   var v=S.view;
-  if(v==="home")renderHome();else if(v==="mevents")renderMyEvents();else if(v==="today")renderToday();else if(v==="me")renderProfile();else if(v==="crew")renderCrew();
+  if(v==="home")renderHome();else if(v==="plan")renderPlan();else if(v==="mevents")renderMyEvents();else if(v==="today")renderToday();else if(v==="me")renderProfile();else if(v==="crew")renderCrew();
   renderNav();
 }
 function homeView(){return S.isAdmin?"today":"home";}
@@ -3338,10 +3377,10 @@ function urgency(due,st){
   if(st==="done")return {k:"done",t:"Done"};
   if(!due)return {k:"",t:"No deadline"};
   var ms=due-Date.now(),days=Math.floor(ms/864e5),today=new Date().toDateString()===due.toDateString();
-  if(ms<0){var c=countdown(due);return {k:"bad",t:"Overdue · "+c.text.replace("overdue by ","")};}
+  if(ms<0){var c=countdown(due);return {k:"bad",t:"Overdue · "+c.text.replace(" overdue","")};}
   if(today)return {k:"bad",t:"Due today"+(due.getHours()!==18||due.getMinutes()!==0?" · "+fmtClock(due):"")};
   if(days<1)return {k:"bad",t:"Due tomorrow"};
-  if(days<3)return {k:"soon",t:"Due "+due.toLocaleDateString(undefined,{weekday:"long"})};
+  if(days<3)return {k:"soon",t:"Due "+due.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})};
   return {k:"ok",t:"Due "+due.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
 }
 function myTaskCard(ev,t,me){
