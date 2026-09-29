@@ -1,0 +1,1978 @@
+<title>GCG Role Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout concept: a black masthead with the red, gold and green stripe, then one step at a time.
+   Colour is the interface: green = good at it, gold = interested, red = rather not, black star = top pick. */
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F0EFEA; --ink:#0D0D0D; --muted:#5A5955; --line:#D8D6CF;
+  --mast:#0D0D0D; --on-mast:#F5F3EC;
+  --red:#C8102E; --on-red:#FFFFFF; --red-soft:#F8DCE0;
+  --gold:#F5B400; --on-gold:#0D0D0D; --gold-soft:#FDEDBF; --gold-ink:#7A5600;
+  --green:#00793B; --on-green:#FFFFFF; --green-soft:#D3EDDD;
+  --star-bg:#0D0D0D; --star-fg:#F5B400;
+  --focus:#00793B; --warn:#B3261E; --ok:#00793B;
+  --font-display:"Unbounded","Trebuchet MS",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media not all{
+  :root:not([data-theme="light"]){
+    --bg:#0A0A0A; --surface:#171716; --surface-2:#242422; --ink:#F3F1EA; --muted:#A6A39B; --line:#333230;
+    --mast:#000000; --on-mast:#F5F3EC;
+    --red:#D42A40; --on-red:#FFFFFF; --red-soft:#3A1219;
+    --gold:#FFC42E; --on-gold:#0D0D0D; --gold-soft:#3A2D08; --gold-ink:#FFC42E;
+    --green:#2DB36A; --on-green:#03150B; --green-soft:#0F2E1E;
+    --star-bg:#000000; --star-fg:#FFC42E;
+    --focus:#2DB36A; --warn:#F08A7F; --ok:#2DB36A;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A0A0A; --surface:#171716; --surface-2:#242422; --ink:#F3F1EA; --muted:#A6A39B; --line:#333230;
+  --mast:#000000; --on-mast:#F5F3EC;
+  --red:#D42A40; --on-red:#FFFFFF; --red-soft:#3A1219;
+  --gold:#FFC42E; --on-gold:#0D0D0D; --gold-soft:#3A2D08; --gold-ink:#FFC42E;
+  --green:#2DB36A; --on-green:#03150B; --green-soft:#0F2E1E;
+  --star-bg:#000000; --star-fg:#FFC42E;
+  --focus:#2DB36A; --warn:#F08A7F; --ok:#2DB36A;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:70px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-inline:16px;padding-block:18px 110px}
+.wrap{max-width:880px;margin-inline:auto}
+h1,h2,h3,p{margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.opt{font-weight:400;color:var(--muted);font-size:12.5px}
+.mono{font-family:var(--font-mono);font-size:13px}
+
+/* masthead */
+.mast{background:var(--mast);color:var(--on-mast);border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.stripe{display:grid;grid-template-columns:repeat(3,1fr);height:10px}
+.stripe i:nth-child(1){background:var(--red)}
+.stripe i:nth-child(2){background:var(--gold)}
+.stripe i:nth-child(3){background:var(--green)}
+.mast-in{display:flex;gap:14px;align-items:center;padding:16px 18px 4px}
+.mast .star{width:40px;height:40px;flex:none;color:var(--gold)}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink)}
+.mast .eyebrow{color:var(--gold)}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.5rem,6vw,2.2rem);line-height:1.1;margin-top:4px;text-wrap:balance;color:#fff}
+.lead{max-width:60ch;padding:8px 18px 18px;color:var(--on-mast)}
+
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--ink);margin-block:16px 16px;overflow-x:auto}
+.tab{appearance:none;background:none;border:0;border-bottom:5px solid transparent;margin-bottom:-2px;padding:11px 14px;cursor:pointer;
+  font-weight:800;font-size:14px;color:var(--muted);white-space:nowrap;min-height:44px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.stack{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.stack > *{min-width:0}
+.sub{color:var(--muted);font-size:14px;max-width:64ch}
+.part-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.part-k{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink)}
+.part-head h2,.h2{font-family:var(--font-display);font-weight:500;font-size:1.1rem;line-height:1.25}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.row.spread{justify-content:space-between}
+.status{font-size:14px;min-height:1.4em;font-weight:700}
+.status[data-kind="ok"]{color:var(--ok)}
+.status[data-kind="warn"]{color:var(--warn)}
+.empty{color:var(--muted);font-size:14px}
+
+/* buttons */
+.btn{appearance:none;border:2px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:10px;padding:0 18px;min-height:44px;cursor:pointer;font-weight:800;font-size:14.5px}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.small{min-height:36px;padding:0 12px;font-size:13.5px}
+.btn.big{min-height:54px;font-size:16px;padding:0 26px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* forms */
+.who{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 16px}
+.field{display:grid;gap:5px;min-width:0}
+.field label{font-weight:700;font-size:14px}
+input[type=text],textarea,select{width:100%;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:10px 12px;min-height:46px}
+input[type=text]:focus,textarea:focus{border-color:var(--gold)}
+textarea{resize:vertical}
+.net{grid-column:1/-1;font-size:13.5px;color:var(--muted)}
+@media (max-width:560px){.who{grid-template-columns:minmax(0,1fr)}}
+
+/* colour key */
+.key{display:flex;flex-wrap:wrap;gap:8px 16px;list-style:none;margin:0;padding:0;font-size:13.5px;font-weight:700}
+.key li{display:inline-flex;align-items:center;gap:7px}
+.d{width:14px;height:14px;border-radius:50%;display:inline-block;flex:none}
+.d.g{background:var(--green)} .d.y{background:var(--gold)} .d.r{background:var(--red)}
+.st{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--star-bg);color:var(--star-fg);font-size:12px;border:1px solid var(--star-fg)}
+
+/* step nav */
+.stepnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;list-style:none;margin:0 0 16px;padding:0}
+.stepnav button{appearance:none;background:none;border:0;display:grid;gap:5px;justify-items:center;width:100%;padding:4px 0;cursor:pointer;font-size:12px;font-weight:800;color:var(--muted)}
+.stepnav .dot{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;border:2px solid var(--line);background:var(--surface);color:var(--muted)}
+.stepnav [data-state="done"] .dot{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.stepnav [data-state="current"] .dot{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
+.stepnav [data-state="current"]{color:var(--ink)}
+.stepnav button:disabled{cursor:default;opacity:.55}
+
+/* question card */
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:14px}
+.prog{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.prog span{height:10px;border-radius:5px;background:var(--surface-2);overflow:hidden;display:block}
+.prog i{display:block;height:100%;width:0}
+.prog span:nth-child(1) i{background:var(--red)}
+.prog span:nth-child(2) i{background:var(--gold)}
+.prog span:nth-child(3) i{background:var(--green)}
+.q-count{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.q-text{font-family:var(--font-display);font-weight:500;font-size:clamp(1.15rem,4.8vw,1.55rem);line-height:1.3;text-wrap:balance;outline:none}
+.answers{display:grid;gap:10px}
+.ans{appearance:none;display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;text-align:left;min-height:58px;padding:0 16px;border-radius:12px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer;font-weight:800;font-size:16px}
+.pips{display:inline-flex;gap:5px}
+.pips i{width:11px;height:11px;border-radius:50%;border:2px solid currentColor;opacity:.45}
+.pips i.on{background:currentColor;opacity:1}
+.ans[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.ans[data-v="1"][aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+[hidden]{display:none!important}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.optb{appearance:none;text-align:left;min-height:44px;padding:8px 14px;border-radius:999px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer;font:inherit;font-weight:700;font-size:14.5px;max-width:100%}
+.optb[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
+.optb:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.openq{display:grid;gap:4px;padding-block:14px;border-top:3px solid var(--gold)}
+.openq:nth-child(2n){border-top-color:var(--green)}.openq:nth-child(3n){border-top-color:var(--red)}
+.oq-t{font-size:1.05rem;margin:0}
+
+/* colour-blocked areas: one open at a time */
+.areas,#areas{display:grid;gap:10px;margin-top:12px}
+.area{margin:0;--ac:var(--red);--on:var(--on-red)}
+.area[data-c="1"]{--ac:var(--gold);--on:var(--on-gold)}
+.area[data-c="2"]{--ac:var(--green);--on:var(--on-green)}
+.area[data-c="3"]{--ac:var(--mast);--on:var(--on-mast)}
+.area-btn{appearance:none;width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;text-align:left;border:0;border-radius:14px;padding:16px;background:var(--ac);color:var(--on);cursor:pointer;font:inherit;min-height:76px}
+.area-btn[aria-expanded="true"]{border-radius:14px 14px 0 0}
+.area-btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.area .area-code{width:46px;height:46px;border-radius:50%;background:var(--on);color:var(--ac);font-size:1.3rem}
+.area-txt{display:grid;gap:2px;min-width:0}
+.area-txt b{font-family:var(--font-display);font-weight:600;font-size:1.02rem;line-height:1.25}
+.area-txt small{font-size:13.5px;line-height:1.35;opacity:.92}
+.area-txt .cnt{font-family:var(--font-mono);font-size:12px;font-weight:600;margin-top:2px}
+.chev{font-size:1.9rem;font-weight:300;line-height:1}
+.area .tiles{display:grid;grid-template-columns:minmax(0,1fr);gap:0;background:var(--surface);border:3px solid var(--ac);border-top:0;border-radius:0 0 14px 14px;overflow:hidden}
+.area .tile{border:0;border-radius:0;border-bottom:1px solid var(--line);padding:14px 14px 12px;gap:8px;background:var(--surface)}
+.area .tile:last-child{border-bottom:0}
+.area .tile[data-lv="good"]{background:var(--green-soft)}
+.area .tile[data-lv="curious"]{background:var(--gold-soft)}
+.area .tile[data-lv="no"]{background:var(--red-soft)}
+.area .tile[data-top="true"]{outline:0;box-shadow:inset 6px 0 0 var(--star-fg),inset 8px 0 0 var(--star-bg)}
+.area .t-name{font-size:16px;flex:1;min-width:0;margin:0}
+.area .t-cov{font-size:14px}
+.area .tb{min-height:46px;font-size:14px}
+.spot.opt{display:grid;gap:6px;position:relative}
+.spot.opt[data-m="most"]{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.spot.opt[data-m="least"]{background:var(--red);border-color:var(--red);color:var(--on-red)}
+.spot.opt:disabled{cursor:default}
+.badge{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.q-sub{font-weight:800;color:var(--ink);font-size:15px}
+
+.area-btn{grid-template-columns:minmax(0,1fr) auto!important}
+.area .t-head .t-cov{flex:1;min-width:0;font-size:15.5px;font-weight:700;color:var(--ink);line-height:1.4;margin:0}
+.area .t-head{align-items:flex-start}
+.area .t-name{font-size:12.5px;font-weight:600;color:var(--muted);margin:0}
+.grp-block{display:grid;gap:8px;margin-top:6px}
+.grp-row{display:flex;justify-content:space-between;align-items:center;gap:10px;border-radius:12px;padding:12px 14px;font-weight:800;background:var(--ac);color:var(--on)}
+.grp-row[data-c="0"]{--ac:var(--red);--on:var(--on-red)}.grp-row[data-c="1"]{--ac:var(--gold);--on:var(--on-gold)}.grp-row[data-c="2"]{--ac:var(--green);--on:var(--on-green)}.grp-row[data-c="3"]{--ac:var(--mast);--on:var(--on-mast)}
+.grp-row span:last-child{font-family:var(--font-mono);font-size:13px}
+
+.more{margin-top:10px;border-top:3px solid var(--line);padding-top:8px}
+.more>summary{font-weight:800;cursor:pointer;padding:10px 0;min-height:44px}
+
+.spots{display:grid;gap:10px}
+.spot{appearance:none;text-align:left;min-height:56px;padding:10px 16px;border-radius:12px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer;font-weight:800;font-size:15.5px}
+.spot[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
+
+/* suggested roles */
+.first{border:3px solid var(--gold);border-radius:14px;padding:16px;background:var(--bg);display:grid;gap:9px;min-width:0}
+.first .kick{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);font-weight:600}
+.first h3{font-family:var(--font-display);font-weight:500;font-size:1.15rem;line-height:1.25}
+.suglist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:12px}
+.sug{display:grid;gap:8px;align-content:start;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.sug h3{font-size:16px;font-weight:800;line-height:1.3}
+h3.minor{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.sugctl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sbtn{appearance:none;border:2px solid var(--line);background:var(--surface);border-radius:10px;min-height:46px;padding:4px;cursor:pointer;font-weight:800;font-size:13.5px}
+.sbtn[data-lv="good"]{border-color:var(--green)} .sbtn[data-lv="curious"]{border-color:var(--gold)} .sbtn[data-lv="no"]{border-color:var(--red)}
+.sbtn[aria-pressed="true"][data-lv="good"]{background:var(--green);color:var(--on-green)}
+.sbtn[aria-pressed="true"][data-lv="curious"]{background:var(--gold);color:var(--on-gold)}
+.sbtn[aria-pressed="true"][data-lv="no"]{background:var(--red);color:var(--on-red)}
+.fn-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:start}
+.covers{font-size:14.5px}
+.fit{font-size:13.5px;color:var(--muted)}
+.code{font-family:var(--font-mono);font-weight:600;font-size:12.5px;background:var(--surface-2);border-radius:5px;padding:2px 7px;margin-top:2px}
+.tag{font-size:12px;font-weight:800;border-radius:999px;padding:2px 10px;white-space:nowrap;margin-top:1px}
+.tag.now{background:var(--ink);color:var(--bg)}
+.tag.soon{border:2px solid var(--gold-ink);color:var(--gold-ink)}
+.tag.later{border:2px dashed var(--muted);color:var(--muted)}
+.must{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:var(--red);color:var(--on-red);border-radius:4px;padding:1px 7px;margin-left:6px}
+
+/* all jobs */
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-block:14px 4px}
+.filters > span{font-size:13.5px;color:var(--muted)}
+.pillrow{display:flex;gap:6px;flex-wrap:wrap}
+.pill{appearance:none;border:2px solid var(--ink);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:13.5px;font-weight:800;min-height:38px}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.areanav{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);display:flex;gap:8px;overflow-x:auto;padding-block:10px;margin-block:8px 6px;border-bottom:2px solid var(--ink);scrollbar-width:thin}
+.chip{appearance:none;flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;border:2px solid var(--ink);background:var(--surface);border-radius:10px;padding:5px 10px;cursor:pointer;font-size:13.5px;font-weight:800;min-height:38px;white-space:nowrap}
+.chip .k{font-family:var(--font-mono);font-size:12px;background:var(--gold);color:var(--on-gold);border-radius:4px;padding:1px 6px}
+.chip .n{font-family:var(--font-mono);font-size:12px;background:var(--green);color:var(--on-green);border-radius:999px;padding:0 7px;min-width:20px;text-align:center}
+.area{margin-block:26px 0}
+.area-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;align-items:center;margin-bottom:12px}
+.area-code{font-family:var(--font-display);font-weight:700;font-size:1.5rem;width:50px;height:50px;border-radius:12px;background:var(--gold);color:var(--on-gold);display:grid;place-items:center}
+.area-head h2{font-family:var(--font-display);font-weight:500;font-size:1.05rem;line-height:1.25}
+.area-head p{color:var(--muted);font-size:14px;max-width:60ch}
+.area-head .cnt{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-top:2px;display:block}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:600px){.tiles{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}}
+.tile{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:9px;display:grid;gap:6px;align-content:start;min-width:0}
+.tile[data-lv="good"]{border-color:var(--green);background:var(--green-soft)}
+.tile[data-lv="curious"]{border-color:var(--gold);background:var(--gold-soft)}
+.tile[data-lv="no"]{border-color:var(--red);background:var(--red-soft)}
+.tile[data-lv="no"] .t-name{text-decoration:line-through;text-decoration-thickness:2px}
+.tile[data-top="true"]{outline:3px solid var(--ink);outline-offset:1px}
+.t-head{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.t-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.t-name{font-size:14.5px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+.t-cov{font-size:12.5px;color:var(--muted);line-height:1.4}
+.tile summary{font-size:12px;font-weight:800;cursor:pointer;padding:4px 0}
+.t-fit{font-size:12.5px;color:var(--ink);padding-bottom:4px}
+.tbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.tb{appearance:none;border:2px solid var(--line);background:var(--surface);border-radius:8px;min-height:42px;padding:0 2px;font-size:12.5px;font-weight:800;cursor:pointer}
+.tb[data-lv="good"]{border-color:var(--green)} .tb[data-lv="curious"]{border-color:var(--gold)} .tb[data-lv="no"]{border-color:var(--red)}
+.tb[aria-pressed="true"][data-lv="good"]{background:var(--green);color:var(--on-green)}
+.tb[aria-pressed="true"][data-lv="curious"]{background:var(--gold);color:var(--on-gold)}
+.tb[aria-pressed="true"][data-lv="no"]{background:var(--red);color:var(--on-red)}
+.starb{appearance:none;flex:none;width:36px;height:36px;border-radius:50%;border:2px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;font-size:17px;line-height:1;padding:0}
+.starb[aria-pressed="true"]{background:var(--star-bg);color:var(--star-fg);border-color:var(--star-fg)}
+
+/* bottom bar */
+.bar{position:fixed;inset-inline:0;bottom:0;z-index:10;background:var(--mast);color:var(--on-mast);padding:14px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.bar::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:linear-gradient(90deg,var(--red) 0 33.33%,var(--gold) 33.33% 66.66%,var(--green) 66.66% 100%)}
+.bar-in{max-width:880px;margin-inline:auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.bar-txt{font-size:13.5px;min-width:0;display:flex;flex-wrap:wrap;gap:2px 12px;align-items:center}
+.tally{display:inline-flex;gap:6px;align-items:center;font-weight:600}
+.tally b{font-family:var(--font-mono);font-weight:600}
+.bar .msg{flex-basis:100%;color:var(--gold);font-weight:800}
+.bar .btn{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
+
+/* review */
+.review{display:grid;gap:14px}
+.sum-group h3{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.sum-group + .sum-group{margin-top:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.pc{display:inline-flex;gap:7px;align-items:center;border-radius:8px;padding:4px 10px;font-size:13.5px;font-weight:700;background:var(--surface-2);border:2px solid transparent}
+.pc i{font-style:normal;font-family:var(--font-mono);font-size:11.5px;opacity:.75}
+.pc.top{background:var(--star-bg);color:var(--star-fg);border-color:var(--star-fg)}
+.pc.good{background:var(--green-soft);border-color:var(--green)}
+.pc.curious{background:var(--gold-soft);border-color:var(--gold)}
+.pc.no{background:var(--red-soft);border-color:var(--red);text-decoration:line-through}
+.qblock h3{font-size:15px;font-weight:800;margin-bottom:6px}
+.openq{display:grid;gap:5px;margin-top:12px}
+.openq label{font-weight:700;font-size:14.5px}
+details{margin-top:4px}
+summary{cursor:pointer;font-weight:700;font-size:14px;padding:6px 0}
+
+/* mine + team */
+.mine-card{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:6px}
+.notice{background:var(--gold-soft);border:2px solid var(--gold);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat .v{font-family:var(--font-display);font-weight:700;font-size:1.5rem;font-variant-numeric:tabular-nums}
+.stat .l{font-size:13px;color:var(--muted)}
+.stat.bad{border-color:var(--red)}
+.stat.bad .v{color:var(--red)}
+.sect{margin-top:30px}
+.sect h2{font-family:var(--font-display);font-weight:500;font-size:1.1rem;margin-bottom:6px}
+.cov-area{margin-top:16px}
+.cov-area h3{font-size:14px;font-weight:800;margin-bottom:6px}
+.cov-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.cov-row .chips{grid-column:2/-1}
+.cov-row .none{grid-column:2/-1;color:var(--warn);font-weight:700;font-size:13.5px}
+.cov-row .nm{font-weight:700}
+.cov-row .ct{font-family:var(--font-mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.people,.talents{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:12px}
+.talents{margin-top:10px}
+.person,.talent{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:8px;align-content:start;min-width:0;overflow-wrap:anywhere}
+.talent{font-size:14px;gap:6px}
+.person h3,.talent h3{font-size:16px;font-weight:800}
+.talent b{font-weight:700}
+.person .meta{font-size:13px;color:var(--muted)}
+.person .extra{font-size:13.5px;background:var(--bg);border-radius:8px;padding:8px 10px}
+.person .lab{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.person details{margin-top:2px}
+.person .qa{font-size:13.5px;margin-top:6px}
+.person .qa b{display:block;font-weight:700}
+.rolerow{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(140px,220px);gap:8px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.rolerow .nm{font-weight:700;min-width:0}
+.rolemeta{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px}
+.rolemeta label{display:inline-flex;gap:6px;align-items:center;cursor:pointer;font-weight:700}
+.rolenote{color:var(--warn);font-weight:700}
+@media (max-width:560px){.rolerow{grid-template-columns:auto minmax(0,1fr)}.rolerow select{grid-column:1/-1}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.prog i{transition:width .25s}}
+/* roles reveal */
+.lean-k{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.lean{display:flex;flex-wrap:wrap;gap:8px}
+.lean-chip{border-radius:999px;padding:8px 14px;font-weight:800;font-size:14.5px;background:var(--gold);color:var(--on-gold)}
+.lean-chip[data-c="1"]{background:var(--green);color:var(--on-green)}
+.lean-chip[data-c="2"]{background:var(--mast);color:var(--on-mast)}
+.first{border:0;background:var(--gold);color:var(--on-gold);padding:20px 18px;gap:12px;border-radius:18px}
+.first .kick{align-self:start;background:var(--mast);color:var(--star-fg);border-radius:999px;padding:5px 12px;font-size:11.5px}
+.first h3{font-size:clamp(1.5rem,7vw,1.9rem);font-weight:700;line-height:1.15}
+.first .covers{font-size:17px;font-weight:600;line-height:1.45}
+.first .fit{color:var(--on-gold);opacity:.85;font-size:14.5px}
+.sug{border:0;border-left:8px solid var(--green);background:var(--surface);border-radius:14px;padding:16px 16px 14px;gap:8px}
+.sug[data-c="1"]{border-left-color:var(--mast)}
+.sug h3{font-family:var(--font-display);font-weight:600;font-size:1.05rem}
+.sug .covers{font-size:15.5px;line-height:1.45}
+.suglist{grid-template-columns:minmax(0,1fr)}
+.sugctl{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:4px}
+.sbtn{min-height:52px;font-size:15px;border-radius:12px}
+.first .sbtn{background:#fff;color:#0D0D0D}
+.first .sbtn[data-lv="good"]{border-color:var(--mast)}
+.first .sbtn[aria-pressed="true"][data-lv="good"]{background:var(--green);border-color:var(--green);color:var(--on-green)}
+#skipBtn{min-height:56px;font-size:1.05rem}
+
+/* one-at-a-time role cards */
+.lean-row{display:grid;gap:8px;margin-block:12px 4px}
+.dcard{background:var(--surface);border:3px solid var(--ink);border-radius:18px;overflow:hidden;margin-top:12px}
+.dband{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 18px;background:var(--gold);color:var(--on-gold);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.dcard[data-c="1"] .dband{background:var(--green);color:var(--on-green)}
+.dcard[data-c="2"] .dband{background:var(--mast);color:var(--on-mast)}
+.dbody{display:grid;gap:12px;padding:20px 18px 18px}
+.dname{font-family:var(--font-display);font-weight:700;font-size:clamp(1.5rem,7vw,1.9rem);line-height:1.15;text-wrap:balance}
+.dduty{font-size:17.5px;font-weight:600;line-height:1.5}
+.dwhy{font-size:14.5px;color:var(--muted)}
+.dbtns{display:grid;gap:10px;margin-top:6px}
+.dbtn{appearance:none;min-height:56px;border-radius:14px;border:3px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:800;font-size:16.5px;cursor:pointer}
+.dbtn[data-lv="good"]{border-color:var(--green)}.dbtn[data-lv="curious"]{border-color:var(--gold)}.dbtn[data-lv="no"]{border-color:var(--red)}
+.dbtn[aria-pressed="true"][data-lv="good"]{background:var(--green);color:var(--on-green)}
+.dbtn[aria-pressed="true"][data-lv="curious"]{background:var(--gold);color:var(--on-gold)}
+.dbtn[aria-pressed="true"][data-lv="no"]{background:var(--red);color:var(--on-red)}
+.dbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.deck-done{font-family:var(--font-display);font-weight:600;font-size:1.3rem;margin-top:14px}
+.lean{gap:6px}.lean-chip{padding:5px 11px;font-size:13px}.lean-row{margin-block:8px 0}.dcard{margin-top:8px}.dbody{padding:16px 16px 16px}.dbtns{gap:8px}.dbtn{min-height:52px}
+
+.opt2{display:grid;gap:10px;border:3px solid var(--ink);border-radius:14px;padding:12px 14px;background:var(--surface)}
+.opt2[data-m="most"]{border-color:var(--green);background:var(--green-soft)}
+.opt2[data-m="least"]{border-color:var(--red);background:var(--red-soft)}
+.opt2-t{font-weight:700;font-size:16px;line-height:1.4}
+.ml-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ml{appearance:none;min-height:46px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:800;font-size:14.5px;cursor:pointer}
+.ml[data-k="m"]{border-color:var(--green)}.ml[data-k="l"]{border-color:var(--red)}
+.ml[aria-pressed="true"][data-k="m"]{background:var(--green);color:var(--on-green)}
+.ml[aria-pressed="true"][data-k="l"]{background:var(--red);color:var(--on-red)}
+.opt2{background:var(--gold);border-color:var(--ink);color:var(--on-gold)}
+.opt2[data-m="most"]{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.opt2[data-m="least"]{background:var(--red);border-color:var(--red);color:var(--on-red)}
+.opt2 .ml{background:#fff;color:#0D0D0D;border-color:#0D0D0D}
+.opt2 .ml[data-k="m"]{border-color:var(--green)}.opt2 .ml[data-k="l"]{border-color:var(--red)}
+.opt2 .ml[aria-pressed="true"][data-k="m"]{background:var(--mast);color:var(--on-mast);border-color:var(--mast)}
+.opt2 .ml[aria-pressed="true"][data-k="l"]{background:var(--mast);color:var(--on-mast);border-color:var(--mast)}
+.cvbox{display:grid;gap:8px;border-top:3px solid var(--green);padding-top:12px}.cvbox h3{font-family:var(--font-display);font-weight:600;font-size:1.05rem}
+#shareBtn{order:-1}
+.q-sub[data-kind="warn"]{color:var(--warn)}
+.pcard{background:var(--mast);color:var(--on-mast);border-radius:18px;padding:20px 18px;display:grid;gap:12px;margin-bottom:16px;border-top:8px solid var(--gold)}
+.pcard .kick{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--star-fg);font-weight:600}
+.ptitle{font-family:var(--font-display);font-weight:700;font-size:clamp(1.4rem,6.5vw,1.8rem);line-height:1.2;text-wrap:balance}
+.pline{font-size:16px;line-height:1.5}
+.pnote{font-size:13px;opacity:.75}
+.pcard .lean-chip[data-c="2"]{background:#fff;color:#0D0D0D}
+.area .tb{font-size:13px}.tally{white-space:nowrap}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div class="stripe" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="mast-in">
+      <svg class="star" viewBox="0 0 24 24" aria-hidden="true"><polygon fill="currentColor" points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+      <div><p class="eyebrow">Gold Coast Games · Team roles</p><h1>Find where you fit</h1></div>
+    </div>
+    <p class="lead">We are a small team, so each of us will hold more than one role. It takes about four minutes. Answer <span id="nqCount">14</span> quick questions, see the roles that suit you, then send. Nothing is final until we agree together.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-choose" data-view="choose" aria-selected="true">Find my fit</button>
+    <button class="tab" role="tab" id="tab-mine" data-view="mine" aria-selected="false">My results</button>
+    <button class="tab" role="tab" id="tab-team" data-view="team" aria-selected="false" hidden>Team results</button>
+  </div>
+
+  <!-- FIND MY FIT -->
+  <section id="view-choose" aria-labelledby="tab-choose">
+    <ol class="stepnav" id="stepnav" aria-label="Your progress"></ol>
+
+    <section id="step-start" class="stack">
+      <div class="panel stack">
+        <h2 class="h2">First, your name</h2>
+        <div class="who">
+          <div class="field"><label for="name">Your name</label><input type="text" id="name" autocomplete="name" placeholder="First name is fine"></div>
+          <div class="field" hidden><label for="hours">Hours a week you can give <span class="opt">optional</span></label><input type="text" id="hours" inputmode="decimal" placeholder="For example 5"></div>
+        </div>
+        <p class="net" id="net" role="status">Checking whether you can send your picks directly…</p>
+        <div class="row"><button class="btn gold big" id="startBtn">Start</button><span class="status" id="startStatus" role="status" aria-live="polite"></span></div>
+      </div>
+    </section>
+
+    <section id="step-quiz" hidden aria-live="polite">
+      <div class="qcard" id="qCard"></div>
+    </section>
+
+    <section id="step-roles" hidden>
+      <div class="panel stack">
+        <div class="part-head"><span class="part-k">Your roles</span><h2 id="rolesH">Which of these sound like you?</h2></div>
+        <div id="matches" class="stack"></div>
+        <div class="row" id="rolesRow" hidden>
+          <button class="btn gold big" id="skipBtn">Continue</button>
+          <button class="btn ghost" id="browseBtn">Browse other jobs (optional)</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="step-all" hidden>
+      <div class="part-head"><span class="part-k">Other jobs</span><h2>What would you do day to day?</h2></div>
+      <p class="sub" style="margin-top:6px">Optional. Tap a coloured bar to open a group, read what the job involves, and tap Good, Interested or No. Star up to 3 top picks. Skip anything that does not interest you.</p>
+      <ul class="key" style="margin-top:10px">
+        <li><i class="d g"></i>Good = good at it</li><li><i class="d y"></i>Interested = I would like to try it</li><li><i class="d r"></i>No = rather not</li><li><i class="st">&#9733;</i>Top pick</li>
+      </ul>
+      <nav class="areanav" id="areanav" aria-label="Jump to an area"></nav>
+      <div id="areas"></div>
+      <div class="row" style="margin-top:24px"><button class="btn gold big" id="toReview">Done, continue</button></div>
+    </section>
+
+    <section id="step-review" class="stack" hidden aria-labelledby="reviewH">
+      <div class="panel review">
+        <div class="part-head"><span class="part-k">Almost done</span><h2 id="reviewH">Review and send</h2></div>
+        <p class="sub">Two quick questions, then send. You can change anything and send again later.</p>
+        <div id="profile"></div>
+        <div id="summary"></div>
+        <div class="qblock"><h3>Tell us more <span class="opt">optional</span></h3><div id="openQs"></div></div>
+        <div class="field">
+          <label for="extra">Anything you are good at that is not on the list? <span class="opt">optional</span></label>
+          <textarea id="extra" rows="3" maxlength="600" placeholder="For example: I edit video, I speak French, I know a venue owner"></textarea>
+        </div>
+        <div class="cvbox">
+          <h3>Your CV <span class="opt">optional</span></h3>
+          <p class="sub"><b>Not important, and you do not need one.</b> If you share it, it helps Hinda get to know you as a whole before introducing you to things, so we all start on the same page and everyone gets credit for what they bring.</p>
+          <div class="field">
+            <label for="cv">A link to your CV or LinkedIn, or paste the parts you want to share</label>
+            <textarea id="cv" rows="4" maxlength="1500" placeholder="For example: linkedin.com/in/yourname, or a few lines about your work and studies"></textarea>
+          </div>
+          <p class="sub">Prefer to send the file itself? Attach it when you send your results.</p>
+        </div>
+        <div class="row">
+          <button class="btn gold big" id="submit">Submit my picks</button>
+          <button class="btn gold big" id="shareBtn" type="button">Send my results</button>
+          <button class="btn gold" id="pdfBtn" type="button">Download my summary (PDF)</button>
+          <button class="btn ghost" id="saveMine" type="button">Save my copy</button>
+          <button class="btn ghost" id="copy">Copy my results</button>
+        </div>
+        <p class="status" id="submitStatus" role="status" aria-live="polite"></p>
+        <details>
+          <summary>See the message that Copy my results uses</summary>
+          <textarea id="msg" class="mono" rows="9" readonly></textarea>
+        </details>
+      </div>
+    </section>
+  </section>
+
+  <!-- MY RESULTS -->
+  <section id="view-mine" class="stack" hidden aria-labelledby="tab-mine">
+    <div id="mineBody"></div>
+  </section>
+
+  <!-- TEAM RESULTS -->
+  <section id="view-team" hidden aria-labelledby="tab-team">
+    <div class="stats" id="t-stats"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost small" id="t-csv">Export picks (CSV)</button>
+      <button class="btn ghost small" id="t-rolescsv">Export draft roles (CSV)</button>
+      <span class="status" id="t-exportStatus" role="status" aria-live="polite"></span>
+    </div>
+
+    <div class="sect">
+      <h2>Talents and ambitions</h2>
+      <p class="sub">Skills GCG could use soon, what each person wants to explore and where they see themselves. Use this to plan onboarding.</p>
+      <div id="t-talents"></div>
+    </div>
+
+    <div class="sect">
+      <h2>Who wants what</h2>
+      <p class="sub">Every job with the people who chose it. Black star is a top pick, green is good at it, gold is interested.</p>
+      <label class="row" style="margin-top:10px;gap:8px"><input type="checkbox" id="t-unclaimed"> <span>Only show jobs nobody chose</span></label>
+      <div id="t-cov"></div>
+    </div>
+
+    <div class="sect">
+      <h2>By person</h2>
+      <div class="people" id="t-people"></div>
+    </div>
+
+    <div class="sect">
+      <h2>Draft roles</h2>
+      <p class="sub">The page suggests one owner per Now and Soon job. It favours top picks and good-at-it picks, spreads work across people, and never suggests a job someone marked rather not. Must-fill jobs are placed first, and when nobody chose one it suggests the best fit from the questionnaire. For anything the team cannot cover, choose Outsource or recruit. Change any owner, then publish. Each person then sees their own list under My results.</p>
+      <div id="t-roles"></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn gold" id="t-publish">Publish draft roles to the team</button>
+        <button class="btn ghost" id="t-reset">Reset to suggestions</button>
+      </div>
+      <p class="status" id="t-pubStatus" role="status" aria-live="polite" style="margin-top:8px"></p>
+      <div id="t-copybox" hidden style="margin-top:8px">
+        <label class="sub" for="t-copyta">Copy blocked here. Select this text and copy it.</label>
+        <textarea id="t-copyta" class="mono" rows="7" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="sect">
+      <h2>Add results sent privately</h2>
+      <p class="sub">Some people may not be able to submit here. Ask them to use Copy my results and send you the message by direct message or email. Paste one or several messages below and the page reads the line that starts with Code.</p>
+      <div class="field" style="margin-top:10px">
+        <label for="paste" class="sr">Pasted messages</label>
+        <textarea id="paste" rows="5" placeholder="Paste the messages here"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn small" id="pasteBtn">Add these picks</button><span class="status" id="pasteStatus" role="status" aria-live="polite"></span></div>
+    </div>
+  </section>
+
+  <div class="bar" id="bar" hidden>
+    <div class="bar-in">
+      <div class="bar-txt" id="barTxt" aria-live="polite"></div>
+      <button class="btn" id="barBtn" type="button">Review and send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Content ---------- */
+var AREAS=[
+ {id:"A",plain:"Deciding direction, priorities and who owns what",name:"Leadership",short:"Leadership",blurb:"Owning the results of a whole area, not doing every task in it. Job titles come later."},
+ {id:"B",plain:"Deciding what we say, to whom and where",name:"Strategy: marketing, communications and content",short:"Strategy",blurb:"Deciding what we say, to whom and where. The thinking behind the posts."},
+ {id:"C",plain:"Running the room on the night",name:"Live event delivery",short:"Live events",blurb:"Everything that happens in the room on the night."},
+ {id:"D",plain:"Making posts, photos, video and messages",name:"Marketing and content: doing the work",short:"Content work",blurb:"Making and sending what the strategy decides."},
+ {id:"E",plain:"Bringing in guests, clients, venues and sponsors",name:"Sales and partnerships",short:"Sales",blurb:"Bringing in guests, clients, venues and sponsors."},
+ {id:"F",plain:"Planning, scheduling and the behind-the-scenes work",name:"Operations",short:"Operations",blurb:"The machinery that makes every event repeatable."},
+ {id:"G",plain:"Getting paid, keeping records and staying legal",name:"Money, legal and compliance",short:"Money and legal",blurb:"Getting paid, keeping records and staying legal."},
+ {id:"H",plain:"Finding grants and new ways to earn",name:"Funding and growth",short:"Funding",blurb:"Grants, pitches and new ways to earn."},
+ {id:"I",plain:"Training, scheduling and looking after the team",name:"People and team",short:"People",blurb:"Scheduling, training and welcoming the team."},
+ {id:"J",plain:"Setting up tools and keeping web pages working",name:"Tech and digital",short:"Tech",blurb:"The tools and pages the company runs on."}
+];
+// id, name, what the person does, good fit if..., when
+var RAW=[
+["A1","Business direction","Sets priorities, decides which partners and opportunities we take, says yes and no.","You can weigh an opportunity against what we are building and turn down good ideas.","Now"],
+["A2","Running operations","Makes sure events are delivered end to end, keeps the weekly rhythm going, oversees logistics and equipment (area F).","You like checklists, follow-through and staying calm under pressure.","Now"],
+["A3","Managing finances","Sets budgets, tracks money in and out, works out pricing, keeps numbers funders can trust (areas G and H).","You are careful with numbers and records.","Now"],
+["A4","Leading marketing","Owns the results of marketing, communications and content: who we reach and whether it is working (areas B and D).","You watch what works and change course when it does not.","Now"],
+["A5","Governance and decision records","Keeps roles and ownership clear, guides how we decide, and writes decisions down.","You notice when nobody owns something and you write things down.","Now"],
+
+["B1","Marketing strategy","Decides who we are for, how we position GCG, and which channels and campaigns to use.","You think about audiences and why people turn up.","Now"],
+["B2","Communications strategy","Decides what we say, in what tone, to whom and when: guests, partners and clients.","You write or speak in a way people trust.","Now"],
+["B3","Content strategy","Decides what content we make and why, keeps a simple calendar, and says what goes where.","You plan ahead and think in series, not one-off posts.","Now"],
+["B4","Brand guardianship","Keeps our look, voice and tone consistent everywhere.","You can spot an off-brand flyer from across the room.","Now"],
+["B5","Community strategy","Turns first-time guests into regulars: follow-up, invitations, staying in touch.","You remember people and enjoy building a relationship over time.","Soon"],
+
+["C1","Hosting","Facilitates the room: pacing, tension and warmth.","You can read a room and hold its attention.","Now"],
+["C2","Welcome and door","Greets guests, handles registration, and walks people through the Welcome Game.","You make strangers feel welcome in the first ten seconds.","Now"],
+["C3","Tech and production on the day","Sets up, runs the projector and sound, and fixes problems live. This is not game design.","You stay calm when a cable fails and fix it fast.","Now"],
+["C4","Sound and atmosphere","Handles music, cues, countdowns, and using silence.","You know how music changes a room.","Now"],
+["C5","Room and venue setup","Arranges seating, the registration desk and decor.","You can see how a space should flow.","Now"],
+["C6","Run sheet and timing","Keeps the night to time and calls the transitions.","You keep time without being pushy.","Now"],
+["C7","Scoring and answer checking","Keeps score live and verifies answers.","You are quick, accurate and fair when people argue about points.","Now"],
+["C8","Photography and videography","Captures the night on camera.","You can film or shoot without disrupting the moment.","Now"],
+
+["D1","Social media","Posts, replies and manages the accounts.","You know how the platforms work and reply like a human.","Now"],
+["D2","Content capture","Takes photos and video during events and behind the scenes. Open to everyone.","You have a phone and an eye. Anyone can pick this one.","Now"],
+["D3","Editing","Turns footage into finished posts.","You can cut a clip into something people watch to the end.","Now"],
+["D4","Dedicated content creator","One person who plans, films, edits and posts regularly.","You want content to be your main job here.","Later"],
+["D5","Graphic design","Makes flyers, tickets, social graphics and decks.","You design in Canva, Figma or similar.","Now"],
+["D6","Invitations and broadcasts","Sends SMS, WhatsApp, email, event pages and reminders.","You write short messages that people act on.","Now"],
+["D7","Testimonials","Collects guest quotes and stories.","People tell you things and you ask the right follow-up.","Now"],
+["D8","Press and media","Handles media coverage, features and outside collaborations.","You have media contacts or enjoy pitching stories.","Later"],
+
+["E1","Ticketing and registration","Sets up ticket pages, QR codes, registration forms and pre-sales.","You set up forms and payment links that just work.","Now"],
+["E2","Partner outreach","Approaches event companies, schools and organisations.","You are comfortable starting conversations with strangers.","Now"],
+["E3","Pricing, proposals and quotes","Works out what we charge and puts it in writing.","You can explain value in a clear one-page proposal.","Now"],
+["E4","Company and client sales","Sells hosted and bespoke events to companies.","You have worked with corporate buyers or enjoy closing deals.","Soon"],
+["E5","Client management","Acts as the one point of contact for a booked client, from brief to follow-up.","You are reliable, responsive and remember every detail.","Soon"],
+["E6","Venue deals","Agrees terms with venues: door, bar, welcome drink.","You negotiate calmly and get terms in writing.","Soon"],
+["E7","Sponsorship","Finds and manages sponsors.","You can match a brand's goals to what we offer.","Soon"],
+
+["F1","Project management","Runs the weekly check-in and the task list, and follows through.","You chase tasks kindly and never lose the thread.","Now"],
+["F2","Event logistics","Handles transport, moving equipment, supplies and the day-of schedule.","You plan the how: what goes where, when, and who carries it.","Now"],
+["F3","Equipment","Stores, checks and maintains projectors, sound and cables.","You keep gear organised and test it before it matters.","Now"],
+["F4","Documentation","Keeps host guides, run sheets and one shared Drive in order.","You write things down clearly so others can repeat them.","Now"],
+["F5","Event data and learning","Tracks attendance, strongest and weakest rounds, feedback and contact collection.","You like finding patterns in what happened.","Now"],
+["F6","Accounts and tools","Manages shared logins, subscriptions and who has access to what.","You keep access tidy and secure.","Now"],
+["F7","Game review and fit check","Inspects a game before we run it: does it fit GCG's principles and the audience, will it work in the room, are the answers verified with a source and date.","You are curious, critical and good at spotting weak questions.","Now"],
+
+["G1","Payments and bookkeeping","Handles Paystack and receipts, and records what each event cost and earned.","You reconcile every cedi.","Now"],
+["G2","Budgeting","Builds event budgets, break-even points, and what a night really costs.","You build a simple spreadsheet and trust it.","Now"],
+["G3","Company registration","Decides how and when to register, and does the paperwork.","You are patient with forms and offices.","Now"],
+["G4","Guest data protection","Keeps contacts and guest information safe.","You take privacy seriously.","Now"],
+["G5","Contracts and agreements","Handles venue, booking, partner and team agreements.","You read the small print.","Soon"],
+["G6","Tax and compliance","Handles filings and obligations once we are registered.","You know, or want to learn, the filing rules.","Later"],
+
+["H1","Funding applications","Writes grant and creative fund applications.","You write clear applications and meet deadlines.","Soon"],
+["H2","Pitching","Prepares and delivers funder and investor presentations.","You present with confidence and prepare well.","Soon"],
+["H3","Impact and reporting","Tracks the numbers and outcomes funders ask for.","You can turn activity into a clear report.","Soon"],
+["H4","New products and revenue","Explores schools, licensing, and physical or digital products.","You spot ways to earn without adding more nights.","Soon"],
+["H5","Audience research","Studies how different groups respond and builds sector profiles.","You enjoy asking people questions and learning from the answers.","Soon"],
+
+["I1","Team scheduling","Tracks who is available and who is at which event.","You keep an accurate calendar for other people.","Now"],
+["I2","Host training","Trains new hosts and sets a standard.","You coach people patiently.","Later"],
+["I3","Onboarding","Brings new team members and volunteers up to speed.","You explain things simply and make newcomers feel settled.","Later"],
+
+["J1","Digital tools and set-up","Sets up forms, sheets, Drive and automations.","You like making tools work together.","Now"],
+["J2","Website and game page","Builds and maintains our own page and the builder behind it.","You build or maintain web pages.","Soon"]
+];
+var FNS=RAW.map(function(r){return {id:r[0],area:r[0][0],name:r[1],covers:r[2],fit:r[3],when:r[4]};});
+var FN={};FNS.forEach(function(f){FN[f.id]=f;});
+var AREA={};AREAS.forEach(function(a){AREA[a.id]=a;});
+var LV_LABEL={good:"Good at it",curious:"Interested",no:"Rather not"};
+var SCORE={top:5,good:3,curious:1};
+
+/* Questionnaire: 12 "most and least like me" questions. Each shows four real actions, each tied to a different trait.
+   Picking a most and a least makes people compare, which is harder to game than rating "I enjoy X". */
+var ITEMS=[["A new project is about to start. What do you do first?", [["Meet everyone involved and make sure they feel included", "welcome"], ["Set up the tools and check that everything works", "fix"], ["Write down who does what and by when", "organise"], ["Get people excited about it", "host"]]], ["Someone outside the team could help us a lot. What is your move?", [["Write a clear message explaining what we do", "write"], ["Call them and make the case yourself", "sell"], ["Find out what matters to them first", "research"], ["Ask around for someone who can introduce us", "connect"]]], ["The team is split on a decision. What do you do?", [["Weigh it up and make the call", "lead"], ["Dig for what worked for others in the same situation", "research"], ["Work out what each option costs", "numbers"], ["Sketch each option so people can see it", "visual"]]], ["A new person joins the team today. What do you do?", [["Walk them through it step by step", "teach"], ["Make sure they feel at home straight away", "welcome"], ["Give them a clear list of what to do and when", "organise"], ["Pair them with the right person on the team", "connect"]]], ["The project is over. Which follow-up job do you take?", [["Write the summary and the thank-you messages", "write"], ["Edit the photos and video", "visual"], ["Count what came in and what went out", "numbers"], ["Talk to people and collect what they thought", "connect"]]], ["Something breaks at the worst moment. What do you do?", [["Keep everyone calm and the mood up", "host"], ["Work out what is wrong and fix it", "fix"], ["Decide the plan and tell people who does what", "lead"], ["Switch to the backup plan you prepared", "organise"]]], ["You are planning next month. Which part do you want?", [["Negotiate the price and terms", "sell"], ["Build the timeline and checklist", "organise"], ["Design the flyer and the pages", "visual"], ["Study what others do well", "research"]]], ["Someone is upset about something. What do you do?", [["Listen and calm them down", "welcome"], ["Write back clearly about what we will do", "write"], ["Show the team how to handle this next time", "teach"], ["Check the records and put it right", "numbers"]]], ["You have a free Saturday for GCG. How do you use it?", [["Learn a new tool so the team is faster", "fix"], ["Message ten people in my network about GCG", "connect"], ["Write guides and templates others can use", "write"], ["Clean up the budget sheet", "numbers"]]], ["Which moment would you most like to own?", [["Being up front and leading the moment", "host"], ["Welcoming people as they arrive", "welcome"], ["Deciding what happens when plans change", "lead"], ["Explaining how things work so everyone understands", "teach"]]], ["A partner asks for a plan by Friday. You:", [["Pull the numbers together", "numbers"], ["Present it and win them over", "sell"], ["Lay out the plan so it looks sharp", "visual"], ["Check the facts and sources", "research"]]], ["Which sounds like your best contribution to a team?", [["Setting direction and getting people moving", "lead"], ["Keeping everything on track", "organise"], ["Helping others get better", "teach"], ["Making things run without a hitch", "fix"]]]];
+var STATEMENTS=ITEMS;
+var LIKE=[
+ ["talk","Talking and working with people",["welcome","host","connect"]],
+ ["make","Making things: design, video, writing",["visual","write"]],
+ ["tech","Solving technical problems and working with tools",["fix"]],
+ ["plan","Organising, planning and keeping things on track",["organise","lead"]],
+ ["num","Working with numbers, records and detail",["numbers","research"]],
+ ["care","Looking after people, places or things",[]],
+ ["deal","Building relationships and persuading people",["sell","connect"]]
+];
+var EXP=[
+ ["host","Hosted or MC'd an event, show or panel",["host"]],
+ ["welcome","Worked a door, front desk or customer-facing role",["welcome"]],
+ ["organise","Planned an event or ran a project to a deadline",["organise"]],
+ ["fix","Set up sound, lights or screens, or fixed tech for others",["fix"]],
+ ["numbers","Managed a budget or kept accounts",["numbers"]],
+ ["write","Written for an audience: posts, articles or proposals",["write"]],
+ ["visual","Designed, photographed or edited video for others",["visual"]],
+ ["sell","Sold something or closed a client or sponsor deal",["sell"]],
+ ["research","Done research or analysis that others relied on",["research"]],
+ ["connect","Built a community, network or mailing list",["connect"]],
+ ["lead","Led a team or was responsible for other people's work",["lead"]],
+ ["teach","Trained, taught or coached people",["teach"]]
+];
+var TRAIT_LABEL={welcome:"Welcoming people",host:"Hosting a room",organise:"Organising",fix:"Fixing tech and problems",numbers:"Numbers and records",write:"Writing",visual:"Design and visuals",sell:"Persuading and negotiating",research:"Researching",connect:"Staying connected",lead:"Leading",teach:"Teaching"};
+var FN_TRAITS={
+ A1:["lead","sell"],A2:["organise","lead"],A3:["numbers","organise"],A4:["lead","connect"],A5:["organise","lead"],
+ B1:["research","write"],B2:["write","connect"],B3:["write","organise"],B4:["visual","write"],B5:["connect","welcome"],
+ C1:["host","welcome"],C2:["welcome","connect"],C3:["fix","organise"],C4:["fix","host"],C5:["organise","visual"],C6:["organise","host"],C7:["numbers","research"],C8:["visual","fix"],
+ D1:["write","visual"],D2:["visual"],D3:["visual","fix"],D4:["visual","write","organise"],D5:["visual"],D6:["write","organise"],D7:["connect","write"],D8:["sell","write"],
+ E1:["organise","fix"],E2:["sell","connect"],E3:["numbers","write","sell"],E4:["sell","connect"],E5:["connect","organise"],E6:["sell","numbers"],E7:["sell","write"],
+ F1:["organise","lead"],F2:["organise"],F3:["fix","organise"],F4:["write","organise"],F5:["research","numbers"],F6:["fix","organise"],F7:["research","write"],
+ G1:["numbers","organise"],G2:["numbers"],G3:["organise","research"],G4:["organise","research"],G5:["research","write"],G6:["numbers","research"],
+ H1:["write","research"],H2:["host","write","sell"],H3:["numbers","write"],H4:["research","lead"],H5:["research","connect"],
+ I1:["organise","connect"],I2:["teach","host"],I3:["teach","welcome"],
+ J1:["fix","organise"],J2:["fix","visual"]
+};
+var SPOTS=[["front","Up front, with people and the room"],["behind","Behind the scenes, in systems and details"],["between","Between people, connecting and coordinating"],["making","Making things: creating and building"],["leading","Leading: deciding and directing"],["looking","Looking after things: people, places and equipment"]];
+var SPOT_LABEL={};SPOTS.forEach(function(s){SPOT_LABEL[s[0]]=s[1];});
+var SPOT_SHORT={looking:"Looking after things",front:"Up front",behind:"Behind the scenes",between:"Between people",making:"Making things",leading:"Leading"};
+// Jobs that must have an owner. Hinda can change this list in Team results.
+var CRITICAL_DEFAULT=["C1","C2","C3","G1"];
+var NQ=ITEMS.length;
+var TRAIT_CNT={};ITEMS.forEach(function(it){it[1].forEach(function(o){TRAIT_CNT[o[1]]=(TRAIT_CNT[o[1]]||0)+1;});});
+// item answer v = most*4+least+1 (1..16); q[NQ] is a bitmask of things the person has actually done
+function decodeA(v){v=Number(v);if(!(v>=1&&v<=16))return null;var m=Math.floor((v-1)/4),l=(v-1)%4;return m===l?null:{m:m,l:l};}
+function normQ(a){var out=[];for(var i=0;i<NQ;i++){var v=Number(a&&a[i]);out.push(decodeA(v)?v:0);}var mk=Number(a&&a[NQ]);out.push(mk>=0&&mk<4096?Math.floor(mk):0);var m2=Number(a&&a[NQ+1]);out.push(m2>=0&&m2<128?Math.floor(m2):0);return out;}
+function encodeQ(q){var t="";for(var i=0;i<NQ;i++)t+=(q[i]>=1?Number(q[i]).toString(17):"0");return t+"-"+(q[NQ]||0)+"-"+(q[NQ+1]||0);}
+function decodeQ(str){
+  var m=String(str).split("-"),arr=[];
+  for(var i=0;i<NQ;i++){var c=(m[0]||"").charAt(i);arr.push(c?parseInt(c,17)||0:0);}
+  arr.push(Number(m[1])||0);arr.push(Number(m[2])||0);return normQ(arr);
+}
+// Trait score 0..1: 0.5 is neutral. Most = +1, least = -1, scaled by how often the trait appears. Things done add a little.
+function traitScores(q){
+  var raw={};
+  (q||[]).slice(0,NQ).forEach(function(v,i){
+    var d=decodeA(v);if(!d||!ITEMS[i])return;
+    var o=ITEMS[i][1];
+    raw[o[d.m][1]]=(raw[o[d.m][1]]||0)+1;
+    raw[o[d.l][1]]=(raw[o[d.l][1]]||0)-1;
+  });
+  var any=Object.keys(raw).length>0,out={};
+  if(!any)return out;
+  Object.keys(TRAIT_CNT).forEach(function(t){out[t]=((raw[t]||0)+TRAIT_CNT[t])/(2*TRAIT_CNT[t]);});
+  var m2=Number(q&&q[NQ+1])||0,lc=0;LIKE.forEach(function(e,k){if(m2&(1<<k))lc++;});
+  var lb=lc?0.2/Math.max(2,lc):0;
+  LIKE.forEach(function(e,k){if(m2&(1<<k))e[2].forEach(function(t){if(out[t]!=null)out[t]=Math.min(1,out[t]+lb);});});
+  var mask=Number(q&&q[NQ])||0;
+  EXP.forEach(function(e,k){if(mask&(1<<k))e[2].forEach(function(t){if(out[t]!=null)out[t]=Math.min(1,out[t]+0.12);});});
+  return out;
+}
+function fitFor(q,id){
+  var ts=traitScores(q),tr=FN_TRAITS[id]||[],s=0,n=0;
+  tr.forEach(function(t){if(ts[t]!=null){s+=ts[t];n++;}});
+  return n?s/n:null;
+}
+function strongest(q,n){
+  var ts=traitScores(q),ks=Object.keys(ts);
+  ks.sort(function(a,b){return ts[b]-ts[a];});
+  return ks.slice(0,n).map(function(t){return TRAIT_LABEL[t];});
+}
+
+/* ---------- Structured story questions ---------- */
+// Structured "tell us more" questions. Each option can point at jobs, which nudges the match.
+var FUTURE=[
+ ["own","Owning a whole area, like operations, finance or marketing"],
+ ["front","Up front: hosting, welcoming, being the face of GCG"],
+ ["craft","Growing a specialist craft: design, video, tech, sound or finance"],
+ ["grow","Growing GCG: partners, sponsors, sales and funding"],
+ ["people","Building the team and community: training, onboarding, guests"],
+ ["expand","Helping take GCG to other cities"],
+ ["light","Helping out a few hours a week, without a bigger role"],
+ ["unsure","Not sure yet"]
+];
+var ENJOY=[
+ ["welcome","Meeting and welcoming guests",["C2","B5","D7"]],
+ ["mic","Being on the mic and holding a room",["C1","C6"]],
+ ["plan","Planning and organising events",["F1","F2","C6","I1","A2"]],
+ ["make","Making posts, photos or video",["D1","D2","D3","C8"]],
+ ["deals","Talking to partners, sponsors and clients",["E2","E4","E5","E6","E7"]],
+ ["money","Working with numbers and money",["G1","G2","A3","H3"]],
+ ["fix","Fixing tech and solving problems on the night",["C3","C4","F3","J1"]],
+ ["check","Researching and checking facts",["F7","C7","H5","B1"]],
+ ["design","Designing flyers, tickets and graphics",["D5","B4"]],
+ ["coach","Coaching and teaching people",["I2","I3"]],
+ ["decide","Setting direction and deciding priorities",["A1","A4","A5","B1"]]
+];
+var EXPLORE=[
+ ["host","Hosting and public speaking",["C1"]],
+ ["video","Video editing",["D3","C8"]],
+ ["graphic","Graphic design",["D5"]],
+ ["sales","Sales and negotiation",["E2","E3","E4","E6","E7"]],
+ ["finance","Budgeting and bookkeeping",["G1","G2"]],
+ ["sound","Sound and production",["C3","C4"]],
+ ["writing","Writing and copy",["D6","B2","H1"]],
+ ["pm","Running projects",["F1","A2"]],
+ ["funding","Grants and fundraising",["H1","H2"]],
+ ["build","Building websites and tools",["J1","J2"]],
+ ["research","Research and data",["F5","H5"]],
+ ["community","Community building",["B5","D7"]]
+];
+var HIDDEN=[
+ ["edit","Video or photo editing",["D3","D2","C8"]],
+ ["design","Graphic design in Canva, Figma or similar",["D5"]],
+ ["mc","MC work or strong stage presence",["C1"]],
+ ["music","Music, DJ or sound skills",["C4"]],
+ ["photo","Photography or filming",["C8","D2"]],
+ ["write","Writing and copywriting",["D6","D1","B2","H1"]],
+ ["numbers","Bookkeeping or accounting",["G1","G2","G3"]],
+ ["web","Building websites, forms or apps",["J1","J2","E1"]],
+ ["venues","Knowing venue owners or event spaces",["E6","E2"]],
+ ["brands","Connections to sponsors or brands",["E7","E2"]],
+ ["reach","A large social media following",["D1","B1"]],
+ ["lang","Speaking other languages",["C2","E2"]],
+ ["admin","Legal or admin know-how",["G3","G5"]],
+ ["set","Decor, crafts or set building",["C5"]],
+ ["field","Deep knowledge in a field: law, health, fashion, sport, music and so on",["F7","C7"]],
+ ["teach","Teaching or coaching",["I2","I3"]]
+];
+function toMap(a){var m={};a.forEach(function(r){m[r[0]]={label:r[1],jobs:r[2]||[]};});return m;}
+var OPT_FUTURE=toMap(FUTURE),OPT_ENJOY=toMap(ENJOY),OPT_EXPLORE=toMap(EXPLORE),OPT_HIDDEN=toMap(HIDDEN);
+function newStory(){return {future:"",enjoy:[],explore:[],hidden:[],exploreNote:"",hiddenNote:""};}
+function cleanList(a,map,max){
+  var out=[];
+  (Array.isArray(a)?a:[]).forEach(function(x){if(map[x]&&out.indexOf(x)<0&&out.length<max)out.push(x);});
+  return out;
+}
+function sanitizeStory(s){
+  s=s||{};var o=newStory();
+  o.future=OPT_FUTURE[s.future]?s.future:"";
+  o.enjoy=cleanList(s.enjoy,OPT_ENJOY,3);
+  o.explore=cleanList(s.explore,OPT_EXPLORE,2);
+  o.hidden=cleanList(s.hidden,OPT_HIDDEN,3);
+  o.exploreNote=clean(s.exploreNote||"").slice(0,80);
+  o.hiddenNote=clean(s.hiddenNote||"").slice(0,80);
+  return o;
+}
+function labelsOf(map,ids){return (ids||[]).filter(function(k){return map[k];}).map(function(k){return map[k].label;});}
+function storyMap(story){
+  var s=sanitizeStory(story);
+  return {
+    future:s.future?OPT_FUTURE[s.future].label:"",
+    enjoy:labelsOf(OPT_ENJOY,s.enjoy).join("; "),
+    explore:labelsOf(OPT_EXPLORE,s.explore).concat(s.exploreNote?[s.exploreNote]:[]).join("; "),
+    hidden:labelsOf(OPT_HIDDEN,s.hidden).concat(s.hiddenNote?[s.hiddenNote]:[]).join("; ")
+  };
+}
+function storyLines(story){
+  var m=storyMap(story),L=[];
+  if(m.future)L.push(["In a few years",m.future]);
+  if(m.enjoy)L.push(["Would enjoy",m.enjoy]);
+  if(m.explore)L.push(["Wants to explore",m.explore]);
+  if(m.hidden)L.push(["Skills GCG could use soon",m.hidden]);
+  return L;
+}
+function signalFor(story,id){
+  if(!story)return 0;
+  var s=0;
+  (story.hidden||[]).forEach(function(k){if(OPT_HIDDEN[k]&&OPT_HIDDEN[k].jobs.indexOf(id)>-1)s+=0.3;});
+  (story.enjoy||[]).forEach(function(k){if(OPT_ENJOY[k]&&OPT_ENJOY[k].jobs.indexOf(id)>-1)s+=0.15;});
+  (story.explore||[]).forEach(function(k){if(OPT_EXPLORE[k]&&OPT_EXPLORE[k].jobs.indexOf(id)>-1)s+=0.1;});
+  return Math.min(0.4,s);
+}
+function matchFor(q,story,id){
+  var f=fitFor(q,id);
+  return f==null?null:Math.min(1,f+signalFor(story,id));
+}
+
+/* ---------- Helpers ---------- */
+function h(tag,attrs){
+  var e=document.createElement(tag);
+  if(attrs){Object.keys(attrs).forEach(function(k){
+    var v=attrs[k]; if(v==null||v===false)return;
+    if(k==="class")e.className=v; else if(k==="text")e.textContent=v;
+    else if(k.slice(0,2)==="on")e.addEventListener(k.slice(2),v);
+    else e.setAttribute(k,v===true?"":v);
+  });}
+  for(var i=2;i<arguments.length;i++){
+    var c=arguments[i]; if(c==null||c===false)continue;
+    if(Array.isArray(c)){c.forEach(function(x){if(x!=null&&x!==false)e.append(x.nodeType?x:document.createTextNode(String(x)));});}
+    else e.append(c.nodeType?c:document.createTextNode(String(c)));
+  }
+  return e;
+}
+function $(id){return document.getElementById(id);}
+function clear(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function say(el,text,kind){el.textContent=text||"";if(kind)el.setAttribute("data-kind",kind);else el.removeAttribute("data-kind");}
+function clean(s){return String(s==null?"":s).replace(/[|\r\n]+/g," ").trim();}
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function pc(cls,id,label){return h("span",{class:"pc "+cls},h("i",{text:id}),label);}
+function fnChip(cls,id){return pc(cls,id,FN[id]?FN[id].name:id);}
+function sanitizeIds(a){return (Array.isArray(a)?a:[]).filter(function(x){return FN[x];});}
+
+/* ---------- State ---------- */
+var S={name:"",hours:"",extra:"",cv:"",levels:{},top:[],filter:"All",view:"choose",
+  q:new Array(NQ+2).fill(0),step:"start",maxStep:0,qi:0,di:0,spot:[],story:newStory(),critical:CRITICAL_DEFAULT.slice(),
+  db:null,dl:null,uid:null,isAdmin:false,canWrite:null,
+  people:[],roles:null,overrides:{},hydratedRoles:false,submittedAt:null};
+var DRAFT_KEY="gcg-role-finder-draft-v1";
+var saveTimer=null;
+
+function loadDraft(){
+  var raw=lsGet(DRAFT_KEY); if(!raw)return null;
+  try{return JSON.parse(raw);}catch(e){return null;}
+}
+function saveDraft(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){
+    lsSet(DRAFT_KEY,JSON.stringify({name:S.name,hours:S.hours,extra:S.extra,cv:S.cv,levels:S.levels,top:S.top,q:S.q,step:S.step,maxStep:S.maxStep,qi:S.qi,di:S.di,spot:S.spot,story:S.story,savedAt:new Date().toISOString()}));
+  },300);
+}
+function hydrateFromResponse(d){
+  S.name=d.name||S.name; S.hours=d.hours?String(d.hours):"";S.extra=d.extra||"";S.cv=d.cv||"";
+  S.levels={};S.top=sanitizeIds(d.top).slice(0,3);
+  sanitizeIds(d.top).concat(sanitizeIds(d.good)).forEach(function(i){S.levels[i]="good";});
+  sanitizeIds(d.curious).forEach(function(i){S.levels[i]="curious";});
+  sanitizeIds(d.no).forEach(function(i){S.levels[i]="no";});
+  S.q=normQ(d.q);S.step="review";S.maxStep=4;S.qi=WARM+NQ;
+  S.spot=(Array.isArray(d.spot)?d.spot:[]).filter(function(k){return SPOT_LABEL[k];});
+  S.story=sanitizeStory(d.story);
+  $("name").value=S.name;$("hours").value=S.hours;$("extra").value=S.extra;$("cv").value=S.cv;
+}
+
+function grouped(src){
+  var lv=src.levels,top=src.top;
+  var out={top:top.slice(),good:[],curious:[],no:[]};
+  FNS.forEach(function(f){
+    var l=lv[f.id]; if(!l)return;
+    if(l==="good"&&top.indexOf(f.id)===-1)out.good.push(f.id);
+    else if(l==="curious")out.curious.push(f.id);
+    else if(l==="no")out.no.push(f.id);
+  });
+  return out;
+}
+function payload(){
+  var g=grouped(S);
+  var hrs=parseFloat(String(S.hours).replace(",","."));
+  return {name:clean(S.name).slice(0,60),hours:isFinite(hrs)&&hrs>0?Math.min(hrs,80):null,extra:clean(S.extra).slice(0,600),cv:clean(S.cv).slice(0,1500),
+    top:g.top,good:g.good,curious:g.curious,no:g.no,q:normQ(S.q),spot:S.spot.slice(),
+    story:sanitizeStory(S.story),
+    updated:new Date().toISOString(),source:"app"};
+}
+function listText(ids){return ids.map(function(i){return i+" "+FN[i].name;}).join("; ");}
+function shareText(){
+  var p=payload(),lines=["GCG role picks: "+(p.name||"(add your name)")];
+  lines.push("Top 3: "+(p.top.length?listText(p.top):"none yet"));
+  lines.push("Good at: "+(p.good.length?listText(p.good):"none"));
+  lines.push("Interested in: "+(p.curious.length?listText(p.curious):"none"));
+  if(p.no.length)lines.push("Rather not: "+listText(p.no));
+  if(p.hours)lines.push("Hours a week: "+p.hours);
+  if(p.extra)lines.push("Also good at: "+p.extra);
+  if(p.cv)lines.push("CV or background: "+p.cv);
+  if(p.spot.length)lines.push("Where I naturally fit: "+p.spot.map(function(k){return SPOT_SHORT[k];}).join(", "));
+  storyLines(p.story).forEach(function(l){lines.push(l[0]+": "+l[1]);});
+  var pr=profileFor();if(pr)lines.push("About "+(p.name||"me")+": "+pr.title+". "+pr.lines.slice(0,2).join(" "));
+  lines.push("Code: GCG1|"+clean(p.name)+"|T="+p.top.join(",")+"|G="+p.good.join(",")+"|C="+p.curious.join(",")+"|R="+p.no.join(",")+"|H="+(p.hours||"")+"|N="+p.extra+"|Q="+encodeQ(p.q)+"|S="+p.spot.join(",")+"|W1="+p.story.future+"|W2="+p.story.enjoy.join(",")+"|W3="+p.story.explore.join(",")+"|W4="+p.story.hidden.join(",")+"|X3="+clean(p.story.exploreNote)+"|X4="+clean(p.story.hiddenNote)+"|V="+p.cv);
+  return lines.join("\n");
+}
+function parseCode(line){
+  var m=String(line).match(/GCG1\|.*$/); if(!m)return null;
+  var parts=m[0].split("|"),o={name:clean(parts[1]||""),top:[],good:[],curious:[],no:[],hours:null,extra:"",
+    q:new Array(NQ+2).fill(0),spot:[],story:newStory()};
+  for(var i=2;i<parts.length;i++){
+    var s=parts[i],ix=s.indexOf("="); if(ix<0)continue;
+    var k=s.slice(0,ix),v=s.slice(ix+1);
+    var ids=v.split(",").map(function(x){return x.trim();}).filter(function(x){return FN[x];});
+    if(k==="T")o.top=ids.slice(0,3); else if(k==="G")o.good=ids; else if(k==="C")o.curious=ids; else if(k==="R")o.no=ids;
+    else if(k==="H"){var n=parseFloat(v);o.hours=isFinite(n)&&n>0?Math.min(n,80):null;}
+    else if(k==="N")o.extra=clean(v).slice(0,600);
+    else if(k==="V")o.cv=clean(v).slice(0,1500);
+    else if(k==="Q")o.q=decodeQ(v);
+    else if(k==="S")o.spot=v.split(",").filter(function(x){return SPOT_LABEL[x];});
+    else if(k==="W1")o.story.future=v;
+    else if(k==="W2")o.story.enjoy=v.split(",");
+    else if(k==="W3")o.story.explore=v.split(",");
+    else if(k==="W4")o.story.hidden=v.split(",");
+    else if(k==="X3")o.story.exploreNote=v;
+    else if(k==="X4")o.story.hiddenNote=v;
+  }
+  o.story=sanitizeStory(o.story);
+  var qAny=o.q.some(function(x){return x>0;});
+  if(!o.name||(o.top.length+o.good.length+o.curious.length+o.no.length+(qAny?1:0))===0)return null;
+  o.updated=new Date().toISOString();o.source="pasted";
+  return o;
+}
+function copyText(text,ta,statusEl,okMsg){
+  function fallback(){
+    if(ta){ta.hidden=false;var box=ta.closest("[hidden]");if(box)box.hidden=false;ta.value=text;ta.focus();ta.select();}
+    say(statusEl,"Copy was blocked here. The text is selected: copy it with your keyboard or long-press.","warn");
+  }
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){say(statusEl,okMsg,"ok");},fallback);
+    }else fallback();
+  }catch(e){fallback();}
+}
+
+/* ---------- Choose flow ---------- */
+var STEPS=["start","quiz","roles","all","review"];
+var STEP_LABEL=["You","Questions","Roles","Jobs","Send"];
+var tiles={},chipN={},headCnt={},storyBtns={};
+var flashMsg="",advTimer=null,sugKey="",sugBtns={};
+
+function counts(){
+  var g=grouped(S);
+  return {top:g.top.length,good:g.good.length+g.top.length,curious:g.curious.length,no:g.no.length,
+    chosen:g.good.length+g.top.length+g.curious.length,reviewed:Object.keys(S.levels).length};
+}
+function answered(){var n=0;S.q.slice(0,NQ).forEach(function(v){if(v>=1)n++;});return n;}
+function firstUnanswered(){for(var i=0;i<NQ;i++){if(!(S.q[i]>=1))return i;}return NQ;}
+function removeTop(id){var i=S.top.indexOf(id);if(i>-1)S.top.splice(i,1);}
+function flash(m){flashMsg=m;renderBar();}
+function setLevel(id,lv){
+  if(S.levels[id]===lv){delete S.levels[id];removeTop(id);}
+  else{S.levels[id]=lv;if(lv!=="good")removeTop(id);}
+  flash("");saveDraft();sync();
+}
+function toggleTop(id){
+  if(S.top.indexOf(id)>-1){removeTop(id);}
+  else{
+    if(S.top.length>=3){flash("You already have 3 top picks. Untap one first.");return;}
+    S.top.push(id);S.levels[id]="good";
+  }
+  flash("");saveDraft();sync();
+}
+
+/* steps */
+function stepIndex(n){return STEPS.indexOf(n);}
+function goStep(name){
+  var i=stepIndex(name);if(i<0)return;
+  S.step=name;if(i>S.maxStep)S.maxStep=i;
+  saveDraft();renderStep();
+  var nav=$("stepnav");if(nav&&nav.scrollIntoView)nav.scrollIntoView({block:"start"});
+}
+function renderStepNav(){
+  var nav=$("stepnav");clear(nav);
+  var keys=["start","quiz","roles","review"],labels=["You","Questions","Roles","Send"];
+  var cur=(S.step==="all")?"roles":S.step;
+  keys.forEach(function(k,i){
+    var idx=stepIndex(k);
+    var state=(k===cur)?"current":(idx<=S.maxStep?"done":"todo");
+    var b=h("button",{type:"button","data-state":state,disabled:idx>S.maxStep,"aria-current":k===cur?"step":null,onclick:function(){goStep(k);}},
+      h("span",{class:"dot",text:state==="done"?"\u2713":String(i+1)}),labels[i]);
+    nav.append(h("li",null,b));
+  });
+}
+function applyBar(){$("bar").hidden=!(S.view==="choose"&&S.step==="all");}
+function renderStep(){
+  STEPS.forEach(function(k){$("step-"+k).hidden=(k!==S.step);});
+  renderStepNav();
+  if(S.step==="quiz")renderQuiz();
+  if(S.step==="roles")renderMatches();
+  if(S.step==="review"){renderProfile();renderSummary();syncStory();$("extra").value=S.extra;$("cv").value=S.cv;$("msg").value=shareText();}
+  applyBar();
+}
+
+/* questions, one card at a time. Cards: 2 warm-ups about you, then the situations, then what you have done. */
+var WARM=2;
+function firstUnanswered(){for(var i=0;i<NQ;i++){if(!(S.q[i]>=1))return WARM+i;}return WARM+NQ;}
+function qGo(i){S.qi=Math.max(0,Math.min(i,WARM+NQ));S.tmp=null;saveDraft();renderQuiz();}
+function pickML(n,idx,kind){
+  clearTimeout(advTimer);
+  var c=WARM+n,d=decodeA(S.q[n]);
+  var cur=(S.tmp&&S.tmp.n===n)?S.tmp:{n:n,m:d?d.m:null,l:d?d.l:null};
+  var other=(kind==="m")?"l":"m";
+  if(cur[kind]===idx){cur[kind]=null;}
+  else{cur[kind]=idx;if(cur[other]===idx)cur[other]=null;}
+  S.tmp=cur;
+  if(cur.m!=null&&cur.l!=null){
+    S.q[n]=cur.m*4+cur.l+1;S.tmp=null;saveDraft();renderQuiz();
+    advTimer=setTimeout(function(){if(S.qi===c)qGo(c+1);},550);
+  }else{S.q[n]=0;saveDraft();renderQuiz();}
+}
+function toggleMask(idx,k,max,limitMsg){
+  var mask=Number(S.q[idx])||0,st=$("qStatus");
+  if(!(mask&(1<<k))){var cnt=0;for(var i=0;i<12;i++){if(mask&(1<<i))cnt++;}if(max&&cnt>=max){if(st)say(st,limitMsg,"warn");return;}}
+  S.q[idx]=mask^(1<<k);if(st)say(st,"");saveDraft();
+  document.querySelectorAll("#qCard .optb").forEach(function(b){b.setAttribute("aria-pressed",String(((Number(S.q[idx])||0)&(1<<Number(b.getAttribute("data-k"))))>0));});
+}
+function toggleSpot(k){
+  var i=S.spot.indexOf(k),st=$("qStatus");
+  if(i>-1)S.spot.splice(i,1);
+  else{S.spot.push(k);}
+  if(st)say(st,"");
+  document.querySelectorAll("#qCard .spot").forEach(function(b){b.setAttribute("aria-pressed",String(S.spot.indexOf(b.getAttribute("data-k"))>-1));});
+  saveDraft();
+}
+function revealRoles(){
+  var left=NQ-answered();
+  if(left>0){qGo(firstUnanswered());var st=$("qStatus");if(st)say(st,"Answer this one first. "+left+" left.","warn");return;}
+  deckIds=null;S.di=0;
+  goStep("roles");
+}
+function renderQuiz(){
+  var box=$("qCard");clear(box);
+  var c=S.qi,TOT=WARM+NQ+1;
+  var prog=h("div",{class:"prog","aria-hidden":"true"},h("span",null,h("i")),h("span",null,h("i")),h("span",null,h("i")));
+  var f=Math.min(c,TOT)/TOT*3;
+  prog.querySelectorAll("i").forEach(function(el,k){el.style.width=Math.round(Math.max(0,Math.min(1,f-k))*100)+"%";});
+  box.append(prog);
+  var back=h("button",{type:"button",class:"btn ghost small",text:"Back",onclick:function(){if(c>0)qGo(c-1);else goStep("start");}});
+  function nextBtn(label,fn,gold){return h("button",{type:"button",class:"btn "+(gold?"gold":"ghost")+" small",text:label||"Next",onclick:fn||function(){qGo(c+1);}});}
+  var part=(c<WARM)?"About you":"Situations";
+  if(c===0){
+    var opts0=h("div",{class:"spots",role:"group","aria-label":"Where you naturally fit"});
+    SPOTS.forEach(function(sp){opts0.append(h("button",{type:"button",class:"spot","data-k":sp[0],"aria-pressed":String(S.spot.indexOf(sp[0])>-1),text:sp[1],onclick:function(){toggleSpot(sp[0]);}}));});
+    var h0=h("h2",{class:"q-text",tabindex:"-1",text:"In a company or group, where do you most naturally find yourself?"});
+    box.append(h("p",{class:"q-count",text:part+" · "+(c+1)+" of "+TOT}),h0,h("p",{class:"sub",text:"Pick as many as you like, even all of them. There is no wrong answer. Everyone here has a part to play."}),opts0,
+      h("p",{class:"status",id:"qStatus",role:"status","aria-live":"polite"}),h("div",{class:"row spread"},back,nextBtn("Next",null,true)));
+    h0.focus({preventScroll:true});
+  }else if(c===1){
+    var mask2=Number(S.q[NQ+1])||0,wrap2=h("div",{class:"opts",role:"group","aria-label":"Work you lose track of time in"});
+    LIKE.forEach(function(e,k){wrap2.append(h("button",{type:"button",class:"optb","data-k":String(k),"aria-pressed":String((mask2&(1<<k))>0),text:e[1],onclick:function(){toggleMask(NQ+1,k,0,"");}}));});
+    var h1=h("h2",{class:"q-text",tabindex:"-1",text:"What kind of work makes you lose track of time?"});
+    box.append(h("p",{class:"q-count",text:part+" · "+(c+1)+" of "+TOT}),h1,h("p",{class:"sub",text:"Pick as many as you like. Next come some short situations, so you can show how you would handle them."}),wrap2,
+      h("p",{class:"status",id:"qStatus",role:"status","aria-live":"polite"}),h("div",{class:"row spread"},back,nextBtn("Next",null,true)));
+    h1.focus({preventScroll:true});
+  }else if(c<WARM+NQ){
+    var n=c-WARM,it=ITEMS[n],d=decodeA(S.q[n]);
+    var cur=(S.tmp&&S.tmp.n===n)?S.tmp:{n:n,m:d?d.m:null,l:d?d.l:null};
+    var done=(cur.m!=null&&cur.l!=null);
+    var msg=done?"Got it.":(cur.m==null&&cur.l==null?"Tap one MOST like you and one LEAST like you.":(cur.m==null?"Now tap the one MOST like you.":"Now tap the one LEAST like you."));
+    var head=h("h2",{class:"q-text",tabindex:"-1",text:it[0]});
+    var opts=h("div",{class:"spots",role:"group","aria-label":it[0]});
+    it[1].forEach(function(o,idx){
+      var state=(cur.m===idx)?"most":(cur.l===idx?"least":"");
+      function mb(kind,label){
+        var on=(kind==="m"?cur.m===idx:cur.l===idx);
+        return h("button",{type:"button",class:"ml","data-k":kind,"aria-pressed":String(on),text:label,onclick:function(){pickML(n,idx,kind);}});
+      }
+      opts.append(h("div",{class:"opt2","data-m":state},h("p",{class:"opt2-t",text:o[0]}),h("div",{class:"ml-row"},mb("m","Most like me"),mb("l","Least like me"))));
+    });
+    box.append(h("p",{class:"q-count",text:part+" · "+(n+1)+" of "+NQ}),head,
+      h("p",{class:"sub q-sub",id:"qStatus",role:"status","aria-live":"polite",text:msg}),opts,
+      h("div",{class:"row spread"},back,nextBtn("Next",function(){if(done)qGo(c+1);else{var q=$("qStatus");if(q){q.textContent="Pick one MOST like you and one LEAST like you first.";q.setAttribute("data-kind","warn");}}},done)));
+    head.focus({preventScroll:true});
+  }else{
+    var mask=Number(S.q[NQ])||0;
+    var wrap=h("div",{class:"opts",role:"group","aria-label":"Things you have done"});
+    EXP.forEach(function(e,k){wrap.append(h("button",{type:"button",class:"optb","data-k":String(k),"aria-pressed":String((mask&(1<<k))>0),text:e[1],onclick:function(){toggleMask(NQ,k,0,"");}}));});
+    var head3=h("h2",{class:"q-text",tabindex:"-1",text:"Which of these have you actually done?"});
+    box.append(h("p",{class:"q-count",text:"Last one"}),head3,h("p",{class:"sub",text:"Tick anything, however small. Skip it if none apply."}),wrap,
+      h("p",{class:"status",id:"qStatus",role:"status","aria-live":"polite"}),
+      h("div",{class:"row spread"},back,h("button",{type:"button",class:"btn gold big",text:"Show my roles",onclick:revealRoles})));
+    head3.focus({preventScroll:true});
+  }
+}
+
+/* suggested roles */
+function fitWord(m){return m>=0.7?"Strong match":(m>=0.55?"Good match":"Possible match");}
+function whyFor(id){
+  var ts=traitScores(S.q),tr=FN_TRAITS[id]||[];
+  var hi=tr.filter(function(t){return ts[t]!=null&&ts[t]>=0.62;}).map(function(t){return TRAIT_LABEL[t].toLowerCase();});
+  var txt=hi.length?"Because your answers point to "+hi.join(" and ")+".":"A moderate fit from your answers.";
+  var skill=(S.story.hidden||[]).filter(function(k){return OPT_HIDDEN[k]&&OPT_HIDDEN[k].jobs.indexOf(id)>-1;}).map(function(k){return OPT_HIDDEN[k].label.toLowerCase();});
+  if(skill.length)txt+=" You also listed "+skill[0]+" as a skill.";
+  return txt;
+}
+// First match plus four others within reach. Jobs needed later are left out; must-fill jobs get a small boost.
+function shortlistFor(q,story){
+  var list=FNS.filter(function(f){return f.when!=="Later";})
+    .map(function(f){var m=matchFor(q,story,f.id);return m==null?null:{f:f,fit:m,rank:m+(isCritical(f.id)?0.08:0)};})
+    .filter(Boolean).sort(function(a,b){return b.rank-a.rank;});
+  return {first:list[0]||null,others:list.slice(1,5)};
+}
+function suggestCard(x,isFirst,pos){
+  var refs={};sugBtns[x.f.id]=refs;
+  function sb(l,label){
+    var b=h("button",{type:"button",class:"sbtn","data-lv":l,"aria-pressed":String(S.levels[x.f.id]===l),text:label,onclick:function(){setLevel(x.f.id,l);}});
+    refs[l]=b;return b;
+  }
+  return h("div",{class:isFirst?"first":"sug","data-c":isFirst?"":String(pos%2)},
+    isFirst?h("span",{class:"kick",text:"Your first match"}):null,
+    h("h3",{text:x.f.name}),
+    h("p",{class:"covers",text:x.f.covers}),
+    isFirst?h("p",{class:"fit",text:whyFor(x.f.id)}):null,
+    h("div",{class:"sugctl"},sb("good","Yes, that's me"),sb("no","Not for me")));
+}
+var DECK_N=9;
+function deckFor(){
+  var list=FNS.filter(function(f){return f.when!=="Later";})
+    .map(function(f){var m=matchFor(S.q,S.story,f.id);return m==null?null:{f:f,fit:m,rank:m+(isCritical(f.id)?0.08:0)};})
+    .filter(Boolean).sort(function(a,b){return b.rank-a.rank;});
+  return list.slice(0,DECK_N);
+}
+var deckIds=null,deckTimer=null;
+function deckAnswer(id,lv){
+  clearTimeout(deckTimer);
+  S.levels[id]=lv;if(lv!=="good")removeTop(id);
+  saveDraft();sync();
+  var at=S.di;
+  deckTimer=setTimeout(function(){if(S.di===at){S.di=at+1;saveDraft();renderMatches();window.scrollTo(0,0);}},380);
+}
+function renderMatches(){
+  var box=$("matches"),row=$("rolesRow");
+  if(S.maxStep<2||answered()<8){clear(box);row.hidden=true;return;}
+  if(!deckIds||S.di===0&&deckIds._q!==S.q.join(",")+"|"+JSON.stringify(S.story)){
+    var d=deckFor();deckIds=d.map(function(x){return x.f.id;});deckIds._q=S.q.join(",")+"|"+JSON.stringify(S.story);deckIds._fit={};d.forEach(function(x){deckIds._fit[x.f.id]=x.fit;});
+  }
+  clear(box);
+  var n=S.di,TOT=deckIds.length;
+  var prog=h("div",{class:"prog","aria-hidden":"true"},h("span",null,h("i")),h("span",null,h("i")),h("span",null,h("i")));
+  var fr=Math.min(n,TOT)/TOT*3;
+  prog.querySelectorAll("i").forEach(function(el,k){el.style.width=Math.round(Math.max(0,Math.min(1,fr-k))*100)+"%";});
+  if(n>=TOT){
+    row.hidden=false;
+    var g=grouped(S),picked=g.top.concat(g.good).concat(g.curious);
+    box.append(prog,h("h3",{class:"deck-done",text:"That is the set."}),
+      h("p",{class:"sub",text:picked.length?"You said yes or maybe to:":"You did not pick any yet. That is fine, we will use your answers."}),
+      picked.length?h("div",{class:"chips"},g.top.map(function(i){return fnChip("top",i);}),g.good.map(function(i){return fnChip("good",i);}),g.curious.map(function(i){return fnChip("curious",i);})):null,
+      h("div",{class:"row"},h("button",{type:"button",class:"btn ghost small",text:"Back",onclick:function(){S.di=Math.max(0,TOT-1);renderMatches();}})));
+    return;
+  }
+  row.hidden=true;
+  var id=deckIds[n],f=FN[id],first=(n===0),c=n%3;
+  var lv=S.levels[id];
+  function bt(l,label){return h("button",{type:"button",class:"dbtn","data-lv":l,"aria-pressed":String(lv===l),text:label,onclick:function(){deckAnswer(id,l);}});}
+  var card=h("div",{class:"dcard","data-c":String(c)},
+    h("div",{class:"dband"},h("span",{text:first?"Your first match":"Could also fit"}),h("span",{text:(n+1)+" of "+TOT})),
+    h("div",{class:"dbody"},
+      h("h3",{class:"dname",text:f.name}),
+      h("p",{class:"dduty",text:f.covers}),
+      first?h("p",{class:"dwhy",text:whyFor(id)}):null,
+      h("div",{class:"dbtns",role:"group","aria-label":"How do you feel about "+f.name},bt("good","Yes, that's me"),bt("curious","Maybe"),bt("no","Not for me"))));
+  box.append(prog);
+  if(first)box.append(h("div",{class:"lean-row"},h("span",{class:"lean-k",text:"You lean towards"}),h("div",{class:"lean"},strongest(S.q,3).map(function(t,i){return h("span",{class:"lean-chip","data-c":String(i),text:t});}))));
+  box.append(card,h("div",{class:"row spread"},n>0?h("button",{type:"button",class:"btn ghost small",text:"Back",onclick:function(){clearTimeout(deckTimer);S.di=n-1;renderMatches();}}):h("span"),
+    h("button",{type:"button",class:"btn ghost small",text:"Skip",onclick:function(){clearTimeout(deckTimer);S.di=n+1;saveDraft();renderMatches();}})));
+}
+
+/* every job, as tiles */
+function toggleArea(id,forceOpen,noScroll){
+  AREAS.forEach(function(x){
+    var on=(x.id===id)?(forceOpen||$("body-"+x.id).hidden):false;
+    $("body-"+x.id).hidden=!on;
+    $("area-"+x.id).querySelector(".area-btn").setAttribute("aria-expanded",String(on));
+    $("area-"+x.id).querySelector(".chev").textContent=on?"\u2212":"+";
+  });
+  var el=$("area-"+id);if(!noScroll&&el&&!$("body-"+id).hidden&&el.scrollIntoView)el.scrollIntoView({block:"start"});
+}
+function buildTiles(){
+  var root=$("areas");$("areanav").hidden=true;
+  AREAS.forEach(function(a,i){
+    chipN[a.id]=h("span");
+    var cnt=h("small",{class:"cnt"});headCnt[a.id]=cnt;
+    var grid=h("div",{class:"tiles",id:"body-"+a.id,hidden:true});
+    FNS.filter(function(f){return f.area===a.id&&f.when!=="Later";}).forEach(function(f){grid.append(buildTile(f));});
+    var head=h("button",{type:"button",class:"area-btn","aria-expanded":"false","aria-controls":"body-"+a.id,onclick:function(){toggleArea(a.id);}},
+      h("span",{class:"area-txt"},h("b",{text:a.plain}),cnt),
+      h("span",{class:"chev","aria-hidden":"true",text:"+"}));
+    root.append(h("section",{class:"area","data-c":["1","2","3"][i%3],id:"area-"+a.id},head,grid));
+  });
+}
+function buildTile(f){
+  var b={};
+  function mk(lv,short,full){
+    var x=h("button",{type:"button",class:"tb","data-lv":lv,"aria-pressed":"false","aria-label":full+": "+f.name,text:short,onclick:function(){setLevel(f.id,lv);}});
+    b[lv]=x;return x;
+  }
+  var star=h("button",{type:"button",class:"starb","aria-pressed":"false","aria-label":"Top pick: "+f.name,text:"\u2605",onclick:function(){toggleTop(f.id);}});
+  var el=h("article",{class:"tile","data-id":f.id,"data-when":f.when,"data-top":"false","data-lv":""},
+    h("div",{class:"t-head"},h("p",{class:"t-cov",text:f.covers}),star),
+    h("p",{class:"t-name",text:"Job name: "+f.name}),
+    h("div",{class:"tbtns",role:"group","aria-label":"How you feel about "+f.name},mk("good","Good","Good at it"),mk("curious","Interested","Interested in it"),mk("no","No","Rather not")));
+  tiles[f.id]={el:el,btn:b,star:star};
+  return el;
+}
+function applyFilter(){ return; }
+function applyFilterOld(){
+  FNS.forEach(function(f){tiles[f.id].el.hidden=!(S.filter==="All"||f.when===S.filter);});
+  AREAS.forEach(function(a){
+    var any=FNS.some(function(f){return f.area===a.id&&!tiles[f.id].el.hidden;});
+    $("area-"+a.id).hidden=!any;
+  });
+}
+function renderBar(){
+  var c=counts(),t=$("barTxt");clear(t);
+  t.append(h("span",{class:"tally"},h("i",{class:"d g"}),"Good ",h("b",{text:String(c.good)})),
+    h("span",{class:"tally"},h("i",{class:"d y"}),"Interested ",h("b",{text:String(c.curious)})),
+    h("span",{class:"tally"},h("i",{class:"d r"}),"No ",h("b",{text:String(c.no)})),
+    h("span",{class:"tally"},"★ ",h("b",{text:c.top+"/3"})));
+  if(flashMsg)t.append(h("span",{class:"msg",text:flashMsg}));
+}
+
+/* review and story questions */
+function renderSummary(){
+  var g=grouped(S),root=$("summary");clear(root);
+  var byArea=AREAS.map(function(a,i){var n=FNS.filter(function(f){return f.area===a.id&&S.levels[f.id]&&S.levels[f.id]!=="no";}).length;return {a:a,i:i,n:n};})
+    .filter(function(x){return x.n>0;}).sort(function(x,y){return y.n-x.n;});
+  if(byArea.length){
+    root.append(h("div",{class:"sum-group"},h("h3",{text:"Where your picks sit"}),
+      h("p",{class:"sub",text:"You picked on the work. Here is which part of the company that work belongs to."}),
+      h("div",{class:"grp-block"},byArea.map(function(x){return h("div",{class:"grp-row","data-c":["1","2","3"][x.i%3]},h("span",{text:x.a.name}),h("span",{text:x.n+(x.n===1?" job":" jobs")}));}))));
+  }
+  function grp(title,ids,cls){
+    if(!ids.length)return;
+    root.append(h("div",{class:"sum-group"},h("h3",{text:title+" ("+ids.length+")"}),
+      ids.length?h("div",{class:"chips"},ids.map(function(i){return fnChip(cls,i);})):h("p",{class:"empty",text:"None yet."})));
+  }
+  grp("Top picks",g.top,"top");grp("Good at",g.good,"good");grp("Interested in",g.curious,"curious");
+  if(g.no.length)grp("Rather not",g.no,"no");
+}
+function buildStory(){
+  var root=$("openQs");clear(root);
+  function group(key,title,hint,list,max,noteKey,noteLabel,notePh){
+    var box=h("div",{class:"openq"},h("h4",{class:"oq-t",id:"oq-"+key,text:title}),h("p",{class:"sub",text:hint}));
+    var wrap=h("div",{class:"opts",role:"group","aria-labelledby":"oq-"+key});
+    storyBtns[key]={};
+    list.forEach(function(r){
+      var b=h("button",{type:"button",class:"optb","aria-pressed":"false",text:r[1],onclick:function(){toggleStory(key,r[0],max);}});
+      storyBtns[key][r[0]]=b;wrap.append(b);
+    });
+    box.append(wrap,h("p",{class:"status",id:"oqs-"+key,role:"status","aria-live":"polite"}));
+    if(noteKey){
+      var inp=h("input",{type:"text",id:"note-"+noteKey,maxlength:"80",placeholder:notePh});
+      inp.addEventListener("input",function(e){S.story[noteKey]=e.target.value;saveDraft();$("msg").value=shareText();});
+      box.append(h("div",{class:"field"},h("label",{for:"note-"+noteKey},noteLabel+" ",h("span",{class:"opt",text:"optional"})),inp));
+    }
+    return box;
+  }
+  root.append(
+    group("future","Where do you see yourself in this company in a few years?","Pick one.",FUTURE,1),
+    group("hidden","Which skill do you have that GCG could use in the next few months?","Pick up to 3. Think of what we need soon: events, content, partners, money, tech.",HIDDEN,3,"hiddenNote","Add detail","For example: the field, the language, the venue"),
+    h("details",{class:"more"},h("summary",{text:"A few more questions (optional)"}),
+      group("enjoy","What would you enjoy doing here?","Pick up to 3.",ENJOY,3),
+      group("explore","What do you want to explore or learn?","Pick up to 2.",EXPLORE,2,"exploreNote","Something else?","For example: podcasting")));
+}
+function toggleStory(key,id,max){
+  var st=$("oqs-"+key);
+  if(key==="future"){S.story.future=(S.story.future===id)?"":id;}
+  else{
+    var arr=S.story[key],i=arr.indexOf(id);
+    if(i>-1)arr.splice(i,1);
+    else{if(arr.length>=max){if(st)say(st,"Pick up to "+max+". Untap one first.","warn");return;}arr.push(id);}
+  }
+  if(st)say(st,"");
+  saveDraft();syncStory();$("msg").value=shareText();
+}
+function syncStory(){
+  Object.keys(storyBtns).forEach(function(key){
+    Object.keys(storyBtns[key]).forEach(function(id){
+      var on=(key==="future")?(S.story.future===id):(S.story[key].indexOf(id)>-1);
+      storyBtns[key][id].setAttribute("aria-pressed",String(on));
+    });
+  });
+  var e=$("note-exploreNote"),h2=$("note-hiddenNote");
+  if(e&&document.activeElement!==e)e.value=S.story.exploreNote;
+  if(h2&&document.activeElement!==h2)h2.value=S.story.hiddenNote;
+}
+
+function sync(){
+  FNS.forEach(function(f){
+    var c=tiles[f.id];if(!c)return;var lv=S.levels[f.id],t=S.top.indexOf(f.id)>-1;
+    ["good","curious","no"].forEach(function(k){c.btn[k].setAttribute("aria-pressed",String(lv===k));});
+    c.star.setAttribute("aria-pressed",String(t));
+    c.el.setAttribute("data-top",String(t));c.el.setAttribute("data-lv",lv||"");
+  });
+  AREAS.forEach(function(a){
+    var ids=FNS.filter(function(f){return f.area===a.id&&f.when!=="Later";}).map(function(f){return f.id;});
+    var n=ids.filter(function(i){return S.levels[i]&&S.levels[i]!=="no";}).length;
+    chipN[a.id].textContent=String(n);chipN[a.id].hidden=!n;
+    headCnt[a.id].textContent=n?n+" of "+ids.length+" chosen":"Tap to open";
+  });
+  renderBar();
+  if(S.step==="roles")renderMatches();
+  if(S.step==="review")renderSummary();
+  $("msg").value=shareText();
+  renderMine();
+}
+
+
+/* ---------- Views ---------- */
+function showView(v){
+  S.view=v;
+  ["choose","mine","team"].forEach(function(k){
+    $("view-"+k).hidden=(k!==v);
+    $("tab-"+k).setAttribute("aria-selected",String(k===v));
+  });
+  applyBar();
+  if(v==="team")renderTeam();
+  if(v==="mine")renderMine();
+  window.scrollTo(0,0);
+}
+
+function myAssignments(){
+  if(!S.roles||!S.roles.assign)return null;
+  var mine=[],names=S.roles.names||{},me=clean(S.name).toLowerCase();
+  Object.keys(S.roles.assign).forEach(function(fid){
+    var pid=S.roles.assign[fid];
+    if(!FN[fid])return;
+    if((S.uid&&pid===S.uid)||(!S.uid&&me&&names[pid]&&String(names[pid]).toLowerCase()===me))mine.push(fid);
+  });
+  return FNS.filter(function(f){return mine.indexOf(f.id)>-1;}).map(function(f){return f.id;});
+}
+function renderMine(){
+  var root=$("mineBody");if(!root)return;clear(root);
+  var mine=myAssignments(),g=grouped(S),c=counts();
+  var box=h("div",{class:"stack"});
+  if(!S.roles){
+    box.append(h("div",{class:"panel"},h("h2",{class:"sr",text:"Roles"}),
+      h("p",{text:"Roles have not been shared yet."}),
+      h("p",{class:"sub",style:"margin-top:6px",text:"Hinda reviews everyone's picks and publishes a draft. Come back to this tab after that."})));
+  }else if(!mine||!mine.length){
+    box.append(h("div",{class:"panel"},
+      h("p",{text:"No job is proposed for you yet."}),
+      h("p",{class:"sub",style:"margin-top:6px",text:S.uid||S.name?"You may not have sent your picks, or your name here may differ from the one you sent. Ask Hinda to check.":"Add your name on the Choose tab so this page can find your roles."})));
+  }else{
+    box.append(h("div",{class:"notice",text:"These are proposals. We agree on final roles together."}));
+    box.append(h("div",{class:"stack"},mine.map(function(id){
+      var f=FN[id];
+      return h("article",{class:"mine-card"},
+        h("div",{class:"fn-head"},h("span",{class:"code",text:f.id}),h("h3",{text:f.name}),h("span",{class:"tag "+f.when.toLowerCase(),text:f.when})),
+        h("p",{class:"covers",text:f.covers}));
+    })));
+  }
+  if(S.roles&&Array.isArray(S.roles.outsource)&&S.roles.outsource.length){
+    box.append(h("div",{class:"panel stack"},
+      h("h2",{style:"font-family:var(--font-display);font-weight:500;font-size:1.05rem",text:"Jobs we plan to outsource or hire for"}),
+      h("p",{class:"sub",text:"Nobody on the team has taken these yet. If one interests you, tell Hinda."}),
+      h("div",{class:"chips"},S.roles.outsource.filter(function(i){return FN[i];}).map(function(i){return fnChip("",i);}))));
+  }
+  if(answered()>=8){
+    var fits=FNS.map(function(f){return {f:f,fit:matchFor(S.q,S.story,f.id)};}).filter(function(x){return x.fit!=null;})
+      .sort(function(a,b){return b.fit-a.fit;}).slice(0,5);
+    box.append(h("div",{class:"panel stack"},
+      h("h2",{style:"font-family:var(--font-display);font-weight:500;font-size:1.05rem",text:"What your answers say"}),
+      h("p",{text:"Your strongest areas: "+strongest(S.q,3).join(", ")+"."+(S.spot.length?" You naturally find yourself "+S.spot.map(function(k){return SPOT_SHORT[k].toLowerCase();}).join(" and ")+".":"")}),
+      h("div",{class:"chips"},fits.map(function(x){return h("span",{class:"pc curious"},h("i",{text:x.f.id}),x.f.name);}))));
+  }
+  if(c.reviewed){
+    box.append(h("div",{class:"panel"},h("h2",{style:"font-family:var(--font-display);font-weight:500;font-size:1.05rem;margin-bottom:6px",text:"Your picks"}),
+      h("div",{class:"chips"},
+        g.top.map(function(i){return fnChip("top",i);}),
+        g.good.map(function(i){return fnChip("good",i);}),
+        g.curious.map(function(i){return fnChip("curious",i);}))));
+  }
+  root.append(box);
+}
+
+/* ---------- Team results (admin) ---------- */
+function scoreOf(p,id){
+  if((p.no||[]).indexOf(id)>-1)return -100;
+  if((p.top||[]).indexOf(id)>-1)return SCORE.top;
+  if((p.good||[]).indexOf(id)>-1)return SCORE.good;
+  if((p.curious||[]).indexOf(id)>-1)return SCORE.curious;
+  return 0;
+}
+function isCritical(id){return S.critical.indexOf(id)>-1;}
+// People who could own a job. Must-fill jobs also accept someone who only fits by questionnaire.
+function eligible(people,f,allowQ){
+  return people.map(function(p){
+    var s=scoreOf(p,f.id),fit=fitFor(p.q,f.id);
+    if(s<0)return null;
+    if(s===0&&!(allowQ&&fit!=null))return null;
+    return {p:p,s:s,cs:s+(fit==null?0:2*fit)};
+  }).filter(Boolean);
+}
+function suggest(people){
+  var load={},owner={},basis={};people.forEach(function(p){load[p.id]=0;});
+  function place(f,allowQ){
+    var best=null,bv=-1e9;
+    eligible(people,f,allowQ).forEach(function(x){var v=x.cs-0.8*load[x.p.id];if(v>bv){bv=v;best=x;}});
+    if(best){owner[f.id]=best.p.id;basis[f.id]=best.s>0?"picked":"questionnaire";load[best.p.id]++;}
+  }
+  FNS.filter(function(f){return isCritical(f.id);})
+    .map(function(f){return {f:f,n:eligible(people,f,true).length};})
+    .filter(function(x){return x.n>0;}).sort(function(a,b){return a.n-b.n;})
+    .forEach(function(x){place(x.f,true);});
+  FNS.filter(function(f){return f.when!=="Later"&&!isCritical(f.id);})
+    .map(function(f){return {f:f,n:eligible(people,f,false).length};})
+    .filter(function(x){return x.n>0;}).sort(function(a,b){return a.n-b.n;})
+    .forEach(function(x){place(x.f,false);});
+  return {owner:owner,basis:basis};
+}
+function finalInfo(){
+  var sug=suggest(S.people),assign={},basis={},outsource={};
+  FNS.forEach(function(f){
+    var o=S.overrides[f.id];
+    if(o==="__out"){outsource[f.id]=true;return;}
+    var v=(o!==undefined)?o:sug.owner[f.id];
+    if(v&&S.people.some(function(p){return p.id===v;})){assign[f.id]=v;basis[f.id]=(o!==undefined)?"manual":sug.basis[f.id];}
+  });
+  return {assign:assign,basis:basis,outsource:outsource};
+}
+function finalAssign(){return finalInfo().assign;}
+function pname(p){return p.name||"Unnamed";}
+function peopleByFn(id){
+  var r={top:[],good:[],curious:[],no:0};
+  S.people.forEach(function(p){
+    if((p.top||[]).indexOf(id)>-1)r.top.push(p);
+    else if((p.good||[]).indexOf(id)>-1)r.good.push(p);
+    else if((p.curious||[]).indexOf(id)>-1)r.curious.push(p);
+    else if((p.no||[]).indexOf(id)>-1)r.no++;
+  });
+  return r;
+}
+function bestFits(id,limit){
+  return S.people.map(function(p){return {p:p,fit:fitFor(p.q,id),no:(p.no||[]).indexOf(id)>-1};})
+    .filter(function(x){return x.fit!=null&&!x.no;}).sort(function(a,b){return b.fit-a.fit;}).slice(0,limit);
+}
+function renderTeam(){
+  if(!S.isAdmin)return;
+  renderStats();renderTalents();renderCov();renderPeople();renderRoles();
+}
+function renderStats(){
+  var root=$("t-stats");clear(root);
+  var info=finalInfo(),chosenFns=0,nowNone=0,mustOpen=0;
+  FNS.forEach(function(f){
+    var r=peopleByFn(f.id),n=r.top.length+r.good.length+r.curious.length;
+    if(n)chosenFns++;
+    if(!n&&f.when==="Now")nowNone++;
+    if(isCritical(f.id)&&!info.assign[f.id]&&!info.outsource[f.id])mustOpen++;
+  });
+  function stat(v,l,bad){return h("div",{class:"stat"+(bad?" bad":"")},h("div",{class:"v",text:String(v)}),h("div",{class:"l",text:l}));}
+  root.append(stat(S.people.length,"people have sent picks"),
+    stat(chosenFns+" of "+FNS.length,"jobs someone chose"),
+    stat(nowNone,"Now jobs nobody chose",nowNone>0),
+    stat(mustOpen,"must-fill jobs still open",mustOpen>0),
+    stat(Object.keys(info.assign).length,"jobs with a proposed owner"),
+    stat(Object.keys(info.outsource).length,"jobs marked to outsource or recruit"));
+}
+function renderCov(){
+  var root=$("t-cov");clear(root);
+  var only=$("t-unclaimed").checked;
+  if(!S.people.length){
+    root.append(h("div",{class:"panel",style:"margin-top:12px"},h("p",{text:"No picks yet."}),
+      h("p",{class:"sub",style:"margin-top:6px",text:"Share this page with the team as Contributors so they can submit. For anyone who cannot, paste their message at the bottom of this tab."})));
+    return;
+  }
+  AREAS.forEach(function(a){
+    var rows=FNS.filter(function(f){return f.area===a.id;}).map(function(f){
+      var r=peopleByFn(f.id),n=r.top.length+r.good.length+r.curious.length;
+      if(only&&n)return null;
+      var fits=n?[]:bestFits(f.id,2);
+      return h("div",{class:"cov-row"},
+        h("span",{class:"code",text:f.id}),
+        h("span",{class:"nm"},f.name+" ",h("span",{class:"tag "+f.when.toLowerCase(),text:f.when}),isCritical(f.id)?h("span",{class:"must",text:"Must fill"}):null),
+        h("span",{class:"ct",text:n+" chose"+(r.no?" · "+r.no+" rather not":"")}),
+        n?h("div",{class:"chips"},
+            r.top.map(function(p){return pc("top","★",pname(p));}),
+            r.good.map(function(p){return pc("good","",pname(p));}),
+            r.curious.map(function(p){return pc("curious","",pname(p));})):
+          h("span",{class:"none",text:"Nobody chose this job."+(fits.length?" Best fit from the questionnaire: "+fits.map(function(x){return pname(x.p)+" ("+fitWord(x.fit).toLowerCase()+")";}).join(", ")+".":"")}));
+    }).filter(Boolean);
+    if(rows.length)root.append(h("div",{class:"cov-area"},h("h3",{text:a.id+". "+a.name}),rows));
+  });
+  if(!root.firstChild)root.append(h("p",{class:"empty",style:"margin-top:12px",text:"Every job has at least one person."}));
+}
+function proposedFor(pid,assign){return FNS.filter(function(f){return assign[f.id]===pid;}).map(function(f){return f.id;});}
+function personMessage(p,assign){
+  var ids=proposedFor(p.id,assign);
+  var lines=["Hi "+pname(p)+", here is what we are proposing for you at Gold Coast Games. Nothing is final until we agree together."];
+  if(ids.length)ids.forEach(function(i){lines.push("- "+i+" "+FN[i].name+": "+FN[i].covers);});
+  else lines.push("- No job proposed yet.");
+  return lines.join("\n");
+}
+function renderPeople(){
+  var root=$("t-people");clear(root);
+  if(!S.people.length){root.append(h("p",{class:"empty",text:"Nobody yet."}));return;}
+  var assign=finalAssign();
+  S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).forEach(function(p){
+    var prop=proposedFor(p.id,assign),strong=strongest(p.q,3),sLines=storyLines(p.story);
+    var sl=shortlistFor(p.q,p.story),shown=sl.first?[sl.first].concat(sl.others):[];
+    var hasStory=sLines.length>0;
+    var delBtn=h("button",{type:"button",class:"btn ghost small","data-armed":"0",text:"Remove"});
+    delBtn.addEventListener("click",function(){
+      if(delBtn.getAttribute("data-armed")!=="1"){
+        delBtn.setAttribute("data-armed","1");delBtn.textContent="Tap again to remove";
+        setTimeout(function(){delBtn.setAttribute("data-armed","0");delBtn.textContent="Remove";},4000);return;
+      }
+      S.db.doc("responses/"+p.id).delete().catch(function(){say($("t-exportStatus"),"Could not remove that entry.","warn");});
+    });
+    root.append(h("div",{class:"person"},
+      h("h3",{text:pname(p)}),
+      h("p",{class:"meta",text:[p.hours?p.hours+" h a week":"Hours not given",(p.source==="pasted"?"added by paste":"sent here"),prop.length+" proposed"].join(" · ")}),
+      h("p",{class:"lab",text:"Top picks"}),
+      (p.top&&p.top.length)?h("div",{class:"chips"},p.top.map(function(i){return fnChip("top",i);})):h("p",{class:"empty",text:"None starred."}),
+      h("p",{class:"lab",text:"Good at ("+(p.good||[]).length+") and curious ("+(p.curious||[]).length+")"}),
+      h("div",{class:"chips"},(p.good||[]).map(function(i){return fnChip("good",i);}),(p.curious||[]).map(function(i){return fnChip("curious",i);})),
+      (p.no&&p.no.length)?h("p",{class:"meta",text:"Rather not: "+p.no.join(", ")}):null,
+      shown.length?h("p",{class:"lab",text:"Suggested to them, first match first"}):null,
+      shown.length?h("div",{class:"chips"},shown.map(function(x,i){return pc(levelIn(p,x.f.id),x.f.id,(i===0?"1st: ":"")+x.f.name);})):null,
+      shown.length?h("p",{class:"meta",text:"Coloured means they chose it. Grey means they did not."}):null,
+      h("p",{class:"lab",text:"From the questionnaire"}),
+      h("p",{class:"meta",text:strong.length?"Strongest: "+strong.join(", ")+".":"Questions not answered."}),
+      (p.spot&&p.spot.length)?h("p",{class:"meta",text:"Naturally fits: "+p.spot.map(function(k){return SPOT_SHORT[k]||k;}).join(", ")+"."}):null,
+      hasStory?h("details",null,h("summary",{text:"Their answers to the extra questions"}),
+        sLines.map(function(l){return h("p",{class:"qa"},h("b",{text:l[0]+": "}),l[1]);})):null,
+      p.extra?h("p",{class:"extra"},h("b",{text:"Also good at: "}),p.extra):null,
+      p.cv?h("p",{class:"extra"},h("b",{text:"CV or background: "}),p.cv):null,
+      h("div",{class:"row"},
+        h("button",{type:"button",class:"btn ghost small",text:"Copy their proposed list",onclick:function(){
+          copyText(personMessage(p,finalAssign()),$("t-copyta"),$("t-pubStatus"),"Copied. Paste it to "+pname(p)+".");
+        }}),
+        h("button",{type:"button",class:"btn ghost small",text:"Copy onboarding notes",onclick:function(){
+          copyText(onboardingText(p,finalAssign()),$("t-copyta"),$("t-pubStatus"),"Copied onboarding notes for "+pname(p)+".");
+        }}),delBtn)));
+  });
+}
+function levelIn(p,id){
+  if((p.top||[]).indexOf(id)>-1)return "top";
+  if((p.good||[]).indexOf(id)>-1)return "good";
+  if((p.curious||[]).indexOf(id)>-1)return "curious";
+  if((p.no||[]).indexOf(id)>-1)return "no";
+  return "";
+}
+function onboardingText(p,assign){
+  var ids=proposedFor(p.id,assign),strong=strongest(p.q,3),sl=shortlistFor(p.q,p.story);
+  var L=["Onboarding notes: "+pname(p)];
+  L.push("Proposed roles: "+(ids.length?listText(ids):"none yet"));
+  if(sl.first)L.push("First questionnaire match: "+sl.first.f.id+" "+sl.first.f.name);
+  L.push("Top picks: "+((p.top&&p.top.length)?listText(p.top):"none"));
+  if(strong.length)L.push("Strongest areas: "+strong.join(", "));
+  if(p.spot&&p.spot.length)L.push("Naturally fits: "+p.spot.map(function(k){return SPOT_SHORT[k]||k;}).join(", "));
+  if(p.hours)L.push("Hours a week: "+p.hours);
+  storyLines(p.story).forEach(function(l){L.push(l[0]+": "+l[1]);});
+  if(p.extra)L.push("Also good at: "+p.extra);
+  if(p.cv)L.push("CV or background: "+p.cv);
+  return L.join("\n");
+}
+function renderTalents(){
+  var root=$("t-talents");clear(root);
+  var rows=S.people.filter(function(p){var m=storyMap(p.story);return m.hidden||m.explore||m.future||m.enjoy||p.extra||p.cv;});
+  if(!rows.length){root.append(h("p",{class:"empty",style:"margin-top:8px",text:"Answers appear here once people send them."}));return;}
+  rows.sort(function(a,b){return pname(a).localeCompare(pname(b));});
+  function line(label,val){return val?h("p",null,h("b",{text:label+": "}),val):null;}
+  root.append(h("div",{class:"talents"},rows.map(function(p){
+    var m=storyMap(p.story);
+    return h("div",{class:"talent"},h("h3",{text:pname(p)}),
+      line("Skills GCG could use soon",m.hidden),line("Also good at",p.extra),line("CV or background",p.cv),line("Wants to explore",m.explore),
+      line("Would enjoy",m.enjoy),line("In a few years",m.future));
+  })));
+}
+function renderRoles(){
+  var root=$("t-roles");clear(root);
+  if(!S.people.length){root.append(h("p",{class:"empty",style:"margin-top:8px",text:"Draft roles appear once people have sent picks."}));return;}
+  var info=finalInfo();
+  FNS.forEach(function(f){
+    var sel=h("select",{id:"own-"+f.id,"aria-label":"Owner for "+f.name},
+      h("option",{value:"",text:f.when==="Later"?"Not yet":"No owner"}),
+      h("option",{value:"__out",text:"Outsource or recruit"}),
+      S.people.map(function(p){
+        var s=scoreOf(p,f.id),fit=fitFor(p.q,f.id);
+        var tag=s===SCORE.top?" ★":s===SCORE.good?" (good)":s===SCORE.curious?" (curious)":s<0?" (rather not)":fit!=null?" (fit "+Math.round(fit*100)+"%)":"";
+        return h("option",{value:p.id,text:pname(p)+tag});
+      }));
+    sel.value=info.outsource[f.id]?"__out":(info.assign[f.id]||"");
+    sel.addEventListener("change",function(){S.overrides[f.id]=sel.value;renderTeam();});
+    var crit=isCritical(f.id),has=!!info.assign[f.id],b=info.basis[f.id],note="";
+    if(crit&&!has&&!info.outsource[f.id])note="Must fill, and nobody fits yet. Ask the team, or choose Outsource or recruit.";
+    else if(b==="questionnaire")note="Nobody chose this job. Suggested from questionnaire answers. Ask them before you publish.";
+    var cb=h("input",{type:"checkbox",id:"must-"+f.id});
+    cb.checked=crit;
+    cb.addEventListener("change",function(){toggleCritical(f.id,cb.checked);});
+    root.append(h("div",{class:"rolerow"},h("span",{class:"code",text:f.id}),
+      h("span",{class:"nm"},f.name+" ",h("span",{class:"tag "+f.when.toLowerCase(),text:f.when})),sel,
+      h("div",{class:"rolemeta"},h("label",{for:"must-"+f.id},cb,"Must fill"),note?h("span",{class:"rolenote",text:note}):null)));
+  });
+}
+var critTimer=null;
+function toggleCritical(id,on){
+  var i=S.critical.indexOf(id);
+  if(on&&i<0)S.critical.push(id);else if(!on&&i>-1)S.critical.splice(i,1);
+  renderTeam();
+  clearTimeout(critTimer);
+  critTimer=setTimeout(function(){
+    if(S.db)S.db.doc("roles/settings").set({critical:S.critical.slice(),updated:new Date().toISOString()}).catch(function(){say($("t-pubStatus"),"Could not save the must-fill list.","warn");});
+  },500);
+}
+function csv(rows){
+  return rows.map(function(r){return r.map(function(c){
+    var s=String(c==null?"":c);if(/^[=+\-@]/.test(s))s="'"+s;
+    return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  }).join(",");}).join("\r\n");
+}
+function saveFile(name,text){
+  var st=$("t-exportStatus");
+  if(!S.dl){say(st,"Saving files is not available in this view.","warn");return;}
+  S.dl.save({filename:name,data:text}).then(function(){say(st,"Saved "+name+".","ok");},function(e){
+    say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the file here.","warn");
+  });
+}
+function exportPicks(){
+  var rows=[["Name","Hours a week","Top picks","Good at","Interested in","Rather not","Also good at","Natural spot","Strongest areas","In a few years","Would enjoy","Wants to explore","Skills GCG could use soon","CV or background","Source"]];
+  S.people.forEach(function(p){var st=storyMap(p.story);rows.push([p.name,p.hours||"",listText(p.top||[]),listText(p.good||[]),listText(p.curious||[]),listText(p.no||[]),p.extra||"",
+    (p.spot||[]).map(function(k){return SPOT_SHORT[k]||k;}).join("; "),strongest(p.q,3).join("; "),st.future||"",st.enjoy||"",st.explore||"",st.hidden||"",p.cv||"",p.source||""]);});
+  saveFile("gcg-role-picks.csv",csv(rows));
+}
+function exportRoles(){
+  var info=finalInfo(),assign=info.assign,by={};S.people.forEach(function(p){by[p.id]=pname(p);});
+  var rows=[["Code","Job","When","Area","Must fill","Proposed owner","Basis"]];
+  FNS.forEach(function(f){rows.push([f.id,f.name,f.when,AREA[f.area].name,isCritical(f.id)?"Yes":"",info.outsource[f.id]?"Outsource or recruit":(by[assign[f.id]]||""),info.outsource[f.id]?"outsource":(info.basis[f.id]||"")]);});
+  saveFile("gcg-draft-roles.csv",csv(rows));
+}
+function publishRoles(){
+  var st=$("t-pubStatus");
+  if(!S.db){say(st,"Publishing is not available in this view.","warn");return;}
+  var inf=finalInfo(),assign=inf.assign,names={};
+  Object.keys(assign).forEach(function(k){var p=S.people.filter(function(x){return x.id===assign[k];})[0];if(p)names[p.id]=pname(p);});
+  S.db.doc("roles/final").set({assign:assign,names:names,outsource:Object.keys(inf.outsource),publishedAt:new Date().toISOString()}).then(function(){
+    say(st,"Published. Each person now sees their own list under My results.","ok");
+  },function(){say(st,"Could not publish. Check that you have edit access.","warn");});
+}
+function addPasted(){
+  var st=$("pasteStatus"),text=$("paste").value;
+  if(!S.db){say(st,"Adding is not available in this view.","warn");return;}
+  var lines=text.split(/\r?\n/),parsed=[];
+  lines.forEach(function(l){var o=parseCode(l);if(o)parsed.push(o);});
+  if(!parsed.length){say(st,"No line starting with Code was found. Ask the person to use Copy my results and send the whole message.","warn");return;}
+  var pending=parsed.length,ok=0;
+  say(st,"Adding…");
+  parsed.forEach(function(o,i){
+    var id="manual-"+Date.now().toString(36)+"-"+i+Math.floor(Math.random()*1296).toString(36);
+    S.db.doc("responses/"+id).set(o).then(function(){ok++;},function(){}).then(function(){
+      if(--pending===0){
+        say(st,ok+" added"+(ok<parsed.length?", "+(parsed.length-ok)+" could not be saved":"")+".",ok?"ok":"warn");
+        if(ok)$("paste").value="";
+      }
+    });
+  });
+}
+
+/* ---------- Send ---------- */
+function submit(){
+  var st=$("submitStatus"),p=payload(),c=counts();
+  if(!p.name){say(st,"Add your name at the top first.","warn");$("name").focus();return;}
+  if(!c.chosen&&answered()<NQ){say(st,"Answer the questions or choose at least one job first.","warn");return;}
+  if(!S.db||!S.uid){say(st,"Sending directly is not available for your account here. Use Copy for WhatsApp and send the message to the group.","warn");return;}
+  say(st,"Sending…");
+  S.db.doc("responses/"+S.uid).set(p).then(function(){
+    S.submittedAt=p.updated;
+    say(st,"Sent. Only Hinda sees it. She reads everyone's picks next and shares proposed roles under My results. You can change your picks and send again at any time.","ok");
+  },function(e){
+    say(st,"Your account cannot save here. Ask Hinda for access, or use Copy my results and send it to her privately.","warn");
+  });
+}
+
+/* ---------- Capabilities ---------- */
+function setNet(text){$("net").textContent=text;}
+function initCaps(){
+  var cl=window.claude;
+  if(!cl||typeof cl.use!=="function"){
+    setNet("Sending directly is not available here. Finish your picks, then use Copy my results and send the message to Hinda privately, not in the group.");
+    $("submit").hidden=true;return;
+  }
+  Promise.all([cl.use("db").catch(function(){return null;}),cl.use("user").catch(function(){return null;}),cl.use("downloads").catch(function(){return null;})]).then(function(r){
+    S.db=r[0];var user=r[1];S.dl=r[2];
+    if(!user||!S.db){
+      setNet("Sending directly is not available for your account here. Finish your picks, then use Copy my results and send the message to Hinda privately, not in the group.");
+      $("submit").hidden=true;return;
+    }
+    return Promise.all([user.id(),user.canEdit(),user.isOwner(),user.can("data.write")]).then(function(v){
+      S.uid=v[0];S.isAdmin=!!(v[1]||v[2]);S.canWrite=v[3];
+      if(!S.uid||S.canWrite===false){
+        setNet("You can view this page but not send picks from your account. Finish your picks, then use Copy my results and send the message to Hinda privately, not in the group.");
+        $("submit").hidden=true;
+      }else{
+        setNet("Your picks go straight to Hinda when you press Submit. Only Hinda sees them, not the rest of the team. Copy my results is there as a backup.");
+      }
+      if(S.isAdmin){$("tab-team").hidden=false;}
+      var work=[];
+      if(S.uid&&S.canWrite!==false){
+        work.push(S.db.doc("responses/"+S.uid).get().then(function(snap){
+          if(!snap.exists)return;
+          var d=snap.data(),draft=loadDraft();
+          S.submittedAt=d.updated||null;
+          var draftNewer=draft&&draft.savedAt&&d.updated&&draft.savedAt>d.updated;
+          if(!draftNewer){hydrateFromResponse(d);sync();syncStory();renderStep();}
+        }).catch(function(){}));
+      }
+      S.db.doc("roles/final").onSnapshot(function(snap){
+        S.roles=snap.exists?snap.data():null;
+        if(S.isAdmin&&!S.hydratedRoles&&S.roles){
+          S.hydratedRoles=true;var a=S.roles.assign||{},out=Array.isArray(S.roles.outsource)?S.roles.outsource:[];
+          FNS.forEach(function(f){S.overrides[f.id]=a[f.id]||(out.indexOf(f.id)>-1?"__out":"");});
+        }
+        renderMine();if(S.view==="team"){renderRoles();renderPeople();renderStats();}
+      },function(){});
+      S.db.doc("roles/settings").onSnapshot(function(snap){
+        if(snap.exists&&Array.isArray(snap.data().critical)){S.critical=sanitizeIds(snap.data().critical);}
+        if(S.step==="roles")renderMatches();if(S.view==="team")renderTeam();
+      },function(){});
+      if(S.isAdmin){
+        S.db.collection("responses").onSnapshot(function(snap){
+          S.people=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;return o;});
+          if(S.view==="team")renderTeam();
+        },function(){});
+      }
+      return Promise.all(work);
+    });
+  }).catch(function(){setNet("Sending directly is not available here. Use Copy for WhatsApp and send the message to the group.");$("submit").hidden=true;});
+}
+
+
+/* ---------- Your profile: a short description of the person, from their own answers ---------- */
+var ARCH={
+ welcome:["Welcomer","make people feel at home the moment they arrive"],
+ host:["Room Lifter","bring energy and hold a room"],
+ organise:["Order Keeper","turn loose plans into something that runs"],
+ fix:["Problem Solver","go towards a problem when something breaks"],
+ numbers:["Number Keeper","like things to add up and notice when they do not"],
+ write:["Word Shaper","put things clearly so people act on them"],
+ visual:["Picture Maker","see how things should look and feel"],
+ sell:["Deal Maker","can make the case and land the yes"],
+ research:["Fact Finder","like to be sure before you say it"],
+ connect:["Connector","remember people and keep the thread going"],
+ lead:["Direction Setter","decide, and people follow"],
+ teach:["Guide","help other people get better"]
+};
+function profileFor(){
+  if(answered()<NQ)return null;
+  var ts=traitScores(S.q),ks=Object.keys(ts).sort(function(a,b){return ts[b]-ts[a];});
+  var top=ks.slice(0,3),low=ks[ks.length-1];
+  var a1=ARCH[top[0]],a2=ARCH[top[1]];
+  var out={title:"The "+a1[0]+" and "+a2[0],chips:top.map(function(t){return ARCH[t][0];}),lines:[]};
+  out.lines.push("You "+a1[1]+", and you "+a2[1]+". "+(ARCH[top[2]]?"There is some "+ARCH[top[2]][0]+" in you too.":""));
+  var m2=Number(S.q[NQ+1])||0,likes=LIKE.filter(function(e,k){return m2&(1<<k);}).map(function(e){return e[1].charAt(0).toLowerCase()+e[1].slice(1);});
+  if(likes.length)out.lines.push(likes.length>3?"You are drawn to many kinds of work, including "+likes.slice(0,3).join(", ")+" and "+(likes.length-3)+" more.":"You lose track of time when you are "+likes.join(" or ")+".");
+  if(S.spot.length)out.lines.push(S.spot.length>3?"You are comfortable in many places in a team, from "+SPOT_SHORT[S.spot[0]].toLowerCase()+" to "+SPOT_SHORT[S.spot[S.spot.length-1]].toLowerCase()+".":"You naturally find yourself "+S.spot.map(function(k){return SPOT_SHORT[k].toLowerCase();}).join(" and ")+".");
+  if(low&&ts[low]<0.4)out.lines.push("You would rather not spend your days on "+TRAIT_LABEL[low].toLowerCase()+", and that is useful to know.");
+  var mask=Number(S.q[NQ])||0,done=EXP.filter(function(e,k){return mask&(1<<k);}).map(function(e){return e[1].charAt(0).toLowerCase()+e[1].slice(1);});
+  if(done.length)out.lines.push("You have already: "+done.slice(0,3).join("; ")+(done.length>3?" and "+(done.length-3)+" more":"")+".");
+  var st=sanitizeStory(S.story),fut=st.future?OPT_FUTURE[st.future].label:"",hid=labelsOf(OPT_HIDDEN,st.hidden);
+  if(fut)out.lines.push("In a few years you see yourself: "+fut.charAt(0).toLowerCase()+fut.slice(1)+".");
+  if(hid.length)out.lines.push("What you bring that GCG can use soon: "+hid.map(function(x){return x.charAt(0).toLowerCase()+x.slice(1);}).join("; ")+".");
+  var g=grouped(S),yes=g.top.concat(g.good);
+  if(yes.length)out.lines.push("You said yes to: "+yes.slice(0,4).map(function(i){return FN[i].name;}).join(", ")+".");
+  return out;
+}
+function renderProfile(){
+  var box=$("profile");clear(box);
+  var p=profileFor();
+  if(!p){box.append(h("p",{class:"sub",text:"Answer the questions and your profile shows up here."}));return;}
+  box.append(h("div",{class:"pcard"},
+    h("span",{class:"kick",text:"This is you, so far"}),
+    h("h3",{class:"ptitle",text:p.title}),
+    h("div",{class:"lean"},p.chips.map(function(t,i){return h("span",{class:"lean-chip","data-c":String(i),text:t});})),
+    p.lines.map(function(l){return h("p",{class:"pline",text:l});}),
+    h("p",{class:"pnote",text:"This comes from your own answers. It is a starting point, and you can change it."})));
+}
+
+
+/* ---------- PDF summary: a small hand-built PDF, no library, works offline ---------- */
+function pdfAscii(t){
+  t=String(t==null?"":t).replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/[\u2013\u2014]/g,"-").replace(/\u2022/g,"-").replace(/\u2026/g,"...").replace(/\u2605/g,"*").replace(/\s+/g," ");
+  var out="";
+  for(var i=0;i<t.length;i++){
+    var c=t.charCodeAt(i);
+    if(c===40||c===41||c===92)out+="\\"+t.charAt(i);
+    else if(c>=32&&c<127)out+=t.charAt(i);
+    else if(c>=160&&c<256)out+="\\"+("00"+c.toString(8)).slice(-3);
+    else out+="?";
+  }
+  return out;
+}
+function pdfWrap(text,size,maxW){
+  var words=String(text==null?"":text).replace(/\s+/g," ").trim().split(" "),lines=[],cur="",per=Math.max(10,Math.floor(maxW/(size*0.53)));
+  words.forEach(function(w){
+    while(w.length>per){if(cur){lines.push(cur);cur="";}lines.push(w.slice(0,per));w=w.slice(per);}
+    if(!cur)cur=w;else if((cur+" "+w).length<=per)cur+=" "+w;else{lines.push(cur);cur=w;}
+  });
+  if(cur)lines.push(cur);
+  return lines.length?lines:[""];
+}
+function buildPdf(blocks){
+  var W=595,H=842,M=48,pages=[],cur=[],y=H-M-14;
+  function newPage(){pages.push(cur);cur=[];y=H-M;}
+  function need(h){if(y-h<M){newPage();}}
+  function text(font,size,x,yy,str,rgb){cur.push("BT /"+font+" "+size+" Tf "+(rgb||"0.05 0.05 0.05")+" rg "+x+" "+yy+" Td ("+pdfAscii(str)+") Tj ET");}
+  // page 1 header stripes
+  var seg=[["0.784 0.063 0.180"],["0.961 0.706 0"],["0 0.475 0.231"],["0.05 0.05 0.05"]],sw=W/4;
+  seg.forEach(function(c,i){cur.push(c[0]+" rg "+(i*sw)+" "+(H-14)+" "+sw+" 14 re f");});
+  y=H-M-14;
+  blocks.forEach(function(b){
+    if(b.t==="title"){pdfWrap(b.text,20,W-2*M).forEach(function(l){need(26);text("F2",20,M,y-20,l);y-=26;});y-=2;}
+    else if(b.t==="sub"){pdfWrap(b.text,10,W-2*M).forEach(function(l){need(14);text("F1",10,M,y-10,l,"0.35 0.35 0.33");y-=14;});y-=6;}
+    else if(b.t==="h"){need(34);y-=10;cur.push("0.961 0.706 0 rg "+M+" "+(y-4)+" 26 3 re f");text("F2",11,M,y-18,String(b.text).toUpperCase(),"0.05 0.05 0.05");y-=24;}
+    else if(b.t==="li"){pdfWrap(b.text,11,W-2*M-14).forEach(function(l,i){need(15);if(i===0)text("F2",11,M,y-11,"-");text("F1",11,M+14,y-11,l);y-=15;});y-=2;}
+    else{pdfWrap(b.text,11,W-2*M).forEach(function(l){need(15);text("F1",11,M,y-11,l);y-=15;});y-=4;}
+  });
+  pages.push(cur);
+  var objs=[],n=0;
+  function add(str){objs.push(str);return ++n;}
+  add("<< /Type /Catalog /Pages 2 0 R >>");
+  var kids=[];pages.forEach(function(_,i){kids.push((5+i*2+1)+" 0 R");});
+  add("<< /Type /Pages /Kids ["+kids.join(" ")+"] /Count "+pages.length+" >>");
+  add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  pages.forEach(function(ops,i){
+    var stream=ops.join("\n");
+    add("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");
+    add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+W+" "+H+"] /Contents "+(5+i*2)+" 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> >>");
+  });
+  var out="%PDF-1.4\n",offs=[];
+  objs.forEach(function(o,i){offs.push(out.length);out+=(i+1)+" 0 obj\n"+o+"\nendobj\n";});
+  var xr=out.length;
+  out+="xref\n0 "+(objs.length+1)+"\n0000000000 65535 f \n";
+  offs.forEach(function(o){out+=("0000000000"+o).slice(-10)+" 00000 n \n";});
+  out+="trailer\n<< /Size "+(objs.length+1)+" /Root 1 0 R >>\nstartxref\n"+xr+"\n%%EOF";
+  var bytes=new Uint8Array(out.length);for(var i=0;i<out.length;i++)bytes[i]=out.charCodeAt(i)&255;
+  return bytes;
+}
+function summaryBlocks(){
+  var p=payload(),pr=profileFor(),g=grouped(S),B=[];
+  B.push({t:"title",text:(p.name||"My")+" - Gold Coast Games summary"});
+  B.push({t:"sub",text:"Made on "+new Date().toISOString().slice(0,10)+". Based on my own answers. A starting point, not a verdict."});
+  if(pr){
+    B.push({t:"h",text:"This is me, so far"});
+    B.push({t:"p",text:pr.title});
+    pr.lines.forEach(function(l){B.push({t:"p",text:l});});
+  }
+  function grp(title,ids){if(!ids.length)return;B.push({t:"h",text:title});ids.forEach(function(i){B.push({t:"li",text:FN[i].name+": "+FN[i].covers});});}
+  grp("Top picks",g.top);grp("Good at",g.good);grp("Interested in",g.curious);grp("Rather not",g.no);
+  var sl=storyLines(S.story);
+  if(sl.length){B.push({t:"h",text:"In my words"});sl.forEach(function(l){B.push({t:"li",text:l[0]+": "+l[1]});});}
+  if(p.extra){B.push({t:"h",text:"Also good at"});B.push({t:"p",text:p.extra});}
+  if(p.cv){B.push({t:"h",text:"CV or background"});B.push({t:"p",text:p.cv});}
+  return B;
+}
+function downloadPdf(){
+  var st=$("submitStatus"),p=payload();
+  if(!p.name){say(st,"Add your name at the start first.","warn");return;}
+  var name="GCG-summary-"+(p.name.replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"me")+".pdf",bytes;
+  try{bytes=buildPdf(summaryBlocks());}catch(e){say(st,"Could not make the PDF here.","warn");return;}
+  if(S.dl){
+    S.dl.save({filename:name,data:bytes}).then(function(){say(st,"Saved "+name+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the PDF here.","warn");});
+    return;
+  }
+  try{var bl=new Blob([bytes],{type:"application/pdf"});var a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved "+name+" to your downloads.","ok");}
+  catch(e){say(st,"Could not save the PDF here.","warn");}
+}
+
+/* ---------- Boot ---------- */
+function boot(){
+  $("nqCount").textContent=String(WARM+NQ+1);
+  buildTiles();buildStory();
+  var d=loadDraft();
+  if(d){
+    S.name=d.name||"";S.hours=d.hours||"";S.extra=d.extra||"";S.cv=d.cv||"";
+    S.levels={};Object.keys(d.levels||{}).forEach(function(k){if(FN[k]&&LV_LABEL[d.levels[k]])S.levels[k]=d.levels[k];});
+    S.top=sanitizeIds(d.top).filter(function(i){return S.levels[i]==="good";}).slice(0,3);
+    S.q=normQ(d.q);
+    S.spot=(Array.isArray(d.spot)?d.spot:[]).filter(function(k){return SPOT_LABEL[k];});
+    S.story=sanitizeStory(d.story);
+    S.step=d.step;S.maxStep=d.maxStep;S.qi=d.qi;S.di=Number(d.di)||0;
+  }
+  S.qi=Math.max(0,Math.min(Number(S.qi)||0,WARM+NQ));
+  if(STEPS.indexOf(S.step)<0)S.step="start";
+  S.maxStep=Math.max(Number(S.maxStep)||0,stepIndex(S.step));
+  $("name").value=S.name;$("hours").value=S.hours;$("extra").value=S.extra;
+  $("name").addEventListener("input",function(e){S.name=e.target.value;saveDraft();$("msg").value=shareText();renderMine();});
+  $("hours").addEventListener("input",function(e){S.hours=e.target.value;saveDraft();$("msg").value=shareText();});
+  $("extra").addEventListener("input",function(e){S.extra=e.target.value;saveDraft();$("msg").value=shareText();});
+  $("cv").addEventListener("input",function(e){S.cv=e.target.value;saveDraft();$("msg").value=shareText();});
+  document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){showView(t.getAttribute("data-view"));});});
+  document.querySelectorAll("#whenFilter .pill").forEach(function(b){b.addEventListener("click",function(){
+    S.filter=b.getAttribute("data-when");
+    document.querySelectorAll("#whenFilter .pill").forEach(function(x){x.setAttribute("aria-pressed",String(x===b));});
+    applyFilter();
+  });});
+  $("startBtn").addEventListener("click",function(){
+    var st=$("startStatus");
+    if(!clean(S.name)){say(st,"Add your name first.","warn");$("name").focus();return;}
+    say(st,"");goStep("quiz");
+  });
+  $("browseBtn").addEventListener("click",function(){goStep("all");});
+  $("skipBtn").addEventListener("click",function(){goStep("review");});
+  $("toReview").addEventListener("click",function(){goStep("review");});
+  $("barBtn").addEventListener("click",function(){goStep("review");});
+  $("submit").addEventListener("click",submit);
+  $("pdfBtn").addEventListener("click",downloadPdf);
+  $("shareBtn").addEventListener("click",function(){
+    var st=$("submitStatus"),p=payload();
+    if(!p.name){say(st,"Add your name at the start first.","warn");return;}
+    if(!counts().chosen&&answered()<NQ){say(st,"Answer the questions or choose at least one job first.","warn");return;}
+    var text=shareText();$("msg").value=text;
+    if(navigator.share){navigator.share({title:"GCG role picks",text:text}).then(function(){say(st,"Shared. Send it to Hinda only, not the group.","ok");},function(e){if(e&&e.name==="AbortError")return;copyText(text,$("msg"),st,"Copied. Send it to Hinda privately, by direct message or email.");});}
+    else copyText(text,$("msg"),st,"Copied. Send it to Hinda privately, by direct message or email.");
+  });
+  $("saveMine").addEventListener("click",function(){
+    var st=$("submitStatus"),p=payload();
+    if(!p.name){say(st,"Add your name at the start first.","warn");return;}
+    if(!counts().chosen&&answered()<NQ){say(st,"Answer the questions or choose at least one job first.","warn");return;}
+    var txt=shareText().split("\n").filter(function(l){return l.indexOf("Code: GCG1")!==0;}).join("\n");
+    if(!S.dl){
+      try{var bl=new Blob([txt],{type:"text/plain"});var a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download="my-gcg-results.txt";document.body.appendChild(a);a.click();a.remove();say(st,"Saved to your downloads.","ok");return;}catch(e){}
+      copyText(txt,$("msg"),st,"Copied your results. Paste them into an email to yourself.");return;
+    }
+    S.dl.save({filename:"my-gcg-results.txt",data:txt}).then(function(){say(st,"Saved.","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save here. Use Copy my results instead.","warn");});
+  });
+  $("copy").addEventListener("click",function(){
+    var p=payload(),st=$("submitStatus");
+    if(!p.name){say(st,"Add your name at the start first.","warn");return;}
+    if(!counts().chosen&&answered()<NQ){say(st,"Answer the questions or choose at least one job first.","warn");return;}
+    $("msg").value=shareText();
+    copyText($("msg").value,$("msg"),st,"Copied. Send it to Hinda privately, by direct message or email. Not in the group.");
+    var det=$("msg").closest("details");if(det&&st.getAttribute("data-kind")==="warn")det.open=true;
+  });
+  $("t-csv").addEventListener("click",exportPicks);
+  $("t-rolescsv").addEventListener("click",exportRoles);
+  $("t-unclaimed").addEventListener("change",renderCov);
+  $("t-publish").addEventListener("click",publishRoles);
+  $("t-reset").addEventListener("click",function(){S.overrides={};renderTeam();say($("t-pubStatus"),"Reset to suggestions. Publish to share them.");});
+  $("pasteBtn").addEventListener("click",addPasted);
+  sync();applyFilter();showView("choose");renderStep();try{toggleArea("A",true,true);}catch(e){}
+  window.__gcg={ITEMS:ITEMS,encodeQ:encodeQ,decodeQ:decodeQ,traitScores:traitScores,parseCode:parseCode,suggest:suggest,shareText:shareText,fitFor:fitFor,matchFor:matchFor,sanitizeStory:sanitizeStory,FNS:FNS,S:S,goStep:goStep};
+  initCaps();
+}
+boot();
+})();
+</script>
