@@ -763,6 +763,22 @@ input:focus,textarea:focus{border-color:var(--ink);outline:0;box-shadow:0 0 0 3p
 .navb{flex:1 1 0;max-width:none;border-radius:0}
 .navb .ni{width:52px;height:28px}
 body.has-nav{padding-bottom:88px}
+
+/* Home: three labelled groups */
+.hgroup{margin:22px 4px 8px;font:700 12px var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.hcard{margin-top:0}
+.hfacts{display:grid;gap:8px;margin:2px 0 4px}
+.hfacts p{display:grid;grid-template-columns:104px 1fr;gap:10px;align-items:baseline;margin:0;font-size:15px}
+.hfacts .hk{color:var(--muted);font-size:13.5px}
+.hlist{padding:4px 16px;margin-top:0;gap:0}
+.hrow,.hrow-d summary{appearance:none;display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:15px 0;font:600 15.5px var(--font-body);color:var(--ink);text-align:left;cursor:pointer;min-height:52px;list-style:none}
+.hrow-d summary::-webkit-details-marker{display:none}
+.hrow-d summary::before{content:"";width:20px;height:20px;flex:none;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2z'/%3E%3C/svg%3E") center/contain no-repeat}
+.hlist>*:last-child,.hlist>.hrow-d:last-child:not([open]) summary{border-bottom:0}
+.hrow .hr-t{flex:1}
+.hrow .ico{color:var(--muted);flex:none}
+.hrow-d>*:not(summary){margin-top:10px}
+.hrow-d[open]{padding-bottom:14px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -3133,36 +3149,38 @@ function drawHome(root){
   }
   var later=laterItems();
   if(later.length)root.append(h("p",{class:"laternote",text:""+later.length+" more task"+(later.length>1?"s":"")+" later in the plan. They open up as the event moves on."}));
-  // GCG right now
+  // The event: one card, with the next crew date inside it
   var evs=myEvents(),ev=evs[0]||S.events.filter(function(e){var d=dateAt(e,0,null);return d&&d>Date.now();}).sort(function(a,b){return String(a.date).localeCompare(String(b.date));})[0];
+  var crew=[];evs.forEach(function(e){crewWide(e).forEach(function(t){var d=taskDue(e,t);if(d&&d>Date.now())crew.push({ev:e,t:t,d:d});});});
+  crew.sort(function(a,b){return a.d-b.d;});
   if(ev){
     var mine=(ev.tasks||[]).filter(function(t){return t.owner===S.uid&&ACTIVE[taskState(ev,t)];});
     var part=[];mine.forEach(function(t){var n=FN[t.job]?FN[t.job].name:t.title;if(part.indexOf(n)<0)part.push(n);});
-    root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"GCG right now"}),
+    root.append(h("p",{class:"hgroup",text:"The event"}),h("section",{class:"card hsec hcard"},
       h("button",{type:"button",class:"evhead",onclick:function(){S.evSel=ev.id;showView("mevents");}},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),
-      h("p",{class:"sub"},eventPct(ev)+"% ready · ",h("button",{type:"button",class:"btn link",text:"See timeline ›",onclick:function(){showView("plan");}})),
-      part.length?h("p",{class:"yourpart"},h("b",{text:"Your part: "}),part.slice(0,3).join(" · ")):null));
+      h("div",{class:"hfacts"},
+        h("p",null,h("span",{class:"hk",text:"Ready"}),h("b",{text:eventPct(ev)+"%"})),
+        part.length?h("p",null,h("span",{class:"hk",text:"Your part"}),h("b",{text:part.slice(0,3).join(" · ")})):null,
+        crew.length?h("p",null,h("span",{class:"hk",text:"Next crew date"}),h("b",{text:crew[0].t.title+", "+fmtWhen(crew[0].d)})):null),
+      h("button",{type:"button",class:"btn small",text:"See timeline",onclick:function(){showView("plan");}})));
   }
-  // your place
+  // More: quiet shortcuts in one list
+  var calSt=h("span",{class:"status"});
+  var upcoming=[];myTasks().forEach(function(x){var s=taskState(x.ev,x.t);if(ACTIVE[s]&&s!=="done"){var c=calItem(x.ev,x.t);if(c&&c.end>new Date())upcoming.push(c);}});
+  crew.forEach(function(c){var ci=calItem(c.ev,c.t,true);if(ci)upcoming.push(ci);});
+  var grabs=upForGrabs(),rows=[];
+  if(grabs.length)rows.push(h("button",{type:"button",class:"hrow",onclick:function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}},ico("hand",20),h("span",{class:"hr-t",text:grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs"}),ico("chevR",18)));
+  if(upcoming.length)rows.push(h("button",{type:"button",class:"hrow",onclick:function(){saveIcs("GCG-upcoming.ics",upcoming,calSt);}},ico("calendar",20),h("span",{class:"hr-t",text:"Add my dates to calendar"}),calSt));
+  if(S.uid&&!S.isAdmin)rows.push(ideaBox(true));
+  if(rows.length)root.append(h("p",{class:"hgroup",text:"More"}),h("section",{class:"card hlist"},rows));
+  // Your place, last
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
-  if(prof)root.append(h("section",{class:"card hsec place"},h("p",{class:"k",text:"Your place"}),
+  if(prof)root.append(h("p",{class:"hgroup",text:"Your place"}),h("section",{class:"card hsec place"},
     ts.length?h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
     h("p",{class:"pl-type",text:prof.title}),
     h("div",{class:"chips"},prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
     h("p",{class:"pl-n",text:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evCount).length+" event"+(Object.keys(evCount).length===1?"":"s"):"Your trail starts with your first task."}),
     missingProfile()?h("button",{type:"button",class:"btn small",text:"Finish your profile ("+missingProfile()+" quick question"+(missingProfile()>1?"s":"")+")",onclick:function(){startExtra();}}):null));
-  // next crew date + calendar
-  var crew=[];evs.forEach(function(e){crewWide(e).forEach(function(t){var d=taskDue(e,t);if(d&&d>Date.now())crew.push({ev:e,t:t,d:d});});});
-  crew.sort(function(a,b){return a.d-b.d;});
-  var calSt=h("span",{class:"status"});
-  var upcoming=[];myTasks().forEach(function(x){var s=taskState(x.ev,x.t);if(ACTIVE[s]&&s!=="done"){var c=calItem(x.ev,x.t);if(c&&c.end>new Date())upcoming.push(c);}});
-  crew.forEach(function(c){var ci=calItem(c.ev,c.t,true);if(ci)upcoming.push(ci);});
-  if(crew.length||upcoming.length)root.append(h("section",{class:"card hsec"},
-    crew.length?[h("p",{class:"k",text:"Next crew date"}),h("p",null,h("b",{text:crew[0].t.title}),h("br"),fmtWhen(crew[0].d)+" · "+(crew[0].ev.name||""))]:null,
-    upcoming.length?h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Add upcoming dates to my calendar",onclick:function(){saveIcs("GCG-upcoming.ics",upcoming,calSt);}}),calSt):null));
-  var grabs=upForGrabs();
-  if(grabs.length)root.append(h("button",{type:"button",class:"grabs-link",onclick:function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}},""+grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs ›"));
-  if(S.uid&&!S.isAdmin)root.append(ideaBox());
 }
 
 /* ---------- Team member Events ---------- */
@@ -3313,14 +3331,14 @@ function saveIdeas(uid,items,name){
   S.ideas[uid]=doc;
   return S.db.doc("ideas/"+uid).set(doc);
 }
-function ideaBox(){
+function ideaBox(inline){
   var kind="idea",st=h("span",{class:"status",role:"status","aria-live":"polite"});
   var ta=h("textarea",{rows:3,maxlength:600,"aria-label":"Your note",placeholder:"What is it? A line or two is enough."});
   var chips=h("div",{class:"chips"});
   function paint(){clear(chips);IDEA_KINDS.forEach(function(k){chips.append(h("button",{type:"button",class:"chip"+(kind===k[0]?" on":""),"aria-pressed":String(kind===k[0]),text:k[1],onclick:function(){kind=k[0];paint();}}));});}
   paint();
   var mine=ideaItems(S.uid).slice().reverse().slice(0,5);
-  return h("details",{class:"card hsec ideas"},h("summary",{text:"Got an idea, a lead or something to fix?"}),
+  return h("details",{class:inline?"ideas hrow-d":"card hsec ideas"},h("summary",{text:"Share an idea, lead or feedback"}),
     h("p",{class:"sub",text:"Hinda reads everything and sees who sent it."}),chips,ta,
     h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Send",onclick:function(){
       var txt=clean(ta.value).slice(0,600);if(!txt){say(st,"Write a line first.","warn");return;}
