@@ -894,6 +894,8 @@ function $(id){return document.getElementById(id);}
 function clear(el){while(el.firstChild)el.removeChild(el.firstChild);}
 function say(el,text,kind){if(!el)return;el.textContent=text||"";if(kind)el.setAttribute("data-kind",kind);else el.removeAttribute("data-kind");}
 function clean(s){return String(s==null?"":s).replace(/[|\r\n]+/g," ").trim();}
+// Data from the shared store arrives read-only. Copy it before the page edits it.
+function thaw(x){return x==null?x:JSON.parse(JSON.stringify(x));}
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function lc1(s){return s?s.charAt(0).toLowerCase()+s.slice(1):s;}
@@ -3168,14 +3170,14 @@ function initCaps(){
       if(S.uid&&S.canWrite!==false){
         S.db.doc("responses/"+S.uid).get().then(function(snap){
           if(!snap.exists){if(S.isAdmin&&S.view==="flow"&&S.screen==="intro")showView("today");else if(S.screen==="profile")render();return;}
-          var d=snap.data(),draft=loadDraft();S.sentAt=d.updated||null;
+          var d=thaw(snap.data()),draft=loadDraft();S.sentAt=d.updated||null;
           var draftNewer=draft&&draft.savedAt&&d.updated&&draft.savedAt>d.updated;
           if(!draftNewer){applyRecord(d);S.screen="profile";saveDraft();}
           if(S.view==="flow"&&!S.goTask&&(S.screen==="profile"||S.screen==="intro"))showView(homeView());else renderNav();
         }).catch(function(){});
       }else if(S.screen==="profile")render();
       S.db.doc("roles/final").onSnapshot(function(snap){
-        S.roles=snap.exists?snap.data():null;updateTabs();
+        S.roles=snap.exists?thaw(snap.data()):null;updateTabs();
         if(S.isAdmin&&!S.hydratedRoles&&S.roles){
           S.hydratedRoles=true;var a=S.roles.assign||{},out=Array.isArray(S.roles.outsource)?S.roles.outsource:[];
           FNS.forEach(function(f){S.overrides[f.id]=a[f.id]||(out.indexOf(f.id)>-1?"__out":"");});
@@ -3187,13 +3189,13 @@ function initCaps(){
         if(S.view==="team"){renderRoles();renderCov();}
       },function(){});
       S.db.collection("events").onSnapshot(function(snap){
-        S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=Object.assign({},d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
+        S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
           .concat(S.events.filter(function(e){return evDirty[e.id]&&!snap.docs.some(function(d){return d.id===e.id;});}));
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
         openLinkedTask();
       },function(){});
       S.db.collection("replies").onSnapshot(function(snap){
-        S.replies=snap.docs.map(function(d){return d.data();}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
+        S.replies=snap.docs.map(function(d){return thaw(d.data());}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
       },function(){});
       S.db.collection("people").onSnapshot(function(snap){
@@ -3201,18 +3203,18 @@ function initCaps(){
         if(S.view==="events")renderEvents();refresh();
       },function(){});
       S.db.collection("titles").onSnapshot(function(snap){
-        S.titles=snap.docs.map(function(d){if(titleDirty[d.id]){var mine=titleById(d.id);if(mine)return mine;}var o=Object.assign({},d.data());o.id=d.id;o.jobs=sanitizeIds(o.jobs);o.holders=Array.isArray(o.holders)?o.holders:[];return o;});
+        S.titles=snap.docs.map(function(d){if(titleDirty[d.id]){var mine=titleById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.jobs=sanitizeIds(o.jobs);o.holders=Array.isArray(o.holders)?o.holders:[];return o;});
         if(S.view==="team")renderTeam();refresh();
       },function(){});
       S.db.doc("settings/app").onSnapshot(function(snap){if(snap.exists&&snap.data().url)S.appUrl=clean(snap.data().url);},function(){});
       S.db.collection("pings").onSnapshot(function(snap){
-        S.pings=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;return o;});
+        S.pings=snap.docs.map(function(d){var o=thaw(d.data());o.id=d.id;return o;});
         if(S.view==="team")renderTeam();refresh();
       },function(){});
-      if(S.uid)S.db.doc("acks/"+S.uid).onSnapshot(function(snap){S.acks=snap.exists?(snap.data().ids||{}):{};refresh();},function(){});
-      if(S.isAdmin)S.db.collection("acks").onSnapshot(function(snap){S.allAcks={};snap.docs.forEach(function(d){S.allAcks[d.id]=d.data().ids||{};});if(S.view==="team")renderTeam();},function(){});
+      if(S.uid)S.db.doc("acks/"+S.uid).onSnapshot(function(snap){S.acks=snap.exists?thaw(snap.data().ids||{}):{};refresh();},function(){});
+      if(S.isAdmin)S.db.collection("acks").onSnapshot(function(snap){S.allAcks={};snap.docs.forEach(function(d){S.allAcks[d.id]=thaw(d.data().ids)||{};});if(S.view==="team")renderTeam();},function(){});
       if(S.isAdmin)S.db.collection("responses").onSnapshot(function(snap){
-        S.people=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;o.q=normQ(o.q);return o;});
+        S.people=snap.docs.map(function(d){var o=thaw(d.data());o.id=d.id;o.q=normQ(o.q);return o;});
         if(S.view==="team")renderTeam();if(S.view==="events")renderEvents();refresh();
       },function(){});
     });
