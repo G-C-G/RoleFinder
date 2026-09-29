@@ -145,7 +145,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .field{display:grid;gap:6px;min-width:0}
 .field label{font-weight:800;font-size:15px}
 .opt{font-weight:600;color:var(--muted);font-size:13px}
-input[type=text],input[type=url],textarea,select{width:100%;background:var(--bg);border:2.5px solid var(--edge);border-radius:14px;padding:12px 14px;min-height:52px;font-size:16px}
+input[type=text],input[type=url],input[type=number],input[type=date],input[type=time],textarea,select{width:100%;background:var(--bg);border:2.5px solid var(--edge);border-radius:14px;padding:12px 14px;min-height:52px;font-size:16px}
 input:focus,textarea:focus{outline:3px solid var(--gold);outline-offset:1px}
 textarea{resize:vertical}
 
@@ -309,6 +309,37 @@ table.map{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
 .msgrow{display:grid;gap:6px;border-top:1.5px solid var(--soft);padding-top:10px}
 .msgrow pre{white-space:pre-wrap;margin:0;background:var(--card);border-radius:10px;padding:10px;border:1.5px solid var(--soft)}
 .crew{margin:8px 0;padding-left:1.2em;display:grid;gap:4px}
+.titlecard{border:2.5px solid var(--edge);border-radius:16px;background:var(--card);overflow:hidden}
+.titlehead{appearance:none;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;text-align:left;border:0;background:var(--card);padding:12px 14px;cursor:pointer}
+.titlehead b{font-family:var(--font-display);font-weight:600;font-size:17px}
+.titlehead .sub{grid-column:1}
+.titlehead span[aria-hidden]{grid-row:1/3;grid-column:2;align-self:center;font-size:24px;font-weight:700}
+.titlebody{display:grid;gap:10px;padding:0 14px 14px}
+.lab{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:4px}
+.tl{display:grid;gap:12px}
+.tl-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tl-head b{font-family:var(--font-display);font-weight:600;font-size:18px}
+.tl-pct{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--green)}
+.tl-track{position:relative;height:18px;border-radius:999px;background:var(--bg-2);border:2px solid var(--edge);margin:18px 12px 8px}
+.tl-fill{position:absolute;inset:0 auto 0 0;border-radius:999px;background:linear-gradient(90deg,var(--red),var(--gold),var(--green));opacity:.9}
+.tl-dot{position:absolute;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;border:2.5px solid var(--edge);background:var(--card);display:grid;place-items:center;font-size:11px;font-weight:900}
+.tl-dot[data-s="done"]{background:var(--green);color:var(--on-green)}
+.tl-dot[data-s="cur"]{background:var(--gold);color:var(--on-gold)}
+.tl-dot[data-s="late"]{background:var(--red);color:var(--on-red)}
+.tl-now{position:absolute;top:-16px;bottom:-6px;width:3px;margin-left:-1.5px;background:var(--ink);border-radius:2px}
+.tl-now span{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:900;white-space:nowrap;background:var(--ink);color:var(--bg);border-radius:6px;padding:0 5px}
+.tl-stages{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.tl-stage{appearance:none;width:100%;display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 10px;align-items:center;text-align:left;border:2px solid var(--soft);border-radius:12px;background:var(--card);padding:8px 10px;cursor:pointer}
+.tl-stage[data-s="done"]{background:var(--green-soft);border-color:var(--green)}
+.tl-stage[data-s="cur"]{background:var(--gold-soft);border-color:var(--gold)}
+.tl-stage[data-s="late"]{border-color:var(--red)}
+.tl-n{grid-row:1/3;width:26px;height:26px;border-radius:50%;border:2px solid var(--edge);display:grid;place-items:center;font-weight:900;font-size:12px}
+.tl-name{font-weight:800}
+.tl-meta{font-size:13px;color:var(--muted);font-weight:700}
+.tl-who{list-style:none;margin:6px 0 4px;padding:0 0 0 12px;display:grid;gap:4px;font-size:14px}
+.tl-who li[data-s="done"]{color:var(--ok)}
+.tl-feed{display:grid;gap:2px;font-size:14px;border-top:1.5px solid var(--soft);padding-top:8px}
+@media (prefers-reduced-motion:no-preference){.tl-fill{transition:width .6s ease-out}}
 .ping{border:2.5px solid var(--edge);border-radius:16px;background:var(--gold-soft);padding:12px 14px;margin-bottom:12px;display:grid;gap:6px}
 .task.flash{outline:4px solid var(--gold);outline-offset:2px}
 .ok{color:var(--ok);font-weight:800}
@@ -350,6 +381,7 @@ table.map.ins td,table.map.ins th{white-space:normal}
     <img class="mini" id="miniLogo" alt="" hidden>
     <div class="bt">Find where you fit<small>Gold Coast Games</small></div>
     <div class="tabs" id="tabs" role="tablist" aria-label="Sections" hidden>
+      <button class="tab" role="tab" id="tab-profile" data-view="profile" aria-selected="false" hidden>My profile</button>
       <button class="tab" role="tab" id="tab-flow" data-view="flow" aria-selected="true">My card</button>
       <button class="tab" role="tab" id="tab-mine" data-view="mine" aria-selected="false" hidden>Proposed roles</button>
       <button class="tab" role="tab" id="tab-tasks" data-view="tasks" aria-selected="false" hidden>My tasks</button>
@@ -360,6 +392,7 @@ table.map.ins td,table.map.ins th{white-space:normal}
   </div>
 
   <main id="view-flow"><div id="flow"></div></main>
+  <section id="view-profile" hidden><div id="profileBody"></div></section>
 
   <section id="view-tasks" hidden><div id="tasksBody"></div></section>
   <section id="view-events" hidden><div id="evBody"></div></section>
@@ -371,6 +404,12 @@ table.map.ins td,table.map.ins th{white-space:normal}
     <div class="row" style="margin-top:14px">
       <button class="btn small" id="t-csv">Export everyone (CSV)</button>
       <span class="status" id="t-exportStatus" role="status" aria-live="polite"></span>
+    </div>
+
+    <div class="sect">
+      <h2>🎖 Titles</h2>
+      <p class="sub">Bundle jobs into a title and give it to people. It shows on their profile, and tasks under those jobs go to them first.</p>
+      <div id="t-titles"></div>
     </div>
 
     <div class="sect">
@@ -1207,7 +1246,7 @@ function submit(){
   say(st,"Sending…");
   S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
   S.db.doc("responses/"+S.uid).set(p).then(function(){
-    S.sentAt=p.updated;say(st,"Sent to Hinda. 🎉 Thank you. You can change your answers and send again any time.","ok");
+    S.sentAt=p.updated;updateTabs();say(st,"Sent to Hinda. 🎉 Onboarding done. Your profile is ready under My profile.","ok");
   },function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});
 }
 
@@ -1277,6 +1316,7 @@ function summaryBlocks(){
   var p=payload(),prof=profileOf(p),g=grouped(S),B=[];
   B.push({t:"title",text:(p.name||"My")+" - Player card"});
   B.push({t:"sub",text:"Gold Coast Games. Made on "+new Date().toISOString().slice(0,10)+" from my own answers. A starting point, not a verdict."});
+  var tts=S.uid?titlesOf(S.uid):[];if(tts.length)B.push({t:"big",text:"Title: "+tts.map(function(x){return x.name;}).join(", ")});
   if(prof){
     B.push({t:"big",text:prof.title});
     B.push({t:"p",text:"Strongest: "+prof.chips.join(", ")+"."});
@@ -1291,8 +1331,8 @@ function summaryBlocks(){
   if(p.cv){B.push({t:"h",text:"CV or LinkedIn"});B.push({t:"p",text:p.cv});}
   return B;
 }
-function downloadPdf(share){share=share===true;
-  var st=$("submitStatus"),p=payload();
+function downloadPdf(share,stEl){share=share===true;
+  var st=stEl||$("submitStatus"),p=payload();
   var name="GCG-player-card-"+(p.name.replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"me")+".pdf",bytes;
   try{bytes=buildPdf(summaryBlocks());}catch(e){say(st,"Could not make the PDF here.","warn");return;}
   if(share){
@@ -1312,9 +1352,9 @@ function downloadPdf(share){share=share===true;
 /* ---------- Views ---------- */
 function showView(v){
   S.view=v;
-  ["flow","tasks","mine","team","events","insights"].forEach(function(k){$("view-"+k).hidden=(k!==v);$("tab-"+k).setAttribute("aria-selected",String(k===v));});
+  ["profile","flow","tasks","mine","team","events","insights"].forEach(function(k){$("view-"+k).hidden=(k!==v);$("tab-"+k).setAttribute("aria-selected",String(k===v));});
   $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="crew"||v==="insights");
-  if(v==="team")renderTeam();if(v==="mine")renderMine();if(v==="tasks")renderTasks();if(v==="events")renderEvents();if(v==="insights")renderInsights();if(v==="flow")render();
+  if(v==="team")renderTeam();if(v==="mine")renderMine();if(v==="tasks")renderTasks();if(v==="events")renderEvents();if(v==="insights")renderInsights();if(v==="flow")render();if(v==="profile")renderProfile();
   window.scrollTo(0,0);
 }
 function updateTabs(){
@@ -1322,7 +1362,8 @@ function updateTabs(){
   var nt=myTasks().length,np=pendingCount();
   $("tab-mine").hidden=!showMine;$("tab-team").hidden=!S.isAdmin;$("tab-events").hidden=!S.isAdmin;$("tab-insights").hidden=!S.isAdmin;
   $("tab-tasks").hidden=!nt;$("tab-tasks").textContent="My tasks"+(np?" ("+np+")":"");
-  $("tabs").hidden=!(showMine||S.isAdmin||nt);
+  var hasProfile=!!S.sentAt;$("tab-profile").hidden=!hasProfile;$("tab-flow").textContent=hasProfile?"Onboarding":"My card";
+  $("tabs").hidden=!(showMine||S.isAdmin||nt||hasProfile);
 }
 function renderMine(){
   var root=$("mineBody");clear(root);
@@ -1340,7 +1381,7 @@ function pname(p){return p.name||"Unnamed";}
 function yesOf(p){return (p.top||[]).concat(p.good||[]);}
 function renderTeam(){
   if(!S.isAdmin)return;
-  renderStats();renderPings();renderMap();renderPeople();renderCov();renderRoles();
+  renderStats();renderTitles();renderPings();renderMap();renderPeople();renderCov();renderRoles();
 }
 function renderStats(){
   var root=$("t-stats");clear(root);
@@ -1385,6 +1426,7 @@ function renderPeople(){
     });
     root.append(h("div",{class:"person"},
       h("h3",{text:pname(p)}),
+      titlesOf(p.id).length?h("div",{class:"chips"},titlesOf(p.id).map(function(x){return h("span",{class:"chip t1",text:"🎖 "+x.name});})):null,
       prof?h("p",{class:"ttl",text:prof.title}):h("p",{class:"meta",text:"Situations not answered."}),
       prof?h("div",{class:"chips"},prof.chips.map(function(c,i){return h("span",{class:"chip t"+i,text:c});})):null,
       h("p",{class:"meta",text:[p.source==="pasted"?"Added by paste":"Sent from the page",p.confirm?"Card: "+CONFIRM[p.confirm]:"Card not checked"].join(" · ")}),
@@ -1777,7 +1819,8 @@ function taskMatch(p,job,skipEid){
   var s=scoreOf(p,job);if(s<0)return null;
   var pts=0,why=[],tr=FN_TRAITS[job]||[],st=sanitizeStory(p.story),mask=Number(p.q&&p.q[NQ])||0;
   if(s>=SCORE.good){pts+=3;why.push("👍 Said yes to "+FN[job].name);}else if(s===SCORE.curious){pts+=1;why.push("🤔 Said maybe to "+FN[job].name);}
-  if(S.roles&&S.roles.assign&&S.roles.assign[job]===p.id){pts+=2;why.push("🎖 Holds this role");}
+  if(p.id&&typeof titleCovers==="function"&&titleCovers(p.id,job)){pts+=3;why.push("🎖 Your title covers this");}
+  else if(S.roles&&S.roles.assign&&S.roles.assign[job]===p.id){pts+=2;why.push("🎖 Holds this role");}
   var done=EXP.filter(function(e,k){return (mask&(1<<k))&&e[2].some(function(t){return tr.indexOf(t)>-1;});});
   if(done.length){pts+=2;why.push("✅ Has "+lc1(done[0][1]));}
   var br=HIDDEN.filter(function(r){return st.hidden.indexOf(r[0])>-1&&(r[2]||[]).indexOf(job)>-1;});
@@ -1946,6 +1989,7 @@ function drawEvents(root){
       h("button",{type:"button",class:"btn",text:"🖨 Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
       h("button",{type:"button",class:"btn",text:"📊 Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
+  root.append(h("div",{class:"card",style:"margin-top:14px"},progressTimeline(ev,renderEvents)));
   if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length)root.append(h("div",{style:"margin-top:14px"},msgBox(S.evMsgs.title,S.evMsgs.list)));
   if(S.run&&S.run.eid===ev.id)root.append(h("div",{id:"runBox",class:"card",style:"margin-top:14px"}));
   // at risk
@@ -2061,6 +2105,48 @@ function adminTask(ev,t,cur){
       t.owner&&st!=="passed"&&st!=="open"&&st!=="done"?h("button",{type:"button",class:"btn link",text:"Mark passed",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null),
     S.panel[pk]&&t.owner?pingPanel(t.owner,ev.id,t.id,"please check this task: "+t.title):null,
     more);
+}
+
+/* ---------- Progress timeline: where the event is, how much is done, and who did it ---------- */
+S.tlOpen={};
+function timeAgo(d){if(!d)return "";var m=Math.round((Date.now()-d)/6e4);if(m<60)return m<=1?"just now":m+" min ago";var hh=Math.round(m/60);if(hh<48)return hh+"h ago";return Math.round(hh/24)+" days ago";}
+function progressTimeline(ev,rerender){
+  var ts=ev.tasks||[],cps=ev.cps||[];
+  var groups={};ts.forEach(function(t){var k=t.group||t.id;(groups[k]=groups[k]||[]).push(t);});
+  var gk=Object.keys(groups),gdone=gk.filter(function(k){return groups[k].every(function(t){return taskState(ev,t)==="done";});}).length;
+  var pctDone=gk.length?Math.round(gdone/gk.length*100):0;
+  // stages: each checkpoint, in order, with its tasks
+  var stages=cps.map(function(c,i){return {i:i,name:c.name,due:cpDue(ev,i),tasks:ts.filter(function(t){return t.cp===i;}),cleared:cpCleared(ev,i)};});
+  var loose=ts.filter(function(t){return t.cp==null||!cps[t.cp];});
+  if(loose.length)stages.push({i:"x",name:"Other tasks",due:null,tasks:loose,cleared:null});
+  var dates=stages.map(function(s){return s.due;}).filter(Boolean);
+  var start=dates.length?Math.min.apply(null,dates.map(Number))-3*864e5:null,end=dates.length?Math.max.apply(null,dates.map(Number)):null;
+  function pos(d){if(!start||!d||end===start)return null;return Math.max(0,Math.min(100,(d-start)/(end-start)*100));}
+  var cur=currentCp(ev),now=Date.now(),nowPos=pos(now);
+  var track=h("div",{class:"tl-track","aria-hidden":"true"},h("div",{class:"tl-fill",style:"width:"+pctDone+"%"}));
+  if(nowPos!=null&&now<=end+864e5)track.append(h("div",{class:"tl-now",style:"left:"+nowPos+"%"},h("span",{text:"Today"})));
+  stages.forEach(function(s,k){var p=pos(s.due);if(p==null)return;
+    var state=s.cleared?"done":(s.i===cur?"cur":(s.due&&s.due<now?"late":""));
+    track.append(h("span",{class:"tl-dot","data-s":state,style:"left:"+p+"%",text:String(k+1)}));});
+  var feed=[];ts.forEach(function(t){if(taskState(ev,t)==="done"&&t.owner){var d=doneAt(ev,t);if(d)feed.push({t:t,d:d});}});
+  feed.sort(function(a,b){return b.d-a.d;});
+  var box=h("div",{class:"tl"},
+    h("div",{class:"tl-head"},h("b",{text:"Progress"}),h("span",{class:"tl-pct",text:pctDone+"% done"}),h("span",{class:"sub",text:gdone+" of "+gk.length+" tasks"})),
+    track,
+    h("ol",{class:"tl-stages"},stages.map(function(s,k){
+      var dn=s.tasks.filter(function(t){return taskState(ev,t)==="done";});
+      var state=s.cleared?"done":(s.i===cur?"cur":(s.due&&s.due<now?"late":""));
+      var key=ev.id+":"+s.i,open=!!S.tlOpen[key];
+      var btn=h("button",{type:"button",class:"tl-stage","data-s":state,"aria-expanded":String(open),onclick:function(){S.tlOpen[key]=!open;rerender();}},
+        h("span",{class:"tl-n",text:String(k+1)}),h("span",{class:"tl-name",text:s.name}),
+        h("span",{class:"tl-meta",text:(s.cleared?"✔ cleared":(s.due?fmtWhen(s.due):""))+" · "+dn.length+"/"+s.tasks.length}));
+      var li=h("li",null,btn);
+      if(open)li.append(h("ul",{class:"tl-who"},s.tasks.map(function(t){var st=taskState(ev,t),d=st==="done"?doneAt(ev,t):null;
+        return h("li",{"data-s":st},st==="done"?"✔ ":"◻ ",h("b",{text:t.title}),st==="done"?" — "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):(t.owner||t.helper?" — "+(t.owner?nameOf(t.owner):t.helper)+" ("+STATE_LABEL[st].replace(/^\S+ /,"").toLowerCase()+")":" — up for grabs"));})));
+      return li;
+    })),
+    feed.length?h("div",{class:"tl-feed"},h("span",{class:"lab",text:"🎉 Latest"}),feed.slice(0,4).map(function(x){return h("p",null,h("b",{text:nameOf(x.t.owner)}),", "+x.t.title+" · "+timeAgo(x.d));})):null);
+  return box;
 }
 
 /* ---------- Run sheet: the event night on one clock ---------- */
@@ -2192,6 +2278,7 @@ function drawTasks(root){
     g.ts.sort(function(a,b){return (taskDue(ev,a)||Infinity)-(taskDue(ev,b)||Infinity);});
     root.append(h("div",{class:"card",style:"margin-top:14px"},
       h("div",null,h("h3",{class:"q",text:ev.name||"Event"}),h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")})),
+      progressTimeline(ev,renderTasks),
       (links.luma||links.group)?h("div",{class:"row"},links.luma?h("a",{class:"btn small",href:links.luma,target:"_blank",rel:"noopener",text:"Luma page"}):null,links.group?h("a",{class:"btn small",href:links.group,target:"_blank",rel:"noopener",text:"Crew group"}):null):null,
       g.ts.map(function(t){return myTaskCard(ev,t,me);}),
       h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"🕒 Run sheet",onclick:function(){S.run={eid:ev.id};renderTasks();var b=$("runBoxT");if(b&&b.scrollIntoView)b.scrollIntoView({block:"start"});}}),
@@ -2304,6 +2391,123 @@ function renderPings(){
     return h("li",null,h("b",{text:nameOf(p.to)+": "}),p.text+" · ",h("span",{class:seen?"ok":"sub",text:seen?"✓ seen":"not seen yet"}));})));
 }
 
+/* ---------- Titles: Hinda bundles jobs into a title and gives it to people ---------- */
+S.titles=[];S.titleOpen="";
+var titleTimers={},titleDirty={};
+function titleById(id){return S.titles.filter(function(x){return x.id===id;})[0]||null;}
+function titlesOf(pid){return S.titles.filter(function(x){return (x.holders||[]).indexOf(pid)>-1;});}
+function titleCovers(pid,job){return titlesOf(pid).some(function(x){return (x.jobs||[]).indexOf(job)>-1;});}
+function saveTitle(tt,now){
+  clearTimeout(titleTimers[tt.id]);titleDirty[tt.id]=(titleDirty[tt.id]||0)+1;
+  function go(){
+    tt=titleById(tt.id)||tt;if(!S.db){titleDirty[tt.id]=0;return;}
+    var id=tt.id,mark=titleDirty[id];
+    S.db.doc("titles/"+id).set({name:clean(tt.name).slice(0,80),desc:clean(tt.desc).slice(0,600),jobs:sanitizeIds(tt.jobs),holders:(tt.holders||[]).slice(0,20),updated:nowIso()})
+      .then(function(){if(titleDirty[id]===mark)titleDirty[id]=0;},function(){titleDirty[id]=0;say($("t-titleStatus"),"Could not save the title.","warn");});
+  }
+  if(now)go();else titleTimers[tt.id]=setTimeout(go,600);
+}
+// Who fits a whole title: their average match across its jobs.
+function titleFit(p,tt){
+  var ms=(tt.jobs||[]).map(function(j){var m=taskMatch(p,j);return m?m.pts:null;});
+  if(ms.some(function(x){return x===null;})&&ms.filter(function(x){return x===null;}).length>ms.length/2)return null;
+  var ok=ms.filter(function(x){return x!=null;});return ok.length?ok.reduce(function(a,b){return a+b;},0)/ms.length:null;
+}
+function renderTitles(){
+  var root=$("t-titles");if(!root||!S.isAdmin)return;
+  var keep=focusKeep(root);clear(root);
+  try{drawTitles(root);}finally{focusRestore(root,keep);}
+}
+function drawTitles(root){
+  var st=h("p",{class:"status",id:"t-titleStatus",role:"status","aria-live":"polite"});
+  root.append(h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"＋ New title",onclick:function(){
+    if(!S.db){say(st,"Titles need the live page.","warn");return;}
+    var tt={id:newId("ti"),name:"New title",desc:"",jobs:[],holders:[]};S.titles.push(tt);S.titleOpen=tt.id;saveTitle(tt,true);renderTitles();}}),st));
+  if(!S.titles.length)root.append(h("p",{class:"sub",text:"No titles yet. For now people help across many jobs. When you decide, bundle jobs into a title (for example Head of Operations: running operations, project management, logistics, equipment) and give it to someone. It then shows on their profile, and tasks under those jobs go to them first."}));
+  S.titles.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));}).forEach(function(tt){
+    var open=S.titleOpen===tt.id;
+    var head=h("button",{type:"button",class:"titlehead","aria-expanded":String(open),onclick:function(){S.titleOpen=open?"":tt.id;renderTitles();}},
+      h("b",{text:tt.name||"Untitled"}),h("span",{class:"sub",text:(tt.jobs||[]).length+" jobs · "+((tt.holders||[]).length?(tt.holders||[]).map(nameOf).join(", "):"nobody yet")}),h("span",{"aria-hidden":"true",text:open?"−":"+"}));
+    var card=h("div",{class:"titlecard"},head);
+    if(open){
+      var nm=h("input",{type:"text","aria-label":"Title name","data-k":"tn-"+tt.id,value:tt.name||""});nm.addEventListener("input",function(){tt.name=nm.value;saveTitle(tt);});
+      var ds=h("textarea",{rows:"2","aria-label":"What this title is responsible for","data-k":"td-"+tt.id,placeholder:"What this person is responsible for, in one or two lines"});ds.value=tt.desc||"";ds.addEventListener("input",function(){tt.desc=ds.value;saveTitle(tt);});
+      var jobs=h("div",{class:"areas"},AREAS.map(function(a){
+        var js=FNS.filter(function(f){return f.area===a.id;}),n=js.filter(function(f){return (tt.jobs||[]).indexOf(f.id)>-1;}).length;
+        return h("details",{class:"more",open:n?true:null},h("summary",{text:a.name+(n?" ("+n+")":"")}),
+          h("div",{class:"chips"},js.map(function(f){var on=(tt.jobs||[]).indexOf(f.id)>-1;
+            return h("button",{type:"button",class:"chip addchip"+(on?" good":""),"aria-pressed":String(on),text:(on?"✓ ":"")+f.name,onclick:function(){
+              tt.jobs=tt.jobs||[];var i=tt.jobs.indexOf(f.id);if(i>-1)tt.jobs.splice(i,1);else tt.jobs.push(f.id);saveTitle(tt,true);renderTitles();}});})));
+      }));
+      var fits=S.people.map(function(p){return {p:p,v:titleFit(p,tt)};}).filter(function(x){return x.v!=null;}).sort(function(a,b){return b.v-a.v;});
+      var holders=h("div",{class:"chips"},S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).map(function(p){
+        var on=(tt.holders||[]).indexOf(p.id)>-1,rank=fits.findIndex(function(x){return x.p.id===p.id;});
+        return h("button",{type:"button",class:"chip addchip"+(on?" good":""),"aria-pressed":String(on),text:(on?"✓ ":"")+pname(p)+(rank===0&&(tt.jobs||[]).length?" ★ best fit":""),onclick:function(){
+          tt.holders=tt.holders||[];var i=tt.holders.indexOf(p.id);if(i>-1)tt.holders.splice(i,1);else tt.holders.push(p.id);saveTitle(tt,true);renderTitles();}});}));
+      card.append(h("div",{class:"titlebody"},h("div",{class:"field"},h("label",{text:"Title"}),nm),h("div",{class:"field"},h("label",{text:"What it covers"}),ds),
+        h("p",{class:"lab",text:"Jobs under this title"}),jobs,
+        h("p",{class:"lab",text:"Who holds it (tap to give or take away)"}),holders,
+        fits.length&&(tt.jobs||[]).length?h("p",{class:"sub",text:"Best fits from their cards: "+fits.slice(0,3).map(function(x){return pname(x.p);}).join(", ")+"."}):null,
+        h("button",{type:"button",class:"btn link",text:"Delete this title",onclick:function(e){var b=e.currentTarget;if(b.getAttribute("data-armed")!=="1"){b.setAttribute("data-armed","1");b.textContent="Tap again to delete";return;}
+          S.db.doc("titles/"+tt.id).delete().then(function(){S.titleOpen="";},function(){say(st,"Could not delete.","warn");});}})));
+    }
+    root.append(card);
+  });
+}
+
+/* ---------- My profile: who you are at GCG, once onboarding is done ---------- */
+function historyOf(pid){
+  var out=[];
+  S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(t){if(t.owner===pid&&taskState(ev,t)==="done")out.push({ev:ev,t:t,at:doneAt(ev,t),r:replyOf(ev,t)});});});
+  return out.sort(function(a,b){return (b.at||0)-(a.at||0);});
+}
+function renderProfile(){
+  var root=$("profileBody");if(!root)return;clear(root);
+  var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),g=grouped(S),yes=g.top.concat(g.good),st=sanitizeStory(p.story),ts=titlesOf(S.uid);
+  var logo=LOGO.indexOf("data:")===0?h("img",{src:LOGO,alt:""}):null;
+  root.append(h("article",{class:"pcard"},h("div",{class:"bands","aria-hidden":"true"},h("i"),h("i"),h("i")),
+    h("div",{class:"pc-in"},
+      h("div",{class:"pc-top"},logo,h("div",null,h("p",{class:"pc-kick",text:"Gold Coast Games · Profile"}),h("p",{class:"pc-name",text:p.name||"You"}))),
+      ts.length?h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:"🎖 "+x.name});})):h("p",{class:"pc-title",text:"Title coming soon"}),
+      prof?h("p",{class:"pc-title",text:prof.title}):null,
+      prof?h("div",{class:"chips"},prof.chips.map(function(c,i){return h("span",{class:"chip t"+i,text:c});})):null)));
+  var pst=h("p",{class:"status",role:"status","aria-live":"polite"});
+  var edit=h("div",{class:"row",style:"margin-top:14px"},
+    h("button",{type:"button",class:"btn small",text:"✏️ Update my answers",onclick:function(){S.screen="like";showView("flow");}}),
+    h("button",{type:"button",class:"btn small",text:"⬇ My card (PDF)",onclick:function(){downloadPdf(false,pst);}}),
+    h("button",{type:"button",class:"btn small",text:"📤 Share my card",onclick:function(){downloadPdf(true,pst);}}),pst);
+  root.append(edit);
+  // title(s)
+  var tbox=h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"🎖 My title"}));
+  if(!ts.length)tbox.append(h("p",{class:"sub",text:"For now you help across several jobs. When Hinda gives you a title, it shows here with everything that falls under it."}));
+  ts.forEach(function(x){
+    var live=[];S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(t){if(t.owner===S.uid&&(x.jobs||[]).indexOf(t.job)>-1&&taskState(ev,t)!=="done"&&taskState(ev,t)!=="passed")live.push({ev:ev,t:t});});});
+    tbox.append(h("div",{class:"box"},h("h3",{text:x.name}),x.desc?h("p",{text:x.desc}):null,
+      h("p",{class:"lab",text:"What falls under it"}),h("ul",{class:"crew"},sanitizeIds(x.jobs).map(function(j){return h("li",null,h("b",{text:FN[j].name+": "}),FN[j].covers);})),
+      live.length?h("p",{class:"lab",text:"Live tasks under this title"}):null,
+      live.length?h("ul",{class:"crew"},live.map(function(y){var d=taskDue(y.ev,y.t);return h("li",null,y.t.title+" · "+(y.ev.name||"")+(d?" · ":""),d?clockSpan(d):null);})):null));
+  });
+  if(myTasks().length)tbox.append(h("button",{type:"button",class:"btn small",text:"Go to my tasks →",onclick:function(){showView("tasks");}}));
+  root.append(tbox);
+  // about
+  var about=h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"About me"}));
+  if(prof)prof.lines.forEach(function(l){about.append(h("p",{text:l}));});
+  if(st.proud)about.append(h("p",null,h("b",{text:"Proudest work: "}),st.proud));
+  var done=maskLabels(EXP,p.q[NQ]);if(done.length)about.append(h("p",null,h("b",{text:"I have: "}),done.map(lc1).join("; ")));
+  var br=labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]);if(br.length)about.append(h("p",null,h("b",{text:"I bring: "}),br.join("; ")));
+  root.append(about);
+  // likes and dislikes
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"What I like and don't"}),
+    yes.length?h("p",{class:"lab",text:"👍 Up for"}):null,yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name});})):null,
+    g.curious.length?h("p",{class:"lab",text:"🤔 Would try"}):null,g.curious.length?h("div",{class:"chips"},g.curious.map(function(i){return h("span",{class:"chip curious",text:FN[i].name});})):null,
+    g.no.length?h("p",{class:"lab",text:"👎 Rather not"}):null,g.no.length?h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:FN[i].name});})):null,
+    workStyle(st)?h("p",null,h("b",{text:"Works best: "}),workStyle(st)):null));
+  // history
+  var hist=historyOf(S.uid);
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"📜 What I've done at GCG"}),
+    hist.length?h("ul",{class:"crew"},hist.map(function(x){return h("li",null,h("b",{text:x.t.title}),", "+(x.ev.name||"")+(x.at?" · "+fmtWhen(x.at):"")+(x.r&&x.r.mood?" "+x.r.mood:""));})):h("p",{class:"sub",text:"Your finished tasks will build up here, event by event."})));
+}
+
 /* ---------- Insights (Hinda): how fast things really get done ---------- */
 function taskRecords(){
   var out=[];
@@ -2382,7 +2586,7 @@ function initCaps(){
           var d=snap.data(),draft=loadDraft();S.sentAt=d.updated||null;
           var draftNewer=draft&&draft.savedAt&&d.updated&&draft.savedAt>d.updated;
           if(!draftNewer){applyRecord(d);S.screen="profile";saveDraft();}
-          if(S.view==="flow")render();
+          updateTabs();if(S.view==="flow"&&!S.goTask)showView("profile");
         }).catch(function(){});
       }else if(S.screen==="profile")render();
       S.db.doc("roles/final").onSnapshot(function(snap){
@@ -2410,6 +2614,10 @@ function initCaps(){
       S.db.collection("people").onSnapshot(function(snap){
         S.names={};snap.docs.forEach(function(d){var o=d.data();if(o&&o.name)S.names[d.id]=clean(o.name).slice(0,60);});
         if(S.view==="tasks")renderTasks();if(S.view==="events")renderEvents();
+      },function(){});
+      S.db.collection("titles").onSnapshot(function(snap){
+        S.titles=snap.docs.map(function(d){if(titleDirty[d.id]){var mine=titleById(d.id);if(mine)return mine;}var o=Object.assign({},d.data());o.id=d.id;o.jobs=sanitizeIds(o.jobs);o.holders=Array.isArray(o.holders)?o.holders:[];return o;});
+        if(S.view==="profile")renderProfile();if(S.view==="team"){renderTitles();renderPeople();}
       },function(){});
       S.db.doc("settings/app").onSnapshot(function(snap){if(snap.exists&&snap.data().url)S.appUrl=clean(snap.data().url);},function(){});
       S.db.collection("pings").onSnapshot(function(snap){
@@ -2448,7 +2656,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,taskLink:taskLink,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();
