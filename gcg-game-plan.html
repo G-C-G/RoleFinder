@@ -489,6 +489,19 @@ body.has-nav{padding-bottom:104px}
 .fold>summary.fold-h::after{content:" +";color:var(--muted)}
 .fold[open]>summary.fold-h::after{content:" −"}
 .actions{margin-top:14px}
+.avatar{border-radius:50%;object-fit:cover;border:3px solid var(--edge);background:var(--bg-2)}
+.avatar.big{width:140px;height:140px;display:grid;place-items:center;font-size:56px}
+.avatar.card{width:96px;height:96px;border-color:#F6B80F}
+.avatar.sm{width:32px;height:32px;border-width:2px;vertical-align:middle;margin-right:8px}
+.photobox{display:grid;justify-items:center;gap:12px;padding:8px 0}
+.photobox label.btn{cursor:pointer}
+.ph-row{display:flex;align-items:center}
+.hello{display:flex;align-items:center}
+.then{appearance:none;width:100%;display:grid;gap:2px;text-align:left;border:2px solid var(--soft);border-radius:16px;background:var(--card);padding:12px 16px;margin-top:12px;cursor:pointer}
+.then b{font-size:16px}
+.laternote{font-size:14px;font-weight:700;color:var(--muted);margin:12px 4px 0}
+.later .laterstage{display:grid;gap:10px;margin-top:10px}
+.later .laterstage>b{font-family:var(--font-display);font-weight:600}
 .goal{font-size:16px;margin:-6px 0 6px;max-width:52ch}
 .needed{font-weight:800;font-size:13.5px;color:var(--ink);background:var(--bg-2);border-radius:8px;padding:4px 8px;justify-self:start}
 .hero-move .needed{background:rgba(255,255,255,.55)}
@@ -958,10 +971,12 @@ function cvText(sections){return sections.map(function(s){return s[0]+"\n"+s[1].
 var LEVELS=[
  {name:"You",screens:["like"]},
  {name:"Situations",screens:ASK.map(function(_,i){return "s"+i;})},
- {name:"Jobs",screens:["deck","all"]}
+ {name:"Jobs",screens:["deck","all","profile"]},
+ {name:"Your profile",screens:["done","bring","proud","photo","work","why"]}
 ];
-// The core onboarding (about 6 minutes). The rest of the profile is asked later, in small bites (see EXTRA).
-var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","profile"]);
+// Onboarding is creating your profile: the card game (about 6 minutes), then your profile (about 4 minutes).
+// Progress is saved at every step, so people can stop and come back.
+var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","profile","done","bring","proud","photo","work","why"]);
 var DECK_N=6;
 var S={name:"",cv:"",extra:"",levels:{},top:[],q:new Array(NQ+2).fill(0),story:newStory(),confirm:"",confirmNote:"",
   screen:"intro",tmp:null,deck:null,deckSig:"",deckAt:0,returnTo:"deck",openArea:"",
@@ -976,7 +991,7 @@ function grouped(src){
 }
 function payload(){
   var g=grouped(S);
-  return {v:4,name:clean(S.name).slice(0,60),cv:clean(S.cv).slice(0,1500),extra:clean(S.extra).slice(0,600),
+  return {v:5,photo:cleanPhoto(S.photo),name:clean(S.name).slice(0,60),cv:clean(S.cv).slice(0,1500),extra:clean(S.extra).slice(0,600),
     top:g.top,good:g.good,curious:g.curious,no:g.no,q:normQ(S.q),story:sanitizeStory(S.story),
     confirm:CONFIRM[S.confirm]?S.confirm:"",confirmNote:clean(S.confirmNote).slice(0,300),
     updated:new Date().toISOString(),source:"app"};
@@ -984,13 +999,13 @@ function payload(){
 function saveDraft(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(function(){
-    lsSet(DRAFT_KEY,JSON.stringify({name:S.name,cv:S.cv,extra:S.extra,levels:S.levels,q:S.q,story:S.story,confirm:S.confirm,confirmNote:S.confirmNote,
+    lsSet(DRAFT_KEY,JSON.stringify({photo:S.photo,extraMode:!!S.extraMode,name:S.name,cv:S.cv,extra:S.extra,levels:S.levels,q:S.q,story:S.story,confirm:S.confirm,confirmNote:S.confirmNote,
       screen:S.screen,deck:S.deck,deckSig:S.deckSig,deckAt:S.deckAt,savedAt:new Date().toISOString()}));
   },250);
 }
 function loadDraft(){var raw=lsGet(DRAFT_KEY);if(!raw)return null;try{return JSON.parse(raw);}catch(e){return null;}}
 function applyRecord(d){
-  S.name=d.name||S.name;S.cv=d.cv||"";S.extra=d.extra||"";
+  S.name=d.name||S.name;S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);
   S.levels={};S.top=sanitizeIds(d.top).slice(0,3);
   sanitizeIds(d.top).concat(sanitizeIds(d.good)).forEach(function(i){S.levels[i]="good";});
   sanitizeIds(d.curious).forEach(function(i){S.levels[i]="curious";});
@@ -1062,18 +1077,19 @@ function go(sc){
   try{window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 function next(){
-  var e=EXTRA.indexOf(S.screen);if(e>-1){var rest=EXTRA.slice(e+1).filter(extraMissing);if(rest.length)go(rest[0]);else finishExtra();return;}
+  if(S.screen==="why"&&!S.extraMode){finishOnboarding();return;}
+  var e=EXTRA.indexOf(S.screen);if(S.extraMode&&e>-1){var rest=EXTRA.slice(e+1).filter(extraMissing);if(rest.length)go(rest[0]);else finishExtra();return;}
   var i=PATH.indexOf(S.screen);if(i>-1&&i<PATH.length-1)go(PATH[i+1]);}
 function back(){
   if(S.screen==="all"){go(S.returnTo||"deck");return;}
   if(S.screen==="deck"&&S.deckAt>0){S.deckAt--;saveDraft();render();return;}
-  var e=EXTRA.indexOf(S.screen);if(e>-1){if(e>0)go(EXTRA[e-1]);else{S.screen="profile";showView("me");}return;}
+  var e=EXTRA.indexOf(S.screen);if(S.extraMode&&e>-1){if(e>0)go(EXTRA[e-1]);else{S.extraMode=false;S.screen="profile";showView("me");}return;}
   var i=PATH.indexOf(S.screen);if(i>0)go(PATH[i-1]);
 }
 function hud(){
   var sc=S.screen,lv=levelOf(sc),wrap=h("div",{class:"hud"});
   var ex=EXTRA.indexOf(sc);
-  if(ex>-1){
+  if(ex>-1&&S.extraMode){
     wrap.append(h("div",{class:"hud-top"},h("button",{type:"button",class:"backb","aria-label":"Back",text:"←",onclick:back}),h("span",{class:"lv"},"➕ ",h("b",{text:"Finish your profile"})," · "+(ex+1)+" of "+EXTRA.length)));
     var tr=h("div",{class:"track","aria-hidden":"true"});EXTRA.forEach(function(_,i){var f=h("i");f.style.width=(i<ex?100:i===ex?50:0)+"%";tr.append(h("span",{class:"seg"},f));});
     wrap.append(tr);return wrap;
@@ -1149,11 +1165,11 @@ var BUILD={
     var hd=h("h1",{tabindex:"-1",text:"Find where you fit"});
     card.append(h("div",{class:"hero"},logo,hd,
       h("p",{class:"lead",text:"We want a clear picture of everyone: what you are good at, what you have done before, and where you could fit at GCG."}),
-      h("div",{class:"badges"},h("span",{class:"badge",text:"⏱ About 6 minutes · stop anytime"}),h("span",{class:"badge",text:"🎯 No wrong answers"}),h("span",{class:"badge",text:"🤝 Not a commitment"}))));
-    var steps=[["You","What kind of work pulls you in"],["Situations","7 quick ones: pick what is most and least like you"],["Jobs","Jobs that might suit you. Pick as many as you like"]];
-    card.append(h("ol",{class:"levels","aria-label":"The three levels"},steps.map(function(s,i){return h("li",null,h("span",{class:"n","aria-hidden":"true",text:String(i+1)}),h("div",null,h("b",{text:s[0]}),h("span",{text:s[1]})));})));
+      h("div",{class:"badges"},h("span",{class:"badge",text:"⏱ About 10 minutes · stop anytime"}),h("span",{class:"badge",text:"🎯 No wrong answers"}),h("span",{class:"badge",text:"🤝 Not a commitment"}))));
+    var steps=[["You","What kind of work pulls you in"],["Situations","7 quick ones: pick what is most and least like you"],["Jobs","Jobs that might suit you. Pick as many as you like"],["Your profile","What you've done, your CV and a photo if you like"]];
+    card.append(h("ol",{class:"levels","aria-label":"The four levels"},steps.map(function(s,i){return h("li",null,h("span",{class:"n","aria-hidden":"true",text:String(i+1)}),h("div",null,h("b",{text:s[0]}),h("span",{text:s[1]})));})));
     card.append(h("div",{class:"prize"},h("b",{text:"🏆 At the end: your player card"}),
-      h("span",{text:"Your natural strengths and the jobs that suit you. Then your own Game Plan: what to do next, your events and your place at GCG. Your card goes to Hinda only; share it yourself if you like."})));
+      h("span",{text:"Your player card, your profile, and your own Game Plan: what to do next, your events and your place at GCG. It all goes to Hinda only; share your card yourself if you like."})));
     var inp=h("input",{type:"text",id:"name",autocomplete:"name",placeholder:"First name is fine",value:S.name});
     inp.addEventListener("input",function(){S.name=inp.value;saveDraft();});
     function start(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}next();}
@@ -1224,12 +1240,24 @@ var BUILD={
     var hd=shell(card,"Your experience","What is a piece of work you are proud of?","One or two lines. Big or small, paid or not.");
     var ta=h("textarea",{id:"proud",rows:"3",maxlength:"400",placeholder:"For example: I ran a 60-person quiz night at uni, from booking the room to hosting it."});
     ta.value=S.story.proud;ta.addEventListener("input",function(){S.story.proud=ta.value;saveDraft();say($("flowStatus"),"");});
-    var cv=h("input",{type:"text",id:"cv",maxlength:"1500",placeholder:"linkedin.com/in/yourname",value:S.cv});
+    var cv=h("textarea",{id:"cv",rows:"4",maxlength:"1500",placeholder:"A link (LinkedIn, Google Drive, Dropbox) or paste your CV: roles, studies, skills"});cv.value=S.cv;
     cv.addEventListener("input",function(){S.cv=cv.value;saveDraft();});
     card.append(h("div",{class:"field"},h("label",{for:"proud",text:"Your proudest work"}),ta),
-      h("div",{class:"field"},h("label",{for:"cv"},"Link to your CV or LinkedIn ",h("span",{class:"opt",text:"optional"})),cv,
-        h("span",{class:"opt",text:"Prefer to share your CV file? Send it to Hinda directly."})));
+      h("div",{class:"field"},h("label",{for:"cv"},"Your CV ",h("span",{class:"opt",text:"optional, but it helps us see everything you've done"})),cv));
     navRow(card,"Next →",function(){if(clean(S.story.proud).length<10){warn("Tell us one thing, even a small one.");ta.focus();return;}next();});
+    return hd;
+  },
+  photo:function(card){
+    var hd=shell(card,"Your profile","Add a photo of yourself","Optional. It goes on your player card and profile, which only you and Hinda see.");
+    var st=h("p",{class:"status",role:"status","aria-live":"polite"});
+    var prev=S.photo?h("img",{class:"avatar big",src:S.photo,alt:"Your photo"}):h("div",{class:"avatar big empty","aria-hidden":"true",text:"🙂"});
+    var file=h("input",{type:"file",accept:"image/*",id:"photoIn",class:"sr"});
+    file.addEventListener("change",function(){var f=file.files&&file.files[0];if(!f)return;say(st,"Preparing your photo…");
+      shrinkPhoto(f,function(url){if(!url){say(st,"That image could not be used. Try another.","warn");return;}S.photo=url;saveDraft();render();});});
+    card.append(h("div",{class:"photobox"},prev,file,
+      h("label",{for:"photoIn",class:"btn go"},S.photo?"📷 Change photo":"📷 Choose a photo"),
+      S.photo?h("button",{type:"button",class:"btn link",text:"Remove photo",onclick:function(){S.photo="";saveDraft();render();}}):null),st);
+    navRow(card,S.photo?"Next →":"Skip for now →",null);
     return hd;
   },
   deck:function(card){
@@ -1337,7 +1365,7 @@ var BUILD={
     card.append(h("div",{class:"box"},h("h3",{text:"Does this sound like you?"}),cb,noteField));
     var st=h("p",{class:"status",id:"submitStatus",role:"status","aria-live":"polite"});
     var canSend=!!(S.db&&S.uid&&S.canWrite!==false);
-    card.append(canSend?h("button",{type:"button",class:"btn go big wide",text:S.sentAt?"Save changes ✓":"Save my card and open my Game Plan ▶",onclick:submit})
+    card.append(canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile ▶",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});}})
         :h("button",{type:"button",class:"btn go big wide",text:"Copy my results",onclick:function(){copyText(shareText(),st,"Copied. Send it to Hinda.");}}),st,
       h("p",{class:"sub center",text:canSend?"Your card goes to Hinda only.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
       h("details",{class:"more"},h("summary",{text:"More: share, PDF, all jobs"}),
@@ -1358,6 +1386,18 @@ function render(){
   var hd=BUILD[kind](card,sc);
   if(hd&&hd.focus)try{hd.focus({preventScroll:true});}catch(e){}
 }
+
+/* ---------- Photos: shrunk on the phone to a small square so they fit in the profile ---------- */
+function shrinkPhoto(file,cb){
+  var rd=new FileReader();
+  rd.onload=function(){var img=new Image();img.onload=function(){
+    try{var sz=240,c=document.createElement("canvas");c.width=sz;c.height=sz;var x=c.getContext("2d");
+      var s=Math.min(img.width,img.height),sx=(img.width-s)/2,sy=(img.height-s)/2;x.drawImage(img,sx,sy,s,s,0,0,sz,sz);
+      var q=0.82,url=c.toDataURL("image/jpeg",q);while(url.length>60000&&q>0.4){q-=0.1;url=c.toDataURL("image/jpeg",q);}cb(url);}catch(e){cb(null);}
+  };img.onerror=function(){cb(null);};img.src=rd.result;};
+  rd.onerror=function(){cb(null);};rd.readAsDataURL(file);
+}
+function cleanPhoto(u){u=String(u||"");return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)&&u.length<90000?u:"";}
 
 /* ---------- Send ---------- */
 function submit(){
@@ -1536,7 +1576,7 @@ function renderPeople(){
       S.db.doc("responses/"+p.id).delete().catch(function(){say($("t-exportStatus"),"Could not remove that entry.","warn");});
     });
     root.append(h("div",{class:"person"},
-      h("h3",{text:pname(p)}),
+      h("h3",{class:"ph-row"},cleanPhoto(p.photo)?h("img",{class:"avatar sm",src:cleanPhoto(p.photo),alt:""}):null,pname(p)),
       titlesOf(p.id).length?h("div",{class:"chips"},titlesOf(p.id).map(function(x){return h("span",{class:"chip t1",text:"🎖 "+x.name});})):null,
       prof?h("p",{class:"ttl",text:prof.title}):h("p",{class:"meta",text:"Situations not answered."}),
       prof?h("div",{class:"chips"},prof.chips.map(function(c,i){return h("span",{class:"chip t"+i,text:c});})):null,
@@ -2363,7 +2403,7 @@ function myTasks(){
   S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(t){if(t.owner===S.uid&&(t.offered||t.manual))out.push({ev:ev,t:t});});});
   return out;
 }
-function pendingCount(){return myTasks().filter(function(x){return taskState(x.ev,x.t)==="offered";}).length;}
+function pendingCount(){return myTasks().filter(function(x){return taskState(x.ev,x.t)==="offered"&&isNow(x.ev,x.t);}).length;}
 function upForGrabs(){
   var out=[],cut=Date.now()-864e5;
   S.events.forEach(function(ev){var d=dateAt(ev,0,null);if(d&&d<cut)return;
@@ -2702,9 +2742,19 @@ function journey(ev,opts){
   return box;
 }
 
+/* ---------- Show only what matters now ---------- */
+// A task is "now" if it belongs to the stage the event is in (or an earlier one), or it is due within a week.
+// Everything else waits, folded, so nobody sees the whole event plan at once.
+var STAGE_IDX={plan:0,prep:1,check:2,play:3,report:4};
+function taskStageIdx(ev,t){if(t.cp!=null&&ev.cps&&ev.cps[t.cp])return STAGE_IDX[stageOfCp(ev,t.cp)];return t.phase==="during"?3:t.phase==="after"?4:1;}
+function curStageIdx(ev){var c=currentCp(ev);return c<(ev.cps||[]).length?STAGE_IDX[stageOfCp(ev,c)]:4;}
+function stageName(i){return STAGES[i]?STAGES[i][2]:"";}
+function isNow(ev,t){var due=taskDue(ev,t);if(due&&due<Date.now()+7*864e5)return true;return taskStageIdx(ev,t)<=curStageIdx(ev);}
+function laterItems(){var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if((x.t.offered||x.t.manual)&&!isNow(ev,x.t))out.push(x);});});return out;}
+
 /* ---------- Team member Home ---------- */
 function myOpenItems(){
-  var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if(x.t.offered||x.t.manual)out.push(x);});});
+  var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if((x.t.offered||x.t.manual)&&isNow(ev,x.t))out.push(x);});});
   return out.sort(function(a,b){var ao=a.st==="offered"?0:1,bo=b.st==="offered"?0:1;return (b.late-a.late)||(ao-bo)||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o)||((a.due||Infinity)-(b.due||Infinity));});
 }
 function myEvents(){
@@ -2734,15 +2784,19 @@ function nextMoveCard(x,st){
 }
 function drawHome(root){
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),items=myOpenItems(),st=h("p",{class:"status",role:"status","aria-live":"polite"});
-  root.append(h("p",{class:"hello",text:greeting()+", "+(clean(S.name)||"there")}),
-    h("h1",{class:"h-sum",text:items.length?"You have "+items.length+" thing"+(items.length>1?"s":"")+" to do.":"You're all clear."}));
+  root.append(h("p",{class:"hello"},S.photo?h("img",{class:"avatar sm",src:S.photo,alt:""}):null,greeting()+", "+(clean(S.name)||"there")),
+    h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):"You're good for now."}));
   pingBanners().forEach(function(b){root.append(b);});
-  if(items.length)root.append(nextMoveCard(items[0],st));
-  else{
+  if(items.length){
+    root.append(nextMoveCard(items[0],st));
+    if(items.length>1)root.append(h("button",{type:"button",class:"then",onclick:function(){S.evSel=items[1].ev.id;showView("mevents");}},h("span",{class:"k",text:"Then"}),h("b",{text:items[1].t.title}),items.length>2?h("span",{class:"sub",text:"+"+(items.length-2)+" more now ›"}):null));
+  }else{
     var ev0=myEvents()[0],doneHere=ev0?(ev0.tasks||[]).filter(function(t){return t.owner===S.uid&&taskState(ev0,t)==="done";}).length:0;
     root.append(h("div",{class:"hero-move clear"},h("p",{class:"k",text:"🎉 You're good"}),h("h2",{class:"hm-t",text:"Nothing needs you right now."}),
       ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+" is "+eventPct(ev0)+"% ready."+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
   }
+  var later=laterItems();
+  if(later.length)root.append(h("p",{class:"laternote",text:"🔒 "+later.length+" more task"+(later.length>1?"s":"")+" later in the plan. They open up as the event moves on."}));
   // GCG right now
   var evs=myEvents(),ev=evs[0]||S.events.filter(function(e){var d=dateAt(e,0,null);return d&&d>Date.now();}).sort(function(a,b){return String(a.date).localeCompare(String(b.date));})[0];
   if(ev){
@@ -2787,11 +2841,12 @@ function drawMyEvents(root){
   if(!evs.length)root.append(h("p",{class:"sub",text:"When you take a task for an event, it shows here."}));
   evs.forEach(function(e){
     var mine=(e.tasks||[]).filter(function(t){return t.owner===S.uid&&(t.offered||t.manual);}),open=mine.filter(function(t){var s=taskState(e,t);return s!=="done"&&s!=="passed";});
-    var nxt=priorityList(e,S.uid).filter(function(x){return x.t.offered||x.t.manual;})[0];
+    var nxt=priorityList(e,S.uid).filter(function(x){return (x.t.offered||x.t.manual)&&isNow(e,x.t);})[0];
+    open=open.filter(function(t){return isNow(e,t);});
     root.append(h("button",{type:"button",class:"card evcard2",onclick:function(){S.evSel=e.id;renderMyEvents();window.scrollTo(0,0);}},
       h("div",{class:"evhead"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:fmtDate(e.date)+" ›"})),
       journey(e,{compact:true,me:S.uid}),
-      h("p",{class:"sub",text:open.length+" of your task"+(open.length===1?"":"s")+" open"+(nxt?" · next: "+nxt.t.title:"")})));
+      h("p",{class:"sub",text:(open.length?open.length+" to do now":"Nothing needed from you right now")+(nxt?" · next: "+nxt.t.title:"")})));
   });
   var grabs=upForGrabs();
   if(grabs.length){
@@ -2812,7 +2867,7 @@ function drawMemberEvent(root,ev){
     links.group?h("a",{class:"btn small chat",href:links.group,target:"_blank",rel:"noopener",text:"💬 Crew chat (WhatsApp) →"}):null,
     h("section",{class:"card hsec"},journey(ev,{vertical:true,me:S.uid,rerender:renderMyEvents})),
     crewDates(ev)||h("span"),
-    h("section",{class:"card hsec"},h("h3",{class:"q",text:"Your part"}),mine.map(function(t){return myTaskCard(ev,t,me);})),
+    yourPart(ev,mine,me),
     crewCredits(ev),
     h("div",{class:"row",style:"margin-top:12px"},
       (links.luma?h("a",{class:"btn small",href:links.luma,target:"_blank",rel:"noopener",text:"Luma page"}):null),
@@ -2821,6 +2876,25 @@ function drawMemberEvent(root,ev){
       h("button",{type:"button",class:"btn small",text:"🖨 Who is doing what",onclick:function(){crewPdf(ev,pst);}})),pst,
     S.run&&S.run.eid===ev.id?h("div",{id:"runBoxT",class:"box"}):h("span"));
   if(S.run)renderRunSheet();
+}
+
+function yourPart(ev,mine,me){
+  var now=[],later=[],done=[];
+  mine.forEach(function(t){var s=taskState(ev,t);if(s==="done"||s==="passed")done.push(t);else if(isNow(ev,t))now.push(t);else later.push(t);});
+  now.sort(function(a,b){var la=taskDue(ev,a),lb=taskDue(ev,b);return (PRI[a.pri||"should"].o-PRI[b.pri||"should"].o)||((la||Infinity)-(lb||Infinity));});
+  var key="more:"+ev.id,showAll=!!S.panel[key],cs=curStageIdx(ev);
+  var box=h("section",{class:"card hsec"},h("p",{class:"k",text:"Your part · now: "+stageName(cs)}),
+    now.length?now.slice(0,showAll?now.length:3).map(function(t){return myTaskCard(ev,t,me);}):h("p",{class:"sub",text:"Nothing needed from you in this stage. 🎉"}),
+    now.length>3&&!showAll?h("button",{type:"button",class:"btn link",text:"Show "+(now.length-3)+" more for now",onclick:function(){S.panel[key]=true;renderMyEvents();}}):null);
+  if(later.length){
+    var byStage={};later.forEach(function(t){var i=taskStageIdx(ev,t);(byStage[i]=byStage[i]||[]).push(t);});
+    box.append(h("details",{class:"more later"},h("summary",{text:"🔒 Later in the plan ("+later.length+")"}),
+      h("p",{class:"sub",text:"These open up when the event gets there. No need to think about them yet."}),
+      Object.keys(byStage).sort().map(function(i){return h("div",{class:"laterstage"},h("b",{text:stageName(Number(i))}),
+        byStage[i].map(function(t){return myTaskCard(ev,t,me);}));})));
+  }
+  if(done.length)box.append(h("details",{class:"more"},h("summary",{text:"✔ Done or passed ("+done.length+")"}),done.map(function(t){return myTaskCard(ev,t,me);})));
+  return box;
 }
 
 /* ---------- Hinda's Today ---------- */
@@ -2911,11 +2985,22 @@ function refresh(){
 function homeView(){return S.isAdmin?"today":"home";}
 
 /* ---------- Finish your profile: the optional questions, asked after onboarding ---------- */
-var EXTRA=["done","bring","proud","work","why"];
+var EXTRA=["done","bring","proud","photo","work","why"];
 function extraMissing(sc){var st=sanitizeStory(S.story);
+  if(sc==="photo")return false;
   return sc==="done"?!(Number(S.q[NQ])>0):sc==="bring"?!(st.hidden.length||st.hiddenNote):sc==="proud"?!st.proud:sc==="work"?!(st.team&&st.structure):!(st.why.length&&st.future);}
-function startExtra(){var first=EXTRA.filter(extraMissing)[0]||EXTRA[0];S.screen=first;saveDraft();showView("flow");}
+function startExtra(only){var first=only||EXTRA.filter(extraMissing)[0]||EXTRA[0];S.extraMode=true;S.screen=first;saveDraft();showView("flow");}
+function saveResponse(done,fail){
+  var p=payload();if(!S.db||!S.uid){if(fail)fail();return;}
+  S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
+  S.db.doc("responses/"+S.uid).set(p).then(function(){S.sentAt=p.updated;renderNav();if(done)done();},function(){if(fail)fail();});
+}
+function finishOnboarding(){
+  saveResponse(function(){S.screen="profile";saveDraft();showView(homeView());toast("🎉 Welcome to your Game Plan");},
+    function(){warn("Could not save here. Go back to your card and use Copy my results.");});
+}
 function finishExtra(){
+  S.extraMode=false;
   if(S.db&&S.uid){var p=payload();S.db.doc("responses/"+S.uid).set(p).then(function(){S.sentAt=p.updated;toast("✓ Profile updated");},function(){});}
   S.screen="profile";saveDraft();showView("me");
 }
@@ -2923,7 +3008,7 @@ function finishExtra(){
 /* ---------- The player card: a reward you can screenshot ---------- */
 function playerCard(p,prof,opts){
   opts=opts||{};
-  var logo=LOGO.indexOf("data:")===0?h("img",{class:"pc2-logo",src:LOGO,alt:""}):null,ts=S.uid?titlesOf(opts.pid||S.uid):[];
+  var ph=cleanPhoto(p.photo),logo=ph?h("img",{class:"avatar card",src:ph,alt:""}):LOGO.indexOf("data:")===0?h("img",{class:"pc2-logo",src:LOGO,alt:""}):null,ts=S.uid?titlesOf(opts.pid||S.uid):[];
   return h("article",{class:"pcard pc2"+(opts.reveal?" reveal":""),"aria-label":(p.name||"Your")+" player card"},
     h("div",{class:"bands","aria-hidden":"true"},h("i"),h("i"),h("i")),
     h("div",{class:"pc2-in"},logo,
@@ -3033,7 +3118,8 @@ function drawMe(root){
   var pst=h("p",{class:"status",role:"status","aria-live":"polite"});
   root.append(h("div",{class:"row center",style:"margin-top:12px"},
     h("button",{type:"button",class:"btn small",text:"📤 Share my card",onclick:function(){downloadPdf(true,pst);}}),
-    h("button",{type:"button",class:"btn small",text:"⬇ PDF",onclick:function(){downloadPdf(false,pst);}})),pst);
+    h("button",{type:"button",class:"btn small",text:"⬇ PDF",onclick:function(){downloadPdf(false,pst);}}),
+    h("button",{type:"button",class:"btn small",text:S.photo?"📷 Change photo":"📷 Add a photo",onclick:function(){startExtra("photo");}})),pst);
   var miss=EXTRA.filter(extraMissing).length;
   if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"➕ Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
   // title
@@ -3134,7 +3220,7 @@ function boot(){
   if(LOGO.indexOf("data:")===0){var m=$("miniLogo");m.src=LOGO;m.hidden=false;$("miniFb").hidden=true;}
   var d=loadDraft();
   if(d){
-    S.name=d.name||"";S.cv=d.cv||"";S.extra=d.extra||"";
+    S.name=d.name||"";S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.extraMode=!!d.extraMode;
     S.levels={};Object.keys(d.levels||{}).forEach(function(k){if(FN[k]&&(d.levels[k]==="good"||d.levels[k]==="curious"||d.levels[k]==="no"))S.levels[k]=d.levels[k];});
     S.q=normQ(d.q);S.story=sanitizeStory(d.story);S.confirm=CONFIRM[d.confirm]?d.confirm:"";S.confirmNote=d.confirmNote||"";
     S.deck=Array.isArray(d.deck)?sanitizeIds(d.deck):null;S.deckSig=d.deckSig||"";S.deckAt=Math.max(0,Number(d.deckAt)||0);

@@ -4,7 +4,7 @@
 
 ## 1. What it is
 
-GCG's team operating system. People onboard by playing a six-minute game ("Find where you fit") that produces a **player card**. From then on, each person has a **Home** that answers three questions within seconds:
+GCG's team operating system. People onboard by **creating their profile**: a short card game ("Find where you fit") that produces a **player card**, then their profile: what they have done, what they bring, proudest work, CV and an optional photo (about 10 minutes, saved as they go). From then on, each person has a **Home** that answers three questions within seconds:
 
 1. What is GCG doing right now?
 2. Where do I fit?
@@ -40,7 +40,8 @@ Team members never see Team, Coverage, Titles, Insights or anyone else's profile
 
 ## 5. Key behaviours
 
-- **Onboarding** is about six minutes: warm-up → seven situations (most / least like me) → six job cards → player card → save. Progress is saved; returning shows "You're 40% through… pick up where you left off". The rest of the profile (what you have done, what you bring, proudest work, how you work, why you are here) is asked later as "Finish your profile: N quick questions".
+- **Onboarding is creating your profile** (about 10 minutes, stop anytime): warm-up → seven situations (most / least like me) → six job cards → player card → what you have done → what you bring → proudest work and CV (link or pasted text) → photo (optional, shrunk on the phone) → how you work → why you are here → Home. Progress is saved; returning shows "You're 40% through… pick up where you left off".
+- **Only what matters now.** Home counts only the tasks for the current stage of each event (or due within a week): one next move, one "then", and a quiet note that more tasks open later. Event pages show "Your part · now: [stage]" with at most three tasks; later tasks sit folded under "Later in the plan", grouped by stage.
 - **Task cards** read in two seconds: deadline first, task, event, why you, "🔒 Needed for: [checkpoint]" on Must tasks, one big button (Take it / Done), quieter secondary options (Can't do it, Not really me; plan date, calendar, stuck, extra hand and crew chat under More).
 - **Declining never hides a task.** "Can't do it" sends it straight back to the pool: it appears in Hinda's Needs you and in Up for grabs. Optional reason: not available / not my thing / need help.
 - **"Not really me"** updates the person's card so fewer tasks like it come their way. The system listens rather than labels people permanently.
