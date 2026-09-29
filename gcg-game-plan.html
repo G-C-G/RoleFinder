@@ -3130,7 +3130,7 @@ function drawHome(root){
     var part=[];mine.forEach(function(t){var n=FN[t.job]?FN[t.job].name:t.title;if(part.indexOf(n)<0)part.push(n);});
     root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"GCG right now"}),
       h("button",{type:"button",class:"evhead",onclick:function(){S.evSel=ev.id;showView("mevents");}},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),
-      journey(ev,{compact:true,me:S.uid,onOpen:function(){S.evSel=ev.id;showView("mevents");}}),
+      h("p",{class:"sub"},eventPct(ev)+"% ready · ",h("button",{type:"button",class:"btn link",text:"See timeline ›",onclick:function(){showView("plan");}})),
       part.length?h("p",{class:"yourpart"},h("b",{text:"Your part: "}),part.slice(0,3).join(" · ")):null));
   }
   // your place
@@ -3171,7 +3171,6 @@ function drawMyEvents(root){
     open=open.filter(function(t){return isNow(e,t);});
     root.append(h("button",{type:"button",class:"card evcard2",onclick:function(){S.evSel=e.id;renderMyEvents();window.scrollTo(0,0);}},
       h("div",{class:"evhead"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:fmtDate(e.date)+(daysTo(e.date)?" · "+daysTo(e.date):"")+" ›"})),
-      journey(e,{compact:true,me:S.uid}),
       h("p",{class:"sub",text:(open.length?open.length+" to do now":"Nothing needed from you right now")+(nxt?" · next: "+nxt.t.title:"")})));
   });
   var grabs=upForGrabs();
@@ -3191,7 +3190,7 @@ function drawMemberEvent(root,ev){
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
-    h("section",{class:"card hsec"},journey(ev,{vertical:true,me:S.uid,rerender:renderMyEvents})),
+    h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
     crewDates(ev)||h("span"),
     yourPart(ev,mine,me),
     crewCredits(ev),
@@ -3265,7 +3264,7 @@ function drawToday(root){
   if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st);nm.style.marginTop="14px";root.append(nm);}
   root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Events"}),
     evs.length?evs.map(function(ev){return h("button",{type:"button",class:"evrow",onclick:function(){S.evOpen=ev.id;showView("events");}},
-      h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),journey(ev,{compact:true}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
+      h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),h("span",{class:"sub",text:eventPct(ev)+"% ready"}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
     h("button",{type:"button",class:"btn small go",text:"Plan an event",onclick:function(){S.evOpen="";showView("events");}})));
 }
 
@@ -3311,7 +3310,7 @@ function drawPlan(root){
     var card=h("section",{class:"card hsec plan-card"},head,journey(ev,{vertical:true,rerender:renderPlan}),
       line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
       next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
-      h("button",{type:"button",class:"btn small",text:S.isAdmin?"Open event":"Open my part",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}));
+      h("button",{type:"button",class:"btn small",text:S.isAdmin?"Open event":"Open my tasks",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}));
     root.append(card);
   });
 }
