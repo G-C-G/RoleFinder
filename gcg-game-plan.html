@@ -832,13 +832,42 @@ body.has-nav{padding-bottom:88px}
 body.home-band .brandbar{background:var(--night);color:var(--on-night);margin:-16px -16px 0;padding:14px 16px 6px;width:calc(100% + 32px)}
 body.home-band .brandbar .bt small{color:var(--gold)}
 body.home-band .pband{margin-top:0;padding-top:8px}
+
+.trow{padding:0;gap:0}
+.trow .tr-b{appearance:none;flex:1;display:flex;align-items:center;gap:12px;background:none;border:0;padding:14px 0;text-align:left;color:var(--ink);cursor:pointer;min-height:56px}
+.tick{appearance:none;flex:none;width:44px;height:44px;margin-left:-8px;background:none;border:0;cursor:pointer;display:grid;place-items:center}
+.tick::before{content:"";width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:var(--card);transition:background .15s,border-color .15s}
+.tick:hover::before,.tick:focus-visible::before{border-color:var(--green,#12894a);background:color-mix(in srgb,var(--green,#12894a) 14%,var(--card))}
+.tick.off{cursor:default}.tick.off::before{border-style:dashed;opacity:.5}
+.tick.on{width:24px;height:24px;margin:0 12px 0 0;border-radius:50%;background:var(--green,#12894a);color:#fff}
+.tick.on::before{display:none}
+.trow.isdone{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.trow.isdone .tr-t b{text-decoration:line-through;color:var(--muted);font-weight:600}
+.tr-pri.new{background:var(--gold);color:var(--on-gold);border-color:var(--gold)}
+.pbar{height:6px;border-radius:99px;background:var(--line);margin:-2px 2px 12px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--green,#12894a);border-radius:99px}
+.donebox{padding:4px 16px;margin-top:14px;gap:0}
+.donebox summary{padding:13px 0;font-weight:600;color:var(--muted);cursor:pointer;min-height:48px;display:flex;align-items:center}
+
+.bellbtn{margin-left:auto;position:relative;appearance:none;background:none;border:0;color:var(--on-night);width:44px;height:44px;display:none;place-items:center;cursor:pointer;border-radius:50%}
+body.home-band .bellbtn:not([hidden]){display:grid}
+.bellbtn[aria-expanded="true"]{background:rgba(255,255,255,.14)}
+.bell-n{position:absolute;top:2px;right:0;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--red,#d7263d);color:#fff;font:700 12px var(--font-body);display:grid;place-items:center;border:2px solid var(--night)}
+.brandbar{position:relative}
+.notepop{position:absolute;z-index:60;top:calc(100% + 8px);left:12px;right:12px;max-height:min(70vh,520px);overflow:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.28);text-align:left}
+.notepop[hidden]{display:none}
+.pop-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;position:sticky;top:0;background:var(--card)}
+.pop-empty{padding:4px 16px 18px;margin:0}
+.notepop .note:first-of-type{border-top:1px solid var(--line)}
 </style>
 
 <div class="wrap" id="wrap">
   <div class="brandbar">
     <span class="mark" id="miniFb" aria-hidden="true">GCG</span>
     <img class="mini" id="miniLogo" alt="" hidden>
-    <div class="bt">Game Plan<small>Gold Coast Games</small></div>
+    <div class="bt">Game Plan</div>
+    <button type="button" class="bellbtn" id="bellBtn" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="false" hidden></button>
+    <div class="notepop" id="notePop" role="dialog" aria-label="Notifications" hidden></div>
   </div>
 
   <main id="view-flow"><div id="flow"></div></main>
@@ -2861,16 +2890,32 @@ function myNotes(){
   return out;
 }
 function noteCount(){return myNotes().length;}
-function noteBox(){
-  var notes=myNotes();if(!notes.length)return null;
-  var open=!!S.panel.notesOpen;
-  var bar=h("button",{type:"button",class:"notebar","aria-expanded":String(open),onclick:function(){S.panel.notesOpen=!open;renderHome();}},
-    ico("bell",20),h("span",{class:"nb-t",text:notes.length===1?"1 notification":notes.length+" notifications"}),h("span",{class:"notes-n",text:String(notes.length)}),ico(open?"chevD":"chevR",18));
-  return h("section",{class:"card notes","aria-label":"Notifications"},bar,open?notes.map(function(n){
-    return h("div",{class:"note"},h("p",{class:"note-k",text:n.kind}),h("p",{class:"note-t",text:n.title}),n.sub?h("p",{class:"sub",text:n.sub}):null,
-      h("div",{class:"row"},n.act?h("button",{type:"button",class:"btn small go",text:n.act.label,onclick:n.act.fn}):null,
-        n.id?h("button",{type:"button",class:"btn small",text:"Got it",onclick:function(){ackNote(n.id);}}):null));}):null);
+function renderBell(){
+  var b=$("bellBtn"),pop=$("notePop");if(!b||!pop)return;
+  var on=document.body.classList.contains("home-band");b.hidden=!on;
+  if(!on){pop.hidden=true;S.panel.notesOpen=false;return;}
+  var notes=myNotes(),open=!!S.panel.notesOpen;
+  clear(b);b.append(ico("bell",24),notes.length?h("span",{class:"bell-n",text:String(notes.length)}):null);
+  b.setAttribute("aria-label",notes.length?notes.length+" notification"+(notes.length>1?"s":""):"Notifications");b.setAttribute("aria-expanded",String(open));
+  pop.hidden=!open;clear(pop);
+  if(!open)return;
+  pop.append(h("div",{class:"pop-h"},h("b",{text:"Notifications"}),h("button",{type:"button",class:"btn link",text:"Close",onclick:function(){S.panel.notesOpen=false;renderBell();}})));
+  if(!notes.length)pop.append(h("p",{class:"sub pop-empty",text:"Nothing new."}));
+  notes.forEach(function(n){
+    pop.append(h("div",{class:"note"},h("p",{class:"note-k",text:n.kind}),h("p",{class:"note-t",text:n.title}),n.sub?h("p",{class:"sub",text:n.sub}):null,
+      h("div",{class:"row"},n.act?h("button",{type:"button",class:"btn small go",text:n.act.label,onclick:function(){S.panel.notesOpen=false;n.act.fn();renderBell();}}):null,
+        n.id?h("button",{type:"button",class:"btn small",text:"Got it",onclick:function(){ackNote(n.id);}}):null)));
+  });
 }
+(function(){
+  document.addEventListener("click",function(e){
+    var b=$("bellBtn"),pop=$("notePop");if(!b||!pop)return;
+    var path=e.composedPath?e.composedPath():[];
+    if(path.indexOf(b)>-1){S.panel.notesOpen=!S.panel.notesOpen;renderBell();}
+    else if(S.panel.notesOpen&&path.indexOf(pop)<0){S.panel.notesOpen=false;renderBell();}
+  });
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&S.panel.notesOpen){S.panel.notesOpen=false;renderBell();}});
+})();
 function sendPing(pid,text,eid,tid,st){
   if(!S.db){say(st,"Pings need the live page.","warn");return null;}
   var id=newId("p"),doc={to:pid,text:clean(text).slice(0,300),eid:eid||"",tid:tid||"",at:nowIso()};
@@ -3091,10 +3136,11 @@ S.evSel="";S.teamTab="people";
 function onboarded(){return !!S.sentAt;}
 function navItems(){return S.isAdmin?NAV_ADMIN:NAV_MEMBER;}
 function renderNav(){
+  renderBell();
   var nav=$("bottomnav");if(!nav)return;clear(nav);
   var show=(onboarded()||S.isAdmin)&&!(S.view==="flow"&&!S.extraMode&&S.screen!=="profile"&&S.screen!=="intro");nav.hidden=!show;document.body.classList.toggle("has-nav",show);
   if(!show)return;
-  var np=S.isAdmin?0:noteCount();
+  var np=S.isAdmin||S.view==="home"?0:noteCount();
   navItems().forEach(function(n){
     var cur=S.view===n[0]||(n[0]==="me"&&S.view==="flow");
     nav.append(h("button",{type:"button",class:"navb","aria-current":cur?"page":null,onclick:function(){go2(n[0]);}},
@@ -3206,17 +3252,19 @@ function renderHome(){
   var root=$("homeBody");if(!root)return;var keep=focusKeep(root);clear(root);
   try{drawHome(root);}finally{focusRestore(root,keep);}
 }
-function nextMoveCard(x,st){
+function quickDone(ev,t,st){writeReply(ev,t,{answer:"take",state:"done",doneAt:nowIso()},st);}
+function quickUndo(ev,t,st){writeReply(ev,t,{answer:"take",state:"started"},st);}
+function nextMoveCard(x,st,multi){
   var ev=x.ev,t=x.t,due=x.due;
   var btns=x.st==="offered"?[
       h("button",{type:"button",class:"btn go big",text:"I'll take it",onclick:function(){writeReply(ev,t,{answer:"take"},st);}}),
       h("button",{type:"button",class:"btn",text:"Can't do it",onclick:function(){writeReply(ev,t,{answer:"pass"},st);}})]
-    :[h("button",{type:"button",class:"btn go big",text:"Go to this task →",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}})];
-  return h("div",{class:"hero-move"},h("p",{class:"k",text:"Do this first"}),h("h2",{class:"hm-t",text:t.title}),
-    h("p",{class:"hm-m"},(ev.name||"")+" · ",due?(x.late?["",clockSpan(due)]:[""+fmtWhen(due)+" · ",clockSpan(due)]):"no deadline"),
+    :[h("button",{type:"button",class:"btn go big",text:"Mark done",onclick:function(){quickDone(ev,t,st);}}),
+      h("button",{type:"button",class:"btn",text:"Open",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}})];
+  return h("div",{class:"hero-move"},h("p",{class:"k",text:"Suggested first"}),h("h2",{class:"hm-t",text:t.title}),
+    h("p",{class:"hm-m"},multi?(ev.name||"")+" · ":"",due?(x.late?["",clockSpan(due)]:[""+fmtWhen(due)+" · ",clockSpan(due)]):"no deadline"),
     (function(){var me=personById(S.uid)||Object.assign(payload(),{id:S.uid}),m=taskMatch(me,t.job,ev.id);if(!m||!m.why.length)return null;
       return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),lc1(m.why[0].replace(/^\S+\s/,"")));})(),
-    t.pri==="must"&&t.cp!=null&&ev.cps&&ev.cps[t.cp]?h("p",{class:"needed",text:"Needed for: "+ev.cps[t.cp].name}):null,
     h("div",{class:"row"},btns),st);
 }
 function drawHome(root){
@@ -3226,25 +3274,35 @@ function drawHome(root){
   var nm=clean(S.name)||"there";
   // Identity band: photo, name, one-line bio. Everything below it is the work.
   root.append(h("button",{type:"button",class:"pband","aria-label":"Your profile",onclick:function(){showView("me");}},
-    S.photo?h("img",{class:"pb-av",src:cleanPhoto(S.photo)||S.photo,alt:""}):h("span",{class:"pb-av init","aria-hidden":"true",text:initials(nm)||"?"}),
     h("span",{class:"pb-who"},h("span",{class:"pb-name",text:nm}),h("span",{class:"pb-bio",text:prof?prof.title:"Finish your profile to see your card"})),
     ico("chevR",18)));
-  root.append(noteBox());
   root.append(h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):"You're good for now."}));
   var top=items[0];
   function open(x){S.evSel=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("mevents");openLinkedTask();}
-  function line(x,locked){
-    var due=x.due,pr=x.t.pri||"should";
-    return h("button",{type:"button",class:"trow"+(x.late?" late":""),onclick:function(){open(x);}},
-      h("span",{class:"tr-t"},h("b",{text:x.t.title}),h("span",{class:"sub",text:(x.ev.name||"")+(due?" · "+(x.late?"overdue, was ":"")+fmtWhen(due):"")})),
-      pr==="must"?h("span",{class:"tr-pri",text:"Must"}):null,ico("chevR",16));
+  var multi=S.events.filter(function(e){return myTasks().some(function(x){return x.ev===e;});}).length>1;
+  function line(x){
+    var due=x.due,pr=x.t.pri||"should",canTick=x.st!=="offered";
+    var sub=(multi?(x.ev.name||"")+(due?" · ":""):"")+(due?(x.late?"overdue, was ":"")+fmtWhen(due):"");
+    return h("div",{class:"trow"+(x.late?" late":"")},
+      canTick?h("button",{type:"button",class:"tick","aria-label":"Mark "+x.t.title+" done",onclick:function(){quickDone(x.ev,x.t,st);}}):h("span",{class:"tick off","aria-hidden":"true"}),
+      h("button",{type:"button",class:"tr-b",onclick:function(){open(x);}},
+        h("span",{class:"tr-t"},h("b",{text:x.t.title}),sub?h("span",{class:"sub",text:sub}):null),
+        x.st==="offered"?h("span",{class:"tr-pri new",text:"New"}):pr==="must"?h("span",{class:"tr-pri",text:"Must"}):null,ico("chevR",16)));
   }
   if(items.length){
     var ph=curPhase(top.ev);
-    root.append(h("div",{class:"phasehead"},h("span",{class:"phasepill",text:PHASE_NAME[ph]}),h("span",{class:"sub",text:(top.ev.name||"")+(daysTo(top.ev.date)?" · "+daysTo(top.ev.date):"")})));
-    root.append(nextMoveCard(top,st));
+    var doneNow=myTasks().filter(function(x){return taskState(x.ev,x.t)==="done"&&taskPhase(x.ev,x.t)===ph;}),total=doneNow.length+items.length;
+    root.append(h("div",{class:"phasehead"},h("span",{class:"phasepill",text:PHASE_NAME[ph]}),h("span",{class:"sub",text:(multi?"":(top.ev.name||"")+(daysTo(top.ev.date)?" · "+daysTo(top.ev.date)+" · ":""))+doneNow.length+" of "+total+" done"})));
+    root.append(h("div",{class:"pbar","aria-hidden":"true"},h("i",{style:"width:"+Math.round(doneNow.length/total*100)+"%"})));
+    root.append(nextMoveCard(top,st,multi));
     var rest=items.slice(1);
-    if(rest.length)root.append(h("p",{class:"hgroup",text:"Also "+PHASE_NAME[ph].toLowerCase()+" · "+rest.length}),h("section",{class:"card hlist"},rest.map(function(x){return line(x);})));
+    if(rest.length)root.append(h("p",{class:"hgroup",text:"Or start with any of these · "+rest.length}),h("section",{class:"card hlist"},rest.map(function(x){return line(x);})));
+    if(doneNow.length){
+      var dd=h("details",{class:"card donebox"},h("summary",{text:"Done · "+doneNow.length}),
+        doneNow.map(function(x){return h("div",{class:"trow isdone"},h("span",{class:"tick on","aria-hidden":"true"},ico("check",16)),h("span",{class:"tr-t"},h("b",{text:x.t.title}),h("span",{class:"sub",text:"Done "+fmtWhen(doneAt(x.ev,x.t))})),
+          replyOf(x.ev,x.t)&&replyOf(x.ev,x.t).state==="done"?h("button",{type:"button",class:"btn link",text:"Undo",onclick:function(){quickUndo(x.ev,x.t,st);}}):null);}));
+      dd.open=!!S.panel.homeDone;dd.addEventListener("toggle",function(){S.panel.homeDone=dd.open;});root.append(dd);
+    }
   }else{
     var ev0=myEvents()[0],doneHere=ev0?(ev0.tasks||[]).filter(function(t){return t.owner===S.uid&&taskState(ev0,t)==="done";}).length:0;
     root.append(h("div",{class:"hero-move clear"},h("p",{class:"k",text:"You're good"}),h("h2",{class:"hm-t",text:"Nothing needs you right now."}),
@@ -3387,7 +3445,7 @@ function drawToday(root){
         h("div",null,h("b",{text:n.t.title}),h("p",{class:"sub",text:[(n.ev.name||""),(n.t.owner?nameOf(n.t.owner):"no one"),n.why==="overdue"?"":n.why].filter(Boolean).join(" · ")}),n.due?clockSpan(n.due):null),act);
     })):h("p",{class:"sub",text:"Nothing needs you right now. "}),
     need.length>5?h("p",{class:"sub",text:"+"+(need.length-5)+" more inside the events."}):null));
-  if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st);nm.style.marginTop="14px";root.append(nm);}
+  if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st,true);nm.style.marginTop="14px";root.append(nm);}
   root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Events"}),
     evs.length?evs.map(function(ev){return h("button",{type:"button",class:"evrow",onclick:function(){S.evOpen=ev.id;showView("events");}},
       h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),h("span",{class:"sub",text:eventPct(ev)+"% ready"}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
