@@ -1690,12 +1690,12 @@ var TEMPLATES={
     T("Ask the client for a testimonial","D7","after",5,null,"should",1,"S",5,"",false),
     T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",5,"",false)
   ]},
-  december:{name:"December Flagship (2 days, outdoor)",start:"09:00",cps:[["Dates and beach site locked",-55],["Permits and partners confirmed",-40],["Tickets live and promo out",-21],["Game checked and run through",-10],["Crew and safety plan ready",-7],["Beach Day",0],["Unity Night",1],["Report done",10]],tasks:[
-    T("Lock the dates and the beach site","A2","before",-60,null,"must",1,"M",0,"",false),
+  outdoor:{name:"Two-day outdoor event",start:"09:00",cps:[["Dates and site locked",-55],["Permits and partners confirmed",-40],["Tickets live and promo out",-21],["Game checked and run through",-10],["Crew and safety plan ready",-7],["Day 1",0],["Day 2",1],["Report done",10]],tasks:[
+    T("Lock the dates and the site","A2","before",-60,null,"must",1,"M",0,"",false),
     T("Apply for permits","F9","before",-50,null,"must",1,"M",1,"",false),
-    T("Bring in running-club partners","E8","before",-45,null,"must",1,"M",1,"",false),
+    T("Bring in partners","E8","before",-45,null,"must",1,"M",1,"",false),
     T("Find sponsors","E7","before",-42,null,"should",1,"L",1,"",false),
-    T("Diaspora outreach plan","B1","before",-40,null,"must",1,"M",1,"",false),
+    T("Audience outreach plan","B1","before",-40,null,"must",1,"M",1,"",false),
     T("Create the Luma event pages","E1","before",-25,null,"must",1,"S",2,"",false),
     T("Design the flyers","D5","before",-24,null,"must",1,"M",2,"",false),
     T("Announce on socials and WhatsApp","D1","before",-21,null,"must",1,"S",2,"announce",false),
@@ -1703,20 +1703,20 @@ var TEMPLATES={
     T("Game check day: run the full game with the whole crew","C9","before",-10,null,"must",1,"M",3,"",true),
     T("First aid, safety and weather plan","F9","before",-10,null,"must",1,"M",4,"",false),
     T("Outdoor projector, power and sound","F3","before",-8,null,"must",1,"M",4,"",false),
-    T("Cleanup supplies, water and prizes","C10","before",-7,null,"must",1,"M",4,"",false),
+    T("Supplies, water and prizes","C10","before",-7,null,"must",1,"M",4,"",false),
     T("Offer tasks and confirm the crew","I1","before",-7,null,"must",1,"S",4,"",false),
     T("Reminder to registered guests","D9","before",-1,null,"should",1,"S",4,"remind",false),
-    T("Beach Day: floor manager","C9","during",0,-60,"must",1,"L",5,"",false),
-    T("Beach Day: set up the site","C5","during",0,-60,"must",4,"M",5,"",false),
-    T("Beach Day: welcome and registration","C2","during",0,-15,"must",2,"M",5,"",false),
-    T("Beach Day: host the games","C1","during",0,0,"must",1,"L",5,"",false),
-    T("Beach Day: first aid on site","F9","during",0,0,"must",1,"M",5,"",false),
-    T("Beach Day: photos and video","C8","during",0,0,"should",2,"M",5,"",false),
-    T("Unity Night: set up projector and seating","C3","during",1,480,"must",2,"M",6,"",false),
-    T("Unity Night: welcome and registration","C2","during",1,570,"must",2,"M",6,"",false),
-    T("Unity Night: host the trivia","C1","during",1,600,"must",1,"L",6,"",false),
-    T("Unity Night: keep score and check answers","C7","during",1,600,"must",1,"M",6,"",false),
-    T("Unity Night: pack down","F2","during",1,780,"must",3,"M",6,"",false),
+    T("Day 1: floor manager","C9","during",0,-60,"must",1,"L",5,"",false),
+    T("Day 1: set up the site","C5","during",0,-60,"must",4,"M",5,"",false),
+    T("Day 1: welcome and registration","C2","during",0,-15,"must",2,"M",5,"",false),
+    T("Day 1: host the games","C1","during",0,0,"must",1,"L",5,"",false),
+    T("Day 1: first aid on site","F9","during",0,0,"must",1,"M",5,"",false),
+    T("Day 1: photos and video","C8","during",0,0,"should",2,"M",5,"",false),
+    T("Day 2: set up projector and seating","C3","during",1,480,"must",2,"M",6,"",false),
+    T("Day 2: welcome and registration","C2","during",1,570,"must",2,"M",6,"",false),
+    T("Day 2: host the games","C1","during",1,600,"must",1,"L",6,"",false),
+    T("Day 2: keep score and check answers","C7","during",1,600,"must",1,"M",6,"",false),
+    T("Day 2: pack down","F2","during",1,780,"must",3,"M",6,"",false),
     T("Thank-you message and feedback form","D9","after",2,null,"must",1,"S",7,"thanks",false),
     T("Thank partners and sponsors","E8","after",4,null,"must",1,"S",7,"",false),
     T("Count money and record costs","G1","after",5,null,"must",1,"M",7,"",false),
@@ -1724,13 +1724,13 @@ var TEMPLATES={
     T("Debrief: what worked, what to change","A2","after",10,null,"must",1,"S",7,"",false)
   ]}
 };
-var TEMPLATE_ORDER=["flagship","welcome","standard","december"];
+var TEMPLATE_ORDER=["flagship","welcome","standard","outdoor"];
 // Keep Must for what makes or breaks the event (about a third); everything else starts as Should.
 var MUST_KEEP=["Quality check the game: fits the audience and the room, every answer verified","Game check day: run the full game with the whole crew","Brief Global Games and make the game","Review the game and verify every answer","Review the game and verify answers","Lock the venue and terms","Create the Luma event page","Announce on socials and WhatsApp",
   "Offer tasks and confirm the crew","Floor manager","Doors open: welcome and registration","Host the three rounds","Keep score and check answers","Count money and record costs",
   "Send the quote and proposal","Deposit received","Brief Global Games and make the custom game","Client signs off the game","Host the welcome game","Host the game","Invoice and follow up payment",
-  "Lock the dates and the beach site","Apply for permits","Make the Beach Day games and cleanup game","Make the Unity Night trivia (current events)","First aid, safety and weather plan","Create the Luma event pages",
-  "Beach Day: floor manager","Beach Day: host the games","Beach Day: first aid on site","Unity Night: host the trivia"];
+  "Lock the dates and the site","Apply for permits","First aid, safety and weather plan","Create the Luma event pages",
+  "Day 1: floor manager","Day 1: host the games","Day 1: first aid on site","Day 2: host the games"];
 TEMPLATE_ORDER.forEach(function(k){TEMPLATES[k].tasks.forEach(function(x){if(x.pri==="must"&&MUST_KEEP.indexOf(x.title)<0)x.pri="should";});});
 function mustShare(ev){var g={},m={};(ev.tasks||[]).forEach(function(t){var k=t.group||t.id;g[k]=1;if(t.pri==="must")m[k]=1;});var n=Object.keys(g).length;return {must:Object.keys(m).length,all:n};}
 var STATE_LABEL={open:"No one yet",draft:"Not sent",offered:"⏳ Waiting",taken:"✅ Taken",started:"▶ In progress",stuck:"⚠ Stuck",done:"✔ Done",passed:"🙅 Passed"};
@@ -2054,7 +2054,7 @@ function drawEvents(root){
   if(S.run&&S.run.eid===ev.id)renderRunSheet();
 }
 function drawEventList(root){
-  var nameIn=h("input",{type:"text","aria-label":"New event name",placeholder:"Event name, e.g. Lawyers Game Night","data-k":"new-name"});
+  var nameIn=h("input",{type:"text","aria-label":"New event name",placeholder:"Event name","data-k":"new-name"});
   var dateIn=h("input",{type:"date","aria-label":"New event date","data-k":"new-date"});
   var tSel=h("select",{"aria-label":"Template"},TEMPLATE_ORDER.map(function(k){return h("option",{value:k,text:TEMPLATES[k].name});}),h("option",{value:"",text:"Blank event"}));
   root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Events"}),h("h2",{class:"q",text:"Plan an event"}),
