@@ -1073,7 +1073,7 @@ function go(sc){
   clearTimeout(advTimer);
   var from=levelOf(S.screen),to=levelOf(sc);
   if(from>-1&&to>from&&from<LEVELS.length)toast("★ Level "+(from+1)+" cleared: "+LEVELS[from].name);
-  S.screen=sc;S.tmp=null;saveDraft();render();
+  S.screen=sc;S.tmp=null;saveDraft();render();renderNav();
   try{window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 function next(){
@@ -1177,7 +1177,7 @@ var BUILD={
     card.append(h("div",{class:"field"},h("label",{for:"name",text:"Your name"}),inp));
     var started=PATH.indexOf(S.screen)>0||answeredAsk(S.q)>0;
     if(started){var pc=Math.round(Math.max(PATH.indexOf(S.screen),1+answeredAsk(S.q))/(PATH.length-1)*100);
-      card.append(h("div",{class:"resume"},h("b",{text:"You're "+Math.min(pc,95)+"% through your player card."}),h("span",{text:" Everything so far is saved. Pick up where you left off."})));}
+      card.append(h("div",{class:"resume"},h("b",{text:"You're "+Math.min(pc,95)+"% through setting up."}),h("span",{text:" Everything so far is saved. Pick up where you left off."})));}
     navRow(card,started?"Continue ▶":"Let's play ▶",function(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}if(started&&PATH.indexOf(S.screen)>0){render();return;}var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});if(started&&answeredAsk(S.q)>0)go(k>-1?"s"+k:"deck");else next();},{big:true});
     return hd;
   },
@@ -1347,7 +1347,7 @@ var BUILD={
   },
   profile:function(card){
     var p=payload(),prof=profileOf(p);
-    var hd=shell(card,"Game complete","Here is your player card",null);
+    var hd=shell(card,"Your card is ready","Here is your player card",null);
     if(!prof){card.append(h("p",{class:"sub",text:"Answer the situations and your card shows up here."}));return hd;}
     card.append(playerCard(p,prof,{reveal:true}));
     card.append(h("div",{class:"pc-lines quiet"},prof.lines.slice(0,2).map(function(l){return h("p",{text:l});})));
@@ -1365,8 +1365,8 @@ var BUILD={
     card.append(h("div",{class:"box"},h("h3",{text:"Does this sound like you?"}),cb,noteField));
     var st=h("p",{class:"status",id:"submitStatus",role:"status","aria-live":"polite"});
     var canSend=!!(S.db&&S.uid&&S.canWrite!==false);
-    card.append(canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile ▶",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});}})
-        :h("button",{type:"button",class:"btn go big wide",text:"Copy my results",onclick:function(){copyText(shareText(),st,"Copied. Send it to Hinda.");}}),st,
+    card.append(!canSend?h("button",{type:"button",class:"btn go big wide",text:"Next: build my profile ▶",onclick:function(){go("done");}}):canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile ▶",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});}})
+        :null,st,
       h("p",{class:"sub center",text:canSend?"Your card goes to Hinda only.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
       h("details",{class:"more"},h("summary",{text:"More: share, PDF, all jobs"}),
         h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"📤 Share my card",onclick:function(){downloadPdf(true);}}),h("button",{type:"button",class:"btn small",text:"⬇ PDF",onclick:function(){downloadPdf(false);}}),
@@ -1386,6 +1386,8 @@ function render(){
   var hd=BUILD[kind](card,sc);
   if(hd&&hd.focus)try{hd.focus({preventScroll:true});}catch(e){}
 }
+
+function safeUrl(u){u=clean(u);if(!u)return "";if(!/^[a-z]+:/i.test(u))u="https://"+u;return /^https?:\/\/[^\s]+$/i.test(u)?u:"";}
 
 /* ---------- Photos: shrunk on the phone to a small square so they fit in the profile ---------- */
 function shrinkPhoto(file,cb){
@@ -2041,7 +2043,8 @@ function suggestEvent(ev){
 }
 function nextBest(ev,t){
   if(t.owner&&(t.passed||[]).indexOf(t.owner)<0)(t.passed=t.passed||[]).push(t.owner);
-  t.manual="";t.offered=false;var r=rankFor(ev,t,eventLoad(ev,t))[0];t.owner=r?r.p.id:"";
+  // The next best person gets the offer straight away, so a declined task never sits waiting.
+  t.manual="";var r=rankFor(ev,t,eventLoad(ev,t))[0];t.owner=r?r.p.id:"";t.offered=!!r;t.ots=r?nowIso():"";
   saveEvent(ev,true);renderEvents();
 }
 function giveTo(ev,t,pid){t.owner=pid;t.offered=true;t.ots=nowIso();t.manual="";saveEvent(ev,true);renderEvents();}
@@ -2667,7 +2670,7 @@ function onboarded(){return !!S.sentAt;}
 function navItems(){return S.isAdmin?NAV_ADMIN:NAV_MEMBER;}
 function renderNav(){
   var nav=$("bottomnav");if(!nav)return;clear(nav);
-  var show=onboarded()||S.isAdmin;nav.hidden=!show;document.body.classList.toggle("has-nav",show);
+  var show=(onboarded()||S.isAdmin)&&!(S.view==="flow"&&!S.extraMode&&S.screen!=="profile"&&S.screen!=="intro");nav.hidden=!show;document.body.classList.toggle("has-nav",show);
   if(!show)return;
   var np=pendingCount()+myPings().length;
   navItems().forEach(function(n){
@@ -2716,7 +2719,8 @@ function journey(ev,opts){
   var row=h("ol",{class:opts.vertical?"jr jv":"jr","aria-label":"Event stages"});
   st.forEach(function(s,i){
     var state=s.done?"done":s.cur?"cur":s.late?"late":"";
-    var you=mine.some(function(t){return s.tasks.indexOf(t)>-1&&taskState(ev,t)!=="done";});
+    var ci=st.findIndex(function(x){return x.cur;});
+    var you=(i===ci||i===ci+1)&&mine.some(function(t){return s.tasks.indexOf(t)>-1&&taskState(ev,t)!=="done"&&taskState(ev,t)!=="passed";});
     var key=ev.id+":"+s.key,open=!!S.tlOpen[key];
     var b=h("button",{type:"button",class:"jp","data-s":state,"aria-expanded":opts.compact?null:String(open),
       "aria-label":s.name+": "+(s.done?"done":s.cur?"happening now":s.late?"behind":"to come"),
@@ -2763,8 +2767,7 @@ function myEvents(){
     .filter(function(ev){var d=dateAt(ev,0,null);return !d||d>cut;})
     .sort(function(a,b){return String(a.date||"~").localeCompare(String(b.date||"~"));});
 }
-function missingProfile(){var st=sanitizeStory(S.story),n=0;
-  if(!(Number(S.q[NQ])>0))n++;if(!st.proud)n++;if(!st.team||!st.structure)n++;if(!st.why.length||!st.future)n++;return n;}
+function missingProfile(){return EXTRA.filter(extraMissing).length;}
 function renderHome(){
   var root=$("homeBody");if(!root)return;var keep=focusKeep(root);clear(root);
   try{drawHome(root);}finally{focusRestore(root,keep);}
@@ -2774,11 +2777,11 @@ function nextMoveCard(x,st){
   var btns=x.st==="offered"?[
       h("button",{type:"button",class:"btn go big",text:"✋ I'll take it",onclick:function(){writeReply(ev,t,{answer:"take"},st);}}),
       h("button",{type:"button",class:"btn",text:"Can't do it",onclick:function(){writeReply(ev,t,{answer:"pass"},st);}})]
-    :[h("button",{type:"button",class:"btn go big",text:"Open it →",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}})];
+    :[h("button",{type:"button",class:"btn go big",text:"Go to this task →",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}})];
   return h("div",{class:"hero-move"},h("p",{class:"k",text:"🎯 Your next move"}),h("h2",{class:"hm-t",text:t.title}),
     h("p",{class:"hm-m"},(ev.name||"")+" · ",due?(x.late?["🔴 ",clockSpan(due)]:["⏰ "+fmtWhen(due)+" · ",clockSpan(due)]):"no deadline"),
     (function(){var me=personById(S.uid)||Object.assign(payload(),{id:S.uid}),m=taskMatch(me,t.job,ev.id);if(!m||!m.why.length)return null;
-      return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),m.why.slice(0,2).map(function(w){return lc1(w.replace(/^\S+\s/,""));}).join(" + "));})(),
+      return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),lc1(m.why[0].replace(/^\S+\s/,"")));})(),
     t.pri==="must"&&t.cp!=null&&ev.cps&&ev.cps[t.cp]?h("p",{class:"needed",text:"🔒 Needed for: "+ev.cps[t.cp].name}):null,
     h("div",{class:"row"},btns),st);
 }
@@ -2813,7 +2816,7 @@ function drawHome(root){
     ts.length?h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:"🎖 "+x.name});})):null,
     h("p",{class:"pl-type",text:prof.title}),
     h("div",{class:"chips"},prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
-    h("p",{class:"pl-n",text:hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evCount).length+" event"+(Object.keys(evCount).length===1?"":"s")}),
+    h("p",{class:"pl-n",text:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evCount).length+" event"+(Object.keys(evCount).length===1?"":"s"):"Your trail starts with your first task."}),
     missingProfile()?h("button",{type:"button",class:"btn small",text:"➕ Finish your profile ("+missingProfile()+" quick question"+(missingProfile()>1?"s":"")+")",onclick:function(){startExtra();}}):null));
   // next crew date + calendar
   var crew=[];evs.forEach(function(e){crewWide(e).forEach(function(t){var d=taskDue(e,t);if(d&&d>Date.now())crew.push({ev:e,t:t,d:d});});});
@@ -2864,14 +2867,14 @@ function drawMemberEvent(root,ev){
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
     h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
-    links.group?h("a",{class:"btn small chat",href:links.group,target:"_blank",rel:"noopener",text:"💬 Crew chat (WhatsApp) →"}):null,
+    safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"💬 Crew chat (WhatsApp) →"}):null,
     h("section",{class:"card hsec"},journey(ev,{vertical:true,me:S.uid,rerender:renderMyEvents})),
     crewDates(ev)||h("span"),
     yourPart(ev,mine,me),
     crewCredits(ev),
     h("div",{class:"row",style:"margin-top:12px"},
-      (links.luma?h("a",{class:"btn small",href:links.luma,target:"_blank",rel:"noopener",text:"Luma page"}):null),
-      (links.group?h("a",{class:"btn small",href:links.group,target:"_blank",rel:"noopener",text:"Crew group"}):null),
+      (safeUrl(links.luma)?h("a",{class:"btn small",href:safeUrl(links.luma),target:"_blank",rel:"noopener",text:"Luma page"}):null),
+      (safeUrl(links.group)?h("a",{class:"btn small",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew group"}):null),
       h("button",{type:"button",class:"btn small",text:"🕒 Run sheet",onclick:function(){S.run={eid:ev.id};renderMyEvents();var b=$("runBoxT");if(b&&b.scrollIntoView)b.scrollIntoView({block:"start"});}}),
       h("button",{type:"button",class:"btn small",text:"🖨 Who is doing what",onclick:function(){crewPdf(ev,pst);}})),pst,
     S.run&&S.run.eid===ev.id?h("div",{id:"runBoxT",class:"box"}):h("span"));
@@ -2913,7 +2916,7 @@ function renderToday(){
 function drawToday(root){
   var evs=activeEvents(),need=[];
   evs.forEach(function(ev){
-    atRisk(ev).forEach(function(x){need.push({sev:x.late||x.st==="stuck"||x.st==="passed"?"now":"soon",ev:ev,t:x.t,st:x.st,due:x.due,why:riskWhy(x)});});
+    atRisk(ev).forEach(function(x){if(claimsOf(ev,x.t).length)return;need.push({sev:x.late||x.st==="stuck"||x.st==="passed"?"now":"soon",ev:ev,t:x.t,st:x.st,due:x.due,why:riskWhy(x)});});
     (ev.tasks||[]).forEach(function(t){
       claimsOf(ev,t).forEach(function(c){need.push({sev:"soon",ev:ev,t:t,st:"claim",pid:c.pid,why:nameOf(c.pid)+" offered to take it"});});
       S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===t.id&&r.hand&&r.hand.at&&!(t.handDone&&t.handDone[r.pid+r.hand.at]))need.push({sev:"now",ev:ev,t:t,st:"hand",pid:r.pid,why:nameOf(r.pid)+" needs an extra hand"+(r.hand.note?": "+r.hand.note:"")});});
@@ -2996,6 +2999,7 @@ function saveResponse(done,fail){
   S.db.doc("responses/"+S.uid).set(p).then(function(){S.sentAt=p.updated;renderNav();if(done)done();},function(){if(fail)fail();});
 }
 function finishOnboarding(){
+  if(!S.db||!S.uid){S.screen="profile";saveDraft();render();setTimeout(function(){say($("submitStatus"),"Sending from this page is not set up for you. Use Copy my results and send them to Hinda.","warn");},60);return;}
   saveResponse(function(){S.screen="profile";saveDraft();showView(homeView());toast("🎉 Welcome to your Game Plan");},
     function(){warn("Could not save here. Go back to your card and use Copy my results.");});
 }
@@ -3070,7 +3074,7 @@ function myTaskCard(ev,t,me){
         st==="taken"?h("button",{type:"button",class:"btn small",text:"▶ I've started",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):null,
         st==="stuck"?h("button",{type:"button",class:"btn small",text:"👍 Unstuck",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):h("button",{type:"button",class:"btn small",text:"⚠ I'm stuck",onclick:function(){S.panel[key]=panel==="stuck"?"":"stuck";renderTasks();}}),
         h("button",{type:"button",class:"btn small",text:"🙋 Need an extra hand",onclick:function(){S.panel[key]=panel==="hand"?"":"hand";renderTasks();}}),
-        ev.links&&ev.links.group?h("a",{class:"btn small",href:ev.links.group,target:"_blank",rel:"noopener",text:"💬 Ask in crew chat"}):null,
+        ev.links&&safeUrl(ev.links.group)?h("a",{class:"btn small",href:safeUrl(ev.links.group),target:"_blank",rel:"noopener",text:"💬 Ask in crew chat"}):null,
         t.msg?h("button",{type:"button",class:"btn small",text:"✉️ Guest message",onclick:function(){copyText(guestMessage(ev,t.msg),stat,"Guest message copied. Paste it into Luma, WhatsApp or SMS.");}}):null),
       panel==="stuck"?h("div",{class:"box"},inp("stuck","What is blocking you?"),h("button",{type:"button",class:"btn small",text:"Flag as stuck",onclick:function(){S.panel[key]="";writeReply(ev,t,{state:"stuck",stuck:clean(dr.stuck)},stat);}})):null,
       panel==="hand"?h("div",{class:"box"},inp("hand","What do you need help with?"),h("button",{type:"button",class:"btn small",text:"Ask for an extra hand",onclick:function(){S.panel[key]="";writeReply(ev,t,{hand:{at:nowIso(),note:clean(dr.hand)}},stat);}})):null);
@@ -3114,7 +3118,7 @@ function drawMe(root){
     return;
   }
   var hist=historyOf(S.uid),evc={};hist.forEach(function(x){evc[x.ev.id]=1;});
-  root.append(playerCard(p,prof,{counts:hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evc).length+" event"+(Object.keys(evc).length===1?"":"s")}));
+  root.append(playerCard(p,prof,{counts:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evc).length+" event"+(Object.keys(evc).length===1?"":"s"):"New to the crew"}));
   var pst=h("p",{class:"status",role:"status","aria-live":"polite"});
   root.append(h("div",{class:"row center",style:"margin-top:12px"},
     h("button",{type:"button",class:"btn small",text:"📤 Share my card",onclick:function(){downloadPdf(true,pst);}}),
