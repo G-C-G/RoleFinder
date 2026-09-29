@@ -285,6 +285,30 @@ table.map{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
 .rolemeta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px}
 .rolenote{color:var(--warn);font-weight:700}
 @media (max-width:560px){.rolerow{grid-template-columns:minmax(0,1fr)}}
+ .banner{appearance:none;width:100%;margin-bottom:12px;border:2.5px solid var(--edge);border-radius:16px;background:var(--green);color:var(--on-green);font-weight:800;font-size:15.5px;padding:12px 14px;text-align:left;cursor:pointer;box-shadow:0 4px 0 var(--shadow)}
+.evlist{display:grid;gap:10px;margin-top:14px}
+.evcard{appearance:none;text-align:left;display:grid;gap:2px;border:2.5px solid var(--edge);border-radius:16px;background:var(--card);padding:14px 16px;cursor:pointer;box-shadow:0 4px 0 var(--shadow)}
+.evcard b{font-family:var(--font-display);font-weight:600;font-size:18px}
+.evmeta{font-weight:800;font-size:14px;color:var(--gold-ink)}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.tasks{display:grid;gap:12px}
+.task{display:grid;gap:10px;border:2.5px solid var(--edge);border-radius:16px;padding:12px;background:var(--bg)}
+.task[data-s="taken"]{background:var(--green-soft)}
+.task[data-s="passed"]{background:var(--red-soft)}
+.task[data-s="offered"]{background:var(--gold-soft)}
+.task-top{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.task-top input{flex:1 1 240px;min-width:0;min-height:44px;font-weight:800}
+.task-top .ttl{flex:1;font-size:17px}
+.task .k{font-weight:800;font-size:13px;color:var(--muted)}
+.pill{flex:none;border-radius:999px;border:2px solid var(--edge);padding:3px 10px;font-weight:800;font-size:13px;background:var(--card);white-space:nowrap}
+.pill[data-s="taken"]{background:var(--green);color:var(--on-green)}
+.pill[data-s="passed"]{background:var(--red);color:var(--on-red)}
+.pill[data-s="offered"]{background:var(--gold);color:var(--on-gold)}
+.seg3.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.addchip{cursor:pointer;min-height:36px}
+.msgrow{display:grid;gap:6px;border-top:1.5px solid var(--soft);padding-top:10px}
+.msgrow pre{white-space:pre-wrap;margin:0;background:var(--card);border-radius:10px;padding:10px;border:1.5px solid var(--soft)}
+.crew{margin:8px 0;padding-left:1.2em;display:grid;gap:4px}
 .next-phase{border:2.5px dashed var(--edge);border-radius:16px;padding:6px 14px 14px;background:var(--card)}
 </style>
 
@@ -296,12 +320,18 @@ table.map{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
     <div class="tabs" id="tabs" role="tablist" aria-label="Sections" hidden>
       <button class="tab" role="tab" id="tab-flow" data-view="flow" aria-selected="true">My card</button>
       <button class="tab" role="tab" id="tab-mine" data-view="mine" aria-selected="false" hidden>Proposed roles</button>
+      <button class="tab" role="tab" id="tab-tasks" data-view="tasks" aria-selected="false" hidden>My tasks</button>
+      <button class="tab" role="tab" id="tab-crew" data-view="crew" aria-selected="false" hidden>Crew</button>
       <button class="tab" role="tab" id="tab-team" data-view="team" aria-selected="false" hidden>Team</button>
+      <button class="tab" role="tab" id="tab-events" data-view="events" aria-selected="false" hidden>Events</button>
     </div>
   </div>
 
   <main id="view-flow"><div id="flow"></div></main>
 
+  <section id="view-crew" hidden><div id="crewBody"></div></section>
+  <section id="view-tasks" hidden><div id="tasksBody"></div></section>
+  <section id="view-events" hidden><div id="evBody"></div></section>
   <section id="view-mine" hidden><div id="mineBody" class="card"></div></section>
 
   <section id="view-team" hidden>
@@ -896,7 +926,7 @@ var BUILD={
     var steps=[["You","What kind of work pulls you in"],["Situations","8 quick ones: pick what is most and least like you"],["Experience","What you have done and what you bring"],["Jobs","Jobs that might suit you. Pick as many as you like"],["About you","How you work best and why you are here"]];
     card.append(h("ol",{class:"levels","aria-label":"The five levels"},steps.map(function(s,i){return h("li",null,h("span",{class:"n","aria-hidden":"true",text:String(i+1)}),h("div",null,h("b",{text:s[0]}),h("span",{text:s[1]})));})));
     card.append(h("div",{class:"prize"},h("b",{text:"🏆 At the end: your player card"}),
-      h("span",{text:"Your natural strengths, how you work best, the jobs that suit you, and strengths written for your CV or LinkedIn. Download it as a PDF and keep it."})));
+      h("span",{text:"Your natural strengths, how you work best, the jobs that suit you, and strengths written for your CV or LinkedIn. Download it as a PDF and keep it. Your card is shared with the GCG crew, so we all know who does what."})));
     var inp=h("input",{type:"text",id:"name",autocomplete:"name",placeholder:"First name is fine",value:S.name});
     inp.addEventListener("input",function(){S.name=inp.value;saveDraft();});
     function start(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}next();}
@@ -1112,6 +1142,8 @@ function render(){
   var root=$("flow");clear(root);
   var sc=S.screen,kind=/^s\d+$/.test(sc)?"sit":sc;
   if(!BUILD[kind]){S.screen=sc="intro";kind="intro";}
+  var np=pendingCount();
+  if(np)root.append(h("button",{type:"button",class:"banner",onclick:function(){showView("tasks");}},"🎲 You have "+np+" task"+(np>1?"s":"")+" to answer. Tap to see them →"));
   if(sc!=="intro")root.append(hud());
   var card=h("section",{class:"card"+(reduceMotion?"":" enter")});
   root.append(card);
@@ -1225,15 +1257,18 @@ function downloadPdf(){
 /* ---------- Views ---------- */
 function showView(v){
   S.view=v;
-  ["flow","mine","team"].forEach(function(k){$("view-"+k).hidden=(k!==v);$("tab-"+k).setAttribute("aria-selected",String(k===v));});
-  $("wrap").classList.toggle("wide",v==="team");
-  if(v==="team")renderTeam();if(v==="mine")renderMine();
+  ["flow","tasks","crew","mine","team","events"].forEach(function(k){$("view-"+k).hidden=(k!==v);$("tab-"+k).setAttribute("aria-selected",String(k===v));});
+  $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="crew");
+  if(v==="team")renderTeam();if(v==="mine")renderMine();if(v==="tasks")renderTasks();if(v==="crew")renderCrew();if(v==="events")renderEvents();if(v==="flow")render();
   window.scrollTo(0,0);
 }
 function updateTabs(){
   var showMine=!!(S.roles&&S.roles.assign);
-  $("tab-mine").hidden=!showMine;$("tab-team").hidden=!S.isAdmin;
-  $("tabs").hidden=!(showMine||S.isAdmin);
+  var nt=myTasks().length,np=pendingCount();
+  $("tab-mine").hidden=!showMine;$("tab-team").hidden=!S.isAdmin;$("tab-events").hidden=!S.isAdmin;
+  $("tab-tasks").hidden=!nt;$("tab-tasks").textContent="My tasks"+(np?" ("+np+")":"");
+  var nc=S.people.length>0;$("tab-crew").hidden=!nc;
+  $("tabs").hidden=!(showMine||S.isAdmin||nt||nc);
 }
 function renderMine(){
   var root=$("mineBody");clear(root);
@@ -1344,6 +1379,27 @@ function renderCov(){
     if(rows.length)root.append(h("div",{class:"cov-area"},h("h3",{text:a.name}),rows));
   });
   if(!root.firstChild)root.append(h("p",{class:"sub",text:"Every job has at least one person."}));
+}
+
+/* ---------- Crew: everyone's player card, visible to the whole team ---------- */
+function renderCrew(){
+  var root=$("crewBody");if(!root)return;clear(root);
+  root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"The crew"}),h("h2",{class:"q",text:"Everyone at GCG"}),
+    h("p",{class:"sub",text:"Each person's player card: what they are strong at, what they have done and what they want to do. Use it to find the right person to ask."})));
+  var grid=h("div",{class:"people",style:"margin-top:14px"});
+  S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).forEach(function(p){
+    var prof=profileOf(p),yes=yesOf(p),done=maskLabels(EXP,p.q&&p.q[NQ]),st=sanitizeStory(p.story);
+    var brings=labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]);
+    grid.append(h("div",{class:"person"},h("h3",{text:pname(p)}),
+      prof?h("p",{class:"ttl",text:prof.title}):null,
+      prof?h("div",{class:"chips"},prof.chips.map(function(c,i){return h("span",{class:"chip t"+i,text:c});})):null,
+      yes.length?h("p",{class:"lab",text:"Up for"}):null,yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name});})):null,
+      done.length?h("p",{class:"lab",text:"Has done"}):null,done.length?h("p",{text:done.join("; ")}):null,
+      brings.length?h("p",{class:"lab",text:"Brings"}):null,brings.length?h("p",{text:brings.join("; ")}):null,
+      st.proud?h("p",{class:"lab",text:"Proudest work"}):null,st.proud?h("p",{text:st.proud}):null,
+      workStyle(st)?h("p",{class:"meta",text:"Works best: "+workStyle(st)}):null));
+  });
+  root.append(grid);
 }
 
 /* ---------- Draft roles (next phase) ---------- */
@@ -1465,6 +1521,296 @@ function addPasted(){
   });
 }
 
+/* ---------- Events: break an event into tasks, offer each task to the best-suited person ---------- */
+// [task title, the job it belongs to]. Hinda can also type any task and pick its closest job.
+var TASK_LIB=[
+ ["Host the night","C1"],["Run the door and registration","C2"],["Set up projector and sound","C3"],["Music and sound cues","C4"],
+ ["Set up the room","C5"],["Keep the run sheet and timing","C6"],["Keep score and check answers","C7"],["Take photos and video on the night","C8"],
+ ["Edit a highlights video","D3"],["Post on social media","D1"],["Design the flyer","D5"],["Send invitations and reminders","D6"],
+ ["Collect guest testimonials","D7"],["Set up tickets and registration","E1"],["Talk to the venue","E6"],["Transport and equipment","F2"],
+ ["Check the games and answers before the night","F7"],["Track payments and costs","G1"],["Record attendance and feedback","F5"]
+];
+var TEMPLATE_GAME=["Host the night","Run the door and registration","Set up projector and sound","Music and sound cues","Set up the room","Keep the run sheet and timing","Keep score and check answers","Take photos and video on the night","Post on social media"];
+var STATE_LABEL={open:"No one yet",draft:"Not sent",offered:"⏳ Waiting",taken:"✅ Taken",passed:"🙅 Passed"};
+S.events=[];S.replies=[];S.evOpen="";S.evMsgs=null;
+function newId(p){return p+Date.now().toString(36)+Math.floor(Math.random()*46656).toString(36);}
+function evById(id){return S.events.filter(function(e){return e.id===id;})[0]||null;}
+function latestReply(eid,tid,pid){
+  return S.replies.filter(function(r){return r.eid===eid&&r.tid===tid&&r.pid===pid;}).sort(function(a,b){return String(b.at).localeCompare(String(a.at));})[0]||null;
+}
+function taskState(ev,t){
+  if(t.manual==="take")return "taken";if(t.manual==="pass")return "passed";
+  if(!t.owner)return "open";
+  var r=t.offered?latestReply(ev.id,t.id,t.owner):null;
+  if(r)return r.answer==="take"?"taken":"passed";
+  return t.offered?"offered":"draft";
+}
+function passersOf(ev,t){
+  var out=(t.passed||[]).slice();
+  S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===t.id&&r.answer==="pass"&&out.indexOf(r.pid)<0)out.push(r.pid);});
+  return out;
+}
+function gcgCount(pid,job,skipEid){
+  var n=0;S.events.forEach(function(ev){if(ev.id===skipEid)return;(ev.tasks||[]).forEach(function(t){if(t.job===job&&t.owner===pid&&taskState(ev,t)==="taken")n++;});});return n;
+}
+// Why this person suits a task: the jobs they said yes to, any role they hold, what they have done, what they bring.
+function taskMatch(p,job,skipEid){
+  if(!FN[job])return null;
+  var s=scoreOf(p,job);if(s<0)return null;
+  var pts=0,why=[],tr=FN_TRAITS[job]||[],st=sanitizeStory(p.story),mask=Number(p.q&&p.q[NQ])||0;
+  if(s>=SCORE.good){pts+=3;why.push("👍 Said yes to "+FN[job].name);}else if(s===SCORE.curious){pts+=1;why.push("🤔 Said maybe to "+FN[job].name);}
+  if(S.roles&&S.roles.assign&&S.roles.assign[job]===p.id){pts+=2;why.push("🎖 Holds this role");}
+  var done=EXP.filter(function(e,k){return (mask&(1<<k))&&e[2].some(function(t){return tr.indexOf(t)>-1;});});
+  if(done.length){pts+=2;why.push("✅ Has "+lc1(done[0][1]));}
+  var br=HIDDEN.filter(function(r){return st.hidden.indexOf(r[0])>-1&&(r[2]||[]).indexOf(job)>-1;});
+  if(br.length){pts+=2;why.push("🧰 Brings: "+br[0][1]);}
+  var past=p.id?gcgCount(p.id,job,skipEid):0;
+  if(past){pts+=1.5;why.push("⭐ Did this at "+past+" GCG event"+(past>1?"s":""));}
+  var fit=fitFor(p.q,job);
+  if(fit!=null){pts+=1.5*fit;if(fit>=0.65)why.push("💪 Strong in "+tr.map(function(t){return TRAIT_LABEL[t].toLowerCase();}).join(" and "));}
+  return {pts:pts,why:why};
+}
+function rankFor(ev,t,load){
+  var out=passersOf(ev,t);
+  return S.people.filter(function(p){return out.indexOf(p.id)<0;}).map(function(p){var m=taskMatch(p,t.job,ev.id);return m?{p:p,m:m,v:m.pts-1.2*((load&&load[p.id])||0)}:null;})
+    .filter(Boolean).sort(function(a,b){return b.v-a.v;});
+}
+function eventLoad(ev,skip){
+  var load={};(ev.tasks||[]).forEach(function(t){if(t!==skip&&t.owner&&taskState(ev,t)!=="passed")load[t.owner]=(load[t.owner]||0)+1;});return load;
+}
+var evTimers={},evDirty={};
+// While a local edit is waiting to save, incoming snapshots keep the local copy so nothing typed is lost.
+function saveEvent(ev,now){
+  clearTimeout(evTimers[ev.id]);evDirty[ev.id]=(evDirty[ev.id]||0)+1;
+  function go(){
+    ev=evById(ev.id)||ev;
+    if(!S.db){evDirty[ev.id]=0;return;}
+    var doc={name:clean(ev.name).slice(0,80),date:ev.date||"",place:clean(ev.place).slice(0,120),notes:clean(ev.notes).slice(0,600),
+      tasks:(ev.tasks||[]).map(function(t){return {id:t.id,title:clean(t.title).slice(0,120),job:FN[t.job]?t.job:"",owner:t.owner||"",offered:!!t.offered,manual:t.manual||"",passed:(t.passed||[]).slice(0,30)};}),
+      updated:new Date().toISOString()};
+    var id=ev.id,mark=evDirty[id];
+    S.db.doc("events/"+id).set(doc).then(function(){if(evDirty[id]===mark)evDirty[id]=0;},function(){evDirty[id]=0;say($("evStatus"),"Could not save the event. Check that you have edit access.","warn");});
+  }
+  if(now)go();else evTimers[ev.id]=setTimeout(go,600);
+}
+function suggestEvent(ev){
+  var n=0;
+  (ev.tasks||[]).forEach(function(t){
+    var st=taskState(ev,t);if(st!=="open")return;
+    var r=rankFor(ev,t,eventLoad(ev,t))[0];if(r){t.owner=r.p.id;t.offered=false;n++;}
+  });
+  saveEvent(ev,true);renderEvents();
+  say($("evStatus"),n?"Suggested people for "+n+" task"+(n>1?"s":"")+". Check them, then send the offers.":"Nothing to suggest. Every task has someone, or nobody fits yet.",n?"ok":"");
+}
+function nextBest(ev,t){
+  if(t.owner&&(t.passed||[]).indexOf(t.owner)<0)(t.passed=t.passed||[]).push(t.owner);
+  t.manual="";t.offered=false;
+  var r=rankFor(ev,t,eventLoad(ev,t))[0];t.owner=r?r.p.id:"";
+  saveEvent(ev,true);renderEvents();
+}
+function fmtDate(d){if(!d)return "Date not set";try{return new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});}catch(e){return d;}}
+function offerMessages(ev){
+  var by={};
+  (ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="offered")(by[t.owner]=by[t.owner]||[]).push(t);});
+  return Object.keys(by).map(function(pid){
+    var p=S.people.filter(function(x){return x.id===pid;})[0],name=p?pname(p):"there";
+    var app=!/^manual-/.test(pid);
+    var L=["Hi "+name+"! For "+(ev.name||"our next event")+" ("+fmtDate(ev.date)+(ev.place?", "+ev.place:"")+") we would love you to take:"];
+    by[pid].forEach(function(t){L.push("- "+t.title);});
+    L.push(app?"Open the GCG Role Finder and tap My tasks to say yes or no to each one.":"Reply yes or no to each one.");
+    return {pid:pid,name:name,text:L.join("\n")};
+  });
+}
+function sendOffers(ev){
+  var n=0;(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"){t.offered=true;n++;}});
+  saveEvent(ev,true);S.evMsgs={eid:ev.id,list:offerMessages(ev)};renderEvents();
+  say($("evStatus"),n?"Sent "+n+" offer"+(n>1?"s":"")+". People see them under My tasks. Copy a message below to nudge them on WhatsApp.":"No new offers to send.",n?"ok":"");
+}
+function statusPill(st){return h("span",{class:"pill","data-s":st,text:STATE_LABEL[st]});}
+function jobSelect(val,onchange,label){
+  var sel=h("select",{"aria-label":label||"Closest job"},h("option",{value:"",text:"Closest job…"}),
+    AREAS.map(function(a){return h("optgroup",{label:a.short},FNS.filter(function(f){return f.area===a.id;}).map(function(f){return h("option",{value:f.id,text:f.name});}));}));
+  sel.value=val||"";sel.addEventListener("change",function(){onchange(sel.value);});return sel;
+}
+function renderEvents(){
+  var root=$("evBody");if(!root||!S.isAdmin)return;
+  var keep=focusKeep(root);clear(root);
+  try{drawEvents(root);}finally{focusRestore(root,keep);}
+}
+// Redraws happen while people type (a save comes back). Put the cursor back where it was.
+function focusKeep(root){
+  var ae=document.activeElement;if(!ae||!root.contains(ae)||!ae.getAttribute("data-k"))return null;
+  var k={k:ae.getAttribute("data-k")};try{k.s=ae.selectionStart;k.e=ae.selectionEnd;}catch(e){}return k;
+}
+function focusRestore(root,k){
+  if(!k)return;var el=root.querySelector('[data-k="'+k.k+'"]');if(!el)return;
+  try{el.focus({preventScroll:true});if(k.s!=null)el.setSelectionRange(k.s,k.e);}catch(e){}
+}
+function drawEvents(root){
+  var ev=S.evOpen?evById(S.evOpen):null;
+  if(!ev){
+    root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Events"}),h("h2",{class:"q",text:"Break an event into tasks"}),
+      h("p",{class:"sub",text:"Add the tasks an event needs. The page suggests who fits each one, from the jobs they said yes to, any role they hold, what they have done and what they bring. They say yes or no to each task."}),
+      h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"＋ New event",onclick:function(){
+        if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
+        var e={id:newId("e"),name:"New event",date:"",place:"",notes:"",tasks:[]};S.events.push(e);S.evOpen=e.id;saveEvent(e,true);renderEvents();}})),
+      h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
+    var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
+    if(!list.length)root.append(h("p",{class:"sub",style:"margin-top:14px",text:"No events yet."}));
+    root.append(h("div",{class:"evlist"},list.map(function(e){
+      var ts=e.tasks||[],taken=ts.filter(function(t){return taskState(e,t)==="taken";}).length,wait=ts.filter(function(t){return taskState(e,t)==="offered";}).length;
+      return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;renderEvents();window.scrollTo(0,0);}},
+        h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")}),
+        h("span",{class:"evmeta",text:taken+" of "+ts.length+" tasks taken"+(wait?" · "+wait+" waiting":"")}));
+    })));
+    return;
+  }
+  // one event
+  function field(label,type,val,set){
+    var inp=h("input",{type:type,value:val||"","aria-label":label,placeholder:label,"data-k":"ev-"+label});
+    inp.addEventListener("input",function(){set(inp.value);saveEvent(ev);});
+    return h("div",{class:"field"},h("label",{text:label}),inp);
+  }
+  var ts=ev.tasks||(ev.tasks=[]);
+  var counts={};ts.forEach(function(t){var s=taskState(ev,t);counts[s]=(counts[s]||0)+1;});
+  root.append(h("div",{class:"card"},
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"← All events",onclick:function(){S.evOpen="";S.evMsgs=null;renderEvents();}})),
+    field("Event name","text",ev.name,function(v){ev.name=v;}),
+    h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;}),field("Place","text",ev.place,function(v){ev.place=v;})),
+    h("div",{class:"chips"},["taken","offered","passed","draft","open"].filter(function(k){return counts[k];}).map(function(k){return h("span",{class:"pill","data-s":k,text:counts[k]+" · "+STATE_LABEL[k]});})),
+    h("div",{class:"row"},
+      h("button",{type:"button",class:"btn go",text:"✨ Suggest people",onclick:function(){suggestEvent(ev);}}),
+      h("button",{type:"button",class:"btn green",text:"📣 Send offers",onclick:function(){sendOffers(ev);}}),
+      h("button",{type:"button",class:"btn",text:"🖨 Who is doing what (PDF)",onclick:function(){crewPdf(ev,$("evStatus"));}})),
+    h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
+  if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length){
+    root.append(h("div",{class:"box",style:"margin-top:14px"},h("h3",{text:"Messages to nudge people"}),
+      S.evMsgs.list.map(function(m){var st=h("span",{class:"status"});
+        return h("div",{class:"msgrow"},h("pre",{class:"mono",text:m.text}),h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy for "+m.name,onclick:function(){copyText(m.text,st,"Copied.");}}),st));})));
+  }
+  // tasks
+  var tl=h("div",{class:"tasks"});
+  if(!ts.length)tl.append(h("p",{class:"sub",text:"No tasks yet. Add the usual game night set, or add tasks one by one below."}));
+  ts.forEach(function(t){
+    var st=taskState(ev,t),rank=rankFor(ev,t,eventLoad(ev,t)),cur=S.people.filter(function(p){return p.id===t.owner;})[0];
+    var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:rank.length?"Choose someone…":"Nobody fits yet"}),
+      rank.map(function(x,i){return h("option",{value:x.p.id,text:(i===0?"★ ":"")+pname(x.p)+(x.m.why.length?" · "+x.m.why[0].replace(/^\S+ /,""):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"")});}));
+    if(cur&&!rank.some(function(x){return x.p.id===cur.id;}))sel.append(h("option",{value:cur.id,text:pname(cur)}));
+    sel.value=t.owner||"";
+    sel.addEventListener("change",function(){t.owner=sel.value;t.offered=false;t.manual="";saveEvent(ev,true);renderEvents();});
+    var why=cur?taskMatch(cur,t.job,ev.id):null;
+    var r=t.owner?latestReply(ev.id,t.id,t.owner):null;
+    var title=h("input",{type:"text",value:t.title,"aria-label":"Task","data-k":"title-"+t.id});
+    title.addEventListener("input",function(){t.title=title.value;saveEvent(ev);});
+    tl.append(h("div",{class:"task","data-s":st},
+      h("div",{class:"task-top"},title,statusPill(st)),
+      h("div",{class:"two-col"},jobSelect(t.job,function(v){t.job=v;t.owner="";t.offered=false;t.manual="";saveEvent(ev,true);renderEvents();},"Closest job for "+t.title),sel),
+      why&&why.why.length?h("div",{class:"chips"},why.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
+      r&&r.note?h("p",{class:"sub"},h("b",{text:(cur?pname(cur):"They")+" said: "}),r.note):null,
+      h("div",{class:"row"},
+        st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best →",onclick:function(){nextBest(ev,t);}}):null,
+        t.owner&&st!=="taken"?h("button",{type:"button",class:"btn small",text:"✓ Mark taken",onclick:function(){t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
+        t.owner&&st!=="passed"&&st!=="open"?h("button",{type:"button",class:"btn small",text:"✗ Mark passed",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null,
+        h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){ev.tasks=ts.filter(function(x){return x!==t;});saveEvent(ev,true);renderEvents();}}))));
+  });
+  // add tasks
+  var have=ts.map(function(t){return t.title;});
+  function addTask(title,job){ts.push({id:newId("t"),title:title,job:job,owner:"",offered:false,manual:"",passed:[]});}
+  var dr=S.evDraft||(S.evDraft={text:"",job:""});
+  var custom=h("input",{type:"text",placeholder:"Or type any task, e.g. Make a 30-second teaser video","aria-label":"New task","data-k":"custom",value:dr.text});
+  custom.addEventListener("input",function(){dr.text=custom.value;});
+  root.append(h("div",{class:"card",style:"margin-top:14px"},h("h3",{class:"q",text:"Tasks"}),tl,
+    h("div",{class:"box"},h("h3",{text:"Add tasks"}),
+      h("button",{type:"button",class:"btn small",text:"＋ Add the usual game night set",onclick:function(){
+        TEMPLATE_GAME.forEach(function(tt){if(have.indexOf(tt)<0){var j=TASK_LIB.filter(function(x){return x[0]===tt;})[0];addTask(tt,j[1]);}});saveEvent(ev,true);renderEvents();}}),
+      h("div",{class:"chips"},TASK_LIB.filter(function(x){return have.indexOf(x[0])<0;}).map(function(x){
+        return h("button",{type:"button",class:"chip addchip",text:"＋ "+x[0],onclick:function(){addTask(x[0],x[1]);saveEvent(ev,true);renderEvents();}});})),
+      custom,jobSelect(dr.job,function(v){dr.job=v;},"Closest job for the new task"),
+      h("button",{type:"button",class:"btn small",text:"Add this task",onclick:function(){
+        if(!clean(custom.value)){custom.focus();return;}if(!dr.job){say($("evStatus"),"Pick the closest job so the page knows who fits.","warn");return;}
+        addTask(clean(custom.value),dr.job);dr.text="";dr.job="";saveEvent(ev,true);renderEvents();}}),
+      h("p",{class:"sub",text:"The closest job tells the page who fits: people who said yes to it, hold it, or have done that kind of work."}))),
+    h("div",{class:"row",style:"margin-top:14px"},h("button",{type:"button",class:"btn link",text:"Delete this event",onclick:function(e){
+      var b=e.currentTarget;if(b.getAttribute("data-armed")!=="1"){b.setAttribute("data-armed","1");b.textContent="Tap again to delete";return;}
+      S.db.doc("events/"+ev.id).delete().then(function(){S.evOpen="";renderEvents();},function(){say($("evStatus"),"Could not delete.","warn");});}})));
+}
+
+function crewBlocks(ev){
+  var B=[],ts=ev.tasks||[],who={};
+  function nm(pid){var p=S.people.filter(function(x){return x.id===pid;})[0];return p?pname(p):(pid===S.uid&&S.name?clean(S.name):"Someone");}
+  B.push({t:"title",text:(ev.name||"Event")+" - Who is doing what"});
+  B.push({t:"sub",text:"Gold Coast Games. "+fmtDate(ev.date)+(ev.place?" at "+ev.place:"")+". Printed "+new Date().toISOString().slice(0,10)+"."});
+  B.push({t:"h",text:"By task"});
+  ts.forEach(function(t){
+    var st=taskState(ev,t),line;
+    if(st==="taken"){line=nm(t.owner);(who[t.owner]=who[t.owner]||[]).push(t.title);}
+    else if(st==="offered")line=nm(t.owner)+" (not confirmed yet)";
+    else if(st==="draft")line=nm(t.owner)+" (not asked yet)";
+    else line="NOT COVERED YET";
+    B.push({t:"li",text:t.title+": "+line});
+  });
+  var ids=Object.keys(who);
+  if(ids.length){B.push({t:"h",text:"By person"});ids.sort(function(a,b){return nm(a).localeCompare(nm(b));}).forEach(function(pid){B.push({t:"li",text:nm(pid)+": "+who[pid].join("; ")});});}
+  return B;
+}
+function savePdf(name,blocks,st){
+  var bytes;try{bytes=buildPdf(blocks);}catch(e){say(st,"Could not make the PDF here.","warn");return;}
+  if(S.dl){S.dl.save({filename:name,data:bytes}).then(function(){say(st,"Saved "+name+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the PDF here.","warn");});return;}
+  try{var bl=new Blob([bytes],{type:"application/pdf"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved "+name+" to your downloads.","ok");}
+  catch(e){say(st,"Could not save the PDF here.","warn");}
+}
+function crewPdf(ev,st){savePdf("GCG-"+((ev.name||"event").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"event")+"-crew.pdf",crewBlocks(ev),st);}
+
+/* ---------- My tasks: what each person has been offered ---------- */
+function myTasks(){
+  var out=[];if(!S.uid)return out;
+  S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(t){if(t.owner===S.uid&&(t.offered||t.manual))out.push({ev:ev,t:t});});});
+  return out;
+}
+function pendingCount(){return myTasks().filter(function(x){return taskState(x.ev,x.t)==="offered";}).length;}
+function answerTask(ev,t,answer,note,st){
+  if(!S.db||!S.uid){say(st,"Answering needs the live page.","warn");return;}
+  var r={eid:ev.id,tid:t.id,pid:S.uid,answer:answer,note:clean(note).slice(0,200),at:new Date().toISOString()};
+  S.db.doc("replies/"+ev.id+"__"+t.id+"__"+S.uid).set(r).then(function(){
+    S.replies=S.replies.filter(function(x){return !(x.eid===r.eid&&x.tid===r.tid&&x.pid===r.pid);}).concat([r]);
+    renderTasks();updateTabs();
+  },function(){say(st,"Could not save your answer. Tell Hinda directly.","warn");});
+}
+function renderTasks(){
+  var root=$("tasksBody");if(!root)return;
+  var keep=focusKeep(root);clear(root);
+  try{drawTasks(root);}finally{focusRestore(root,keep);}
+}
+function drawTasks(root){
+  var mine=myTasks(),me=S.people.filter(function(x){return x.id===S.uid;})[0]||Object.assign(payload(),{id:S.uid});
+  root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"My tasks"}),h("h2",{class:"q",text:mine.length?"Tasks we would love you to take":"No tasks for you right now"}),
+    h("p",{class:"sub",text:"Each one was picked for you from your player card. Say yes to the ones you want. Saying no is fine."})));
+  var byEv={};mine.forEach(function(x){(byEv[x.ev.id]=byEv[x.ev.id]||{ev:x.ev,ts:[]}).ts.push(x.t);});
+  Object.keys(byEv).map(function(k){return byEv[k];}).sort(function(a,b){return String(a.ev.date||"~").localeCompare(String(b.ev.date||"~"));}).forEach(function(g){
+    var pst=h("p",{class:"status",role:"status","aria-live":"polite"});
+    var crew=(g.ev.tasks||[]).filter(function(t){return taskState(g.ev,t)==="taken";});
+    root.append(h("div",{class:"card",style:"margin-top:14px"},
+      h("div",null,h("h3",{class:"q",text:g.ev.name||"Event"}),h("p",{class:"sub",text:fmtDate(g.ev.date)+(g.ev.place?" · "+g.ev.place:"")})),
+      h("details",null,h("summary",{text:"👥 The whole crew ("+crew.length+" of "+(g.ev.tasks||[]).length+" tasks taken)"}),
+        h("ul",{class:"crew"},(g.ev.tasks||[]).map(function(t){var st=taskState(g.ev,t),p=S.people.filter(function(x){return x.id===t.owner;})[0];
+          return h("li",null,h("b",{text:t.title+": "}),st==="taken"?(p?pname(p):t.owner===S.uid?"You":"Taken"):st==="offered"?"Waiting":"Not covered yet");})),
+        h("button",{type:"button",class:"btn small",text:"🖨 Who is doing what (PDF)",onclick:function(){crewPdf(g.ev,pst);}}),pst),
+      g.ts.map(function(t){
+        var st=taskState(g.ev,t),m=taskMatch(me,t.job,g.ev.id),r=latestReply(g.ev.id,t.id,S.uid),stat=h("p",{class:"status",role:"status","aria-live":"polite"});
+        var note=h("input",{type:"text",maxlength:"200",placeholder:"Anything to add? (optional)","aria-label":"Note for "+t.title,"data-k":"note-"+g.ev.id+t.id,value:(S.noteDraft&&S.noteDraft[g.ev.id+t.id])||(r&&r.note)||""});
+        note.addEventListener("input",function(){(S.noteDraft=S.noteDraft||{})[g.ev.id+t.id]=note.value;});
+        return h("div",{class:"task","data-s":st},
+          h("div",{class:"task-top"},h("b",{class:"ttl",text:t.title}),statusPill(st)),
+          m&&m.why.length?h("div",{class:"chips"},h("span",{class:"k",text:"Why you:"}),m.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
+          note,
+          h("div",{class:"seg3 two"},
+            h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(st==="taken"),text:"✋ I'll take it",onclick:function(){answerTask(g.ev,t,"take",note.value,stat);}}),
+            h("button",{type:"button",class:"sb","data-c":"no","aria-pressed":String(st==="passed"),text:"🙅 Not this one",onclick:function(){answerTask(g.ev,t,"pass",note.value,stat);}})),
+          stat);
+      })));
+  });
+}
+
 /* ---------- Capabilities ---------- */
 function initCaps(){
   var cl=window.claude;
@@ -1496,12 +1842,19 @@ function initCaps(){
         if(snap.exists&&Array.isArray(snap.data().critical))S.critical=sanitizeIds(snap.data().critical);
         if(S.view==="team"){renderRoles();renderCov();}
       },function(){});
-      if(S.isAdmin){
-        S.db.collection("responses").onSnapshot(function(snap){
-          S.people=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;o.q=normQ(o.q);return o;});
-          if(S.view==="team")renderTeam();
-        },function(){});
-      }
+      S.db.collection("events").onSnapshot(function(snap){
+        S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=Object.assign({},d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
+          .concat(S.events.filter(function(e){return evDirty[e.id]&&!snap.docs.some(function(d){return d.id===e.id;});}));
+        updateTabs();if(S.view==="events")renderEvents();if(S.view==="tasks")renderTasks();if(S.view==="flow")render();
+      },function(){});
+      S.db.collection("replies").onSnapshot(function(snap){
+        S.replies=snap.docs.map(function(d){return d.data();}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
+        updateTabs();if(S.view==="events")renderEvents();if(S.view==="tasks")renderTasks();
+      },function(){});
+      S.db.collection("responses").onSnapshot(function(snap){
+        S.people=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;o.q=normQ(o.q);return o;});
+        updateTabs();if(S.view==="team")renderTeam();if(S.view==="crew")renderCrew();if(S.view==="events")renderEvents();
+      },function(){});
     });
   }).catch(function(){});
 }
@@ -1527,7 +1880,7 @@ function boot(){
   $("pasteBtn").addEventListener("click",addPasted);
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();
