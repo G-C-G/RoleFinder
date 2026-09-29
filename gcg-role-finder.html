@@ -341,6 +341,7 @@ table.map{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
 .tl-feed{display:grid;gap:2px;font-size:14px;border-top:1.5px solid var(--soft);padding-top:8px}
 @media (prefers-reduced-motion:no-preference){.tl-fill{transition:width .6s ease-out}}
 .plan{display:grid;gap:6px}
+.crewdates{background:var(--gold-soft)}
 .plan label{font-weight:800;font-size:14px}
 .calrow .k{font-weight:800;font-size:13.5px;color:var(--muted)}
 .howto{border:2px dashed var(--edge);border-radius:14px;padding:4px 12px;background:var(--bg)}
@@ -1606,118 +1607,126 @@ var PRI={must:{l:"Must",e:"🔴",o:0},should:{l:"Should",e:"🟡",o:1},nice:{l:"
 var SIZE={S:"Small",M:"Medium",L:"Large"};
 var PHASES=[["before","Before"],["during","On the day"],["after","After"]];
 // A template task: title, job, phase, day offset from the event date, minutes from start time (on-the-day tasks only),
-// priority, people needed, size, checkpoint index, and the guest message it drafts (if any).
+// priority, people needed, size, checkpoint index, the guest message it drafts (if any), and whether the whole crew takes part.
 // Games come ready from Global Games, so an event only goes in once its game exists: no game-making steps here.
-function T(title,job,phase,d,m,pri,need,size,cp,msg){return {title:title,job:job,phase:phase,d:d,m:m,pri:pri,need:need||1,size:size||"M",cp:cp,msg:msg||""};}
+function T(title,job,phase,d,m,pri,need,size,cp,msg,all){return {title:title,job:job,phase:phase,d:d,m:m,pri:pri,need:need||1,size:size||"M",cp:cp,msg:msg||"",all:!!all};}
 var TEMPLATES={
-  flagship:{name:"Flagship night",start:"18:30",cps:[["Venue, partner and host locked",-21],["Tickets live and promo out",-14],["Crew confirmed and tested",-2],["Event night",0],["Report done",7]],tasks:[
-    T("Lock the venue and terms","E6","before",-24,null,"must",1,"M",0,""),
-    T("Bring in the community partner","E8","before",-22,null,"must",1,"M",0,""),
-    T("Invite and confirm a guest host","C11","before",-21,null,"should",1,"S",0,""),
-    T("Create the Luma event page","E1","before",-18,null,"must",1,"S",1,""),
-    T("Design the flyer","D5","before",-16,null,"should",1,"M",1,""),
-    T("Announce on socials and WhatsApp","D1","before",-14,null,"must",1,"S",1,"announce"),
-    T("Partner shares the invite with their members","E8","before",-14,null,"must",1,"S",1,""),
-    T("Send personal invitations","D6","before",-10,null,"should",1,"S",1,"announce"),
-    T("Sort welcome drinks and prizes","C10","before",-5,null,"should",1,"S",2,""),
-    T("Offer tasks and confirm the crew","I1","before",-5,null,"must",1,"S",2,""),
-    T("Brief the host on the game and rounds","C11","before",-3,null,"must",1,"S",2,""),
-    T("Test projector, sound and slides","F3","before",-2,null,"must",1,"S",2,""),
-    T("Reminder to registered guests","D9","before",-1,null,"should",1,"S",2,"remind"),
-    T("Day-of reminder","D9","during",0,-390,"should",1,"S",3,"dayof"),
-    T("Floor manager","C9","during",0,-120,"must",1,"L",3,""),
-    T("Set up the room","C5","during",0,-120,"must",3,"M",3,""),
-    T("Tech and sound check","C3","during",0,-90,"must",1,"S",3,""),
-    T("Doors open: welcome and registration","C2","during",0,-30,"must",2,"M",3,""),
-    T("Welcome game","C1","during",0,0,"should",1,"S",3,""),
-    T("Host the three rounds","C1","during",0,15,"must",1,"L",3,""),
-    T("Keep score and check answers","C7","during",0,15,"must",1,"M",3,""),
-    T("Music and sound cues","C4","during",0,0,"should",1,"M",3,""),
-    T("Photos and video","C8","during",0,0,"should",1,"M",3,""),
-    T("Collect guest testimonials","D7","during",0,150,"nice",1,"S",3,""),
-    T("Pack down and return equipment","F2","during",0,180,"must",2,"M",3,""),
-    T("Thank-you message and feedback form","D9","after",1,null,"must",1,"S",4,"thanks"),
-    T("Post photos from the night","D1","after",1,null,"should",1,"S",4,""),
-    T("Count money and record costs","G1","after",3,null,"must",1,"M",4,""),
-    T("Thank the community partner","E8","after",3,null,"should",1,"S",4,""),
-    T("Edit the highlights video","D3","after",4,null,"should",1,"M",4,""),
-    T("Record attendance and feedback","F5","after",5,null,"should",1,"S",4,""),
-    T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",4,"")
+  flagship:{name:"Flagship night",start:"18:30",cps:[["Venue, partner and host locked",-21],["Tickets live and promo out",-14],["Game checked and run through",-7],["Crew confirmed and tested",-2],["Event night",0],["Report done",7]],tasks:[
+    T("Lock the venue and terms","E6","before",-24,null,"must",1,"M",0,"",false),
+    T("Bring in the community partner","E8","before",-22,null,"must",1,"M",0,"",false),
+    T("Invite and confirm a guest host","C11","before",-21,null,"should",1,"S",0,"",false),
+    T("Create the Luma event page","E1","before",-18,null,"must",1,"S",1,"",false),
+    T("Design the flyer","D5","before",-16,null,"should",1,"M",1,"",false),
+    T("Announce on socials and WhatsApp","D1","before",-14,null,"must",1,"S",1,"announce",false),
+    T("Partner shares the invite with their members","E8","before",-14,null,"must",1,"S",1,"",false),
+    T("Send personal invitations","D6","before",-10,null,"should",1,"S",1,"announce",false),
+    T("Quality check the game: fits the audience and the room, every answer verified","F7","before",-14,null,"must",1,"M",2,"",false),
+    T("Game check day: run the full game with the whole crew","C9","before",-7,null,"must",1,"M",2,"",true),
+    T("Sort welcome drinks and prizes","C10","before",-5,null,"should",1,"S",3,"",false),
+    T("Offer tasks and confirm the crew","I1","before",-5,null,"must",1,"S",3,"",false),
+    T("Brief the host on the game and rounds","C11","before",-3,null,"must",1,"S",3,"",false),
+    T("Test projector, sound and slides","F3","before",-2,null,"must",1,"S",3,"",false),
+    T("Reminder to registered guests","D9","before",-1,null,"should",1,"S",3,"remind",false),
+    T("Day-of reminder","D9","during",0,-390,"should",1,"S",4,"dayof",false),
+    T("Floor manager","C9","during",0,-120,"must",1,"L",4,"",false),
+    T("Set up the room","C5","during",0,-120,"must",3,"M",4,"",false),
+    T("Tech and sound check","C3","during",0,-90,"must",1,"S",4,"",false),
+    T("Doors open: welcome and registration","C2","during",0,-30,"must",2,"M",4,"",false),
+    T("Welcome game","C1","during",0,0,"should",1,"S",4,"",false),
+    T("Host the three rounds","C1","during",0,15,"must",1,"L",4,"",false),
+    T("Keep score and check answers","C7","during",0,15,"must",1,"M",4,"",false),
+    T("Music and sound cues","C4","during",0,0,"should",1,"M",4,"",false),
+    T("Photos and video","C8","during",0,0,"should",1,"M",4,"",false),
+    T("Collect guest testimonials","D7","during",0,150,"nice",1,"S",4,"",false),
+    T("Pack down and return equipment","F2","during",0,180,"must",2,"M",4,"",false),
+    T("Thank-you message and feedback form","D9","after",1,null,"must",1,"S",5,"thanks",false),
+    T("Post photos from the night","D1","after",1,null,"should",1,"S",5,"",false),
+    T("Count money and record costs","G1","after",3,null,"must",1,"M",5,"",false),
+    T("Thank the community partner","E8","after",3,null,"should",1,"S",5,"",false),
+    T("Edit the highlights video","D3","after",4,null,"should",1,"M",5,"",false),
+    T("Record attendance and feedback","F5","after",5,null,"should",1,"S",5,"",false),
+    T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",5,"",false)
   ]},
-  welcome:{name:"Corporate: welcome game",start:"18:00",cps:[["Brief and quote agreed",-8],["Agreement and deposit",-6],["Crew confirmed",-2],["Event day",0],["Client report and invoice paid",10]],tasks:[
-    T("Take the client brief","E5","before",-11,null,"must",1,"S",0,""),
-    T("Send the quote and proposal","E3","before",-8,null,"must",1,"M",0,""),
-    T("Agreement signed","G5","before",-6,null,"must",1,"S",1,""),
-    T("Deposit received","G1","before",-6,null,"must",1,"S",1,""),
-    T("Confirm venue access, timings and AV with the client","E5","before",-4,null,"must",1,"S",2,""),
-    T("Offer tasks and confirm the crew","I1","before",-4,null,"must",1,"S",2,""),
-    T("Test projector, sound and slides","F3","before",-1,null,"must",1,"S",2,""),
-    T("Client point of contact on the day","E5","during",0,-60,"must",1,"M",3,""),
-    T("Set up","C5","during",0,-90,"must",2,"M",3,""),
-    T("Tech and sound check","C3","during",0,-60,"must",1,"S",3,""),
-    T("Host the welcome game","C1","during",0,0,"must",1,"M",3,""),
-    T("Photos and video","C8","during",0,0,"should",1,"M",3,""),
-    T("Pack down","F2","during",0,30,"must",2,"S",3,""),
-    T("Send the client report with photos","E5","after",3,null,"must",1,"M",4,""),
-    T("Invoice and follow up payment","G1","after",2,null,"must",1,"S",4,""),
-    T("Ask the client for a testimonial","D7","after",5,null,"should",1,"S",4,""),
-    T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",4,"")
+  welcome:{name:"Corporate: welcome game",start:"18:00",cps:[["Brief and quote agreed",-13],["Agreement and deposit",-11],["Game checked and run through",-7],["Crew confirmed",-2],["Event day",0],["Client report and invoice paid",10]],tasks:[
+    T("Take the client brief","E5","before",-15,null,"must",1,"S",0,"",false),
+    T("Send the quote and proposal","E3","before",-13,null,"must",1,"M",0,"",false),
+    T("Agreement signed","G5","before",-11,null,"must",1,"S",1,"",false),
+    T("Deposit received","G1","before",-11,null,"must",1,"S",1,"",false),
+    T("Quality check the game: fits the audience and the room, every answer verified","F7","before",-10,null,"must",1,"M",2,"",false),
+    T("Game check day: run the full game with the whole crew","C9","before",-7,null,"must",1,"M",2,"",true),
+    T("Confirm venue access, timings and AV with the client","E5","before",-4,null,"must",1,"S",3,"",false),
+    T("Offer tasks and confirm the crew","I1","before",-4,null,"must",1,"S",3,"",false),
+    T("Test projector, sound and slides","F3","before",-1,null,"must",1,"S",3,"",false),
+    T("Client point of contact on the day","E5","during",0,-60,"must",1,"M",4,"",false),
+    T("Set up","C5","during",0,-90,"must",2,"M",4,"",false),
+    T("Tech and sound check","C3","during",0,-60,"must",1,"S",4,"",false),
+    T("Host the welcome game","C1","during",0,0,"must",1,"M",4,"",false),
+    T("Photos and video","C8","during",0,0,"should",1,"M",4,"",false),
+    T("Pack down","F2","during",0,30,"must",2,"S",4,"",false),
+    T("Send the client report with photos","E5","after",3,null,"must",1,"M",5,"",false),
+    T("Invoice and follow up payment","G1","after",2,null,"must",1,"S",5,"",false),
+    T("Ask the client for a testimonial","D7","after",5,null,"should",1,"S",5,"",false),
+    T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",5,"",false)
   ]},
-  standard:{name:"Corporate: full game (3 rounds)",start:"18:00",cps:[["Brief and quote agreed",-12],["Agreement and deposit",-9],["Crew confirmed",-3],["Event day",0],["Client report and invoice paid",10]],tasks:[
-    T("Take the client brief","E5","before",-15,null,"must",1,"S",0,""),
-    T("Send the quote and proposal","E3","before",-12,null,"must",1,"M",0,""),
-    T("Agreement signed","G5","before",-9,null,"must",1,"S",1,""),
-    T("Deposit received","G1","before",-9,null,"must",1,"S",1,""),
-    T("Confirm venue access, timings and AV with the client","E5","before",-4,null,"must",1,"S",2,""),
-    T("Offer tasks and confirm the crew","I1","before",-4,null,"must",1,"S",2,""),
-    T("Test projector, sound and slides","F3","before",-1,null,"must",1,"S",2,""),
-    T("Client point of contact on the day","E5","during",0,-60,"must",1,"M",3,""),
-    T("Set up","C5","during",0,-90,"must",2,"M",3,""),
-    T("Tech and sound check","C3","during",0,-60,"must",1,"S",3,""),
-    T("Host the game","C1","during",0,0,"must",1,"L",3,""),
-    T("Keep score and check answers","C7","during",0,0,"must",1,"M",3,""),
-    T("Photos and video","C8","during",0,0,"should",1,"M",3,""),
-    T("Pack down","F2","during",0,150,"must",2,"S",3,""),
-    T("Send the client report with photos","E5","after",3,null,"must",1,"M",4,""),
-    T("Invoice and follow up payment","G1","after",2,null,"must",1,"S",4,""),
-    T("Ask the client for a testimonial","D7","after",5,null,"should",1,"S",4,""),
-    T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",4,"")
+  standard:{name:"Corporate: full game (3 rounds)",start:"18:00",cps:[["Brief and quote agreed",-19],["Agreement and deposit",-16],["Game checked and run through",-7],["Crew confirmed",-3],["Event day",0],["Client report and invoice paid",10]],tasks:[
+    T("Take the client brief","E5","before",-21,null,"must",1,"S",0,"",false),
+    T("Send the quote and proposal","E3","before",-19,null,"must",1,"M",0,"",false),
+    T("Agreement signed","G5","before",-16,null,"must",1,"S",1,"",false),
+    T("Deposit received","G1","before",-16,null,"must",1,"S",1,"",false),
+    T("Quality check the game: fits the audience and the room, every answer verified","F7","before",-14,null,"must",1,"M",2,"",false),
+    T("Game check day: run the full game with the whole crew","C9","before",-7,null,"must",1,"M",2,"",true),
+    T("Confirm venue access, timings and AV with the client","E5","before",-4,null,"must",1,"S",3,"",false),
+    T("Offer tasks and confirm the crew","I1","before",-4,null,"must",1,"S",3,"",false),
+    T("Test projector, sound and slides","F3","before",-1,null,"must",1,"S",3,"",false),
+    T("Client point of contact on the day","E5","during",0,-60,"must",1,"M",4,"",false),
+    T("Set up","C5","during",0,-90,"must",2,"M",4,"",false),
+    T("Tech and sound check","C3","during",0,-60,"must",1,"S",4,"",false),
+    T("Host the game","C1","during",0,0,"must",1,"L",4,"",false),
+    T("Keep score and check answers","C7","during",0,0,"must",1,"M",4,"",false),
+    T("Photos and video","C8","during",0,0,"should",1,"M",4,"",false),
+    T("Pack down","F2","during",0,150,"must",2,"S",4,"",false),
+    T("Send the client report with photos","E5","after",3,null,"must",1,"M",5,"",false),
+    T("Invoice and follow up payment","G1","after",2,null,"must",1,"S",5,"",false),
+    T("Ask the client for a testimonial","D7","after",5,null,"should",1,"S",5,"",false),
+    T("Debrief: what worked, what to change","A2","after",7,null,"must",1,"S",5,"",false)
   ]},
-  december:{name:"December Flagship (2 days, outdoor)",start:"09:00",cps:[["Dates and beach site locked",-55],["Permits and partners confirmed",-40],["Tickets live and promo out",-21],["Crew and safety plan ready",-7],["Beach Day",0],["Unity Night",1],["Report done",10]],tasks:[
-    T("Lock the dates and the beach site","A2","before",-60,null,"must",1,"M",0,""),
-    T("Apply for permits","F9","before",-50,null,"must",1,"M",1,""),
-    T("Bring in running-club partners","E8","before",-45,null,"must",1,"M",1,""),
-    T("Find sponsors","E7","before",-42,null,"should",1,"L",1,""),
-    T("Diaspora outreach plan","B1","before",-40,null,"must",1,"M",1,""),
-    T("Create the Luma event pages","E1","before",-25,null,"must",1,"S",2,""),
-    T("Design the flyers","D5","before",-24,null,"must",1,"M",2,""),
-    T("Announce on socials and WhatsApp","D1","before",-21,null,"must",1,"S",2,"announce"),
-    T("First aid, safety and weather plan","F9","before",-10,null,"must",1,"M",3,""),
-    T("Outdoor projector, power and sound","F3","before",-8,null,"must",1,"M",3,""),
-    T("Cleanup supplies, water and prizes","C10","before",-7,null,"must",1,"M",3,""),
-    T("Offer tasks and confirm the crew","I1","before",-7,null,"must",1,"S",3,""),
-    T("Reminder to registered guests","D9","before",-1,null,"should",1,"S",3,"remind"),
-    T("Beach Day: floor manager","C9","during",0,-60,"must",1,"L",4,""),
-    T("Beach Day: set up the site","C5","during",0,-60,"must",4,"M",4,""),
-    T("Beach Day: welcome and registration","C2","during",0,-15,"must",2,"M",4,""),
-    T("Beach Day: host the games","C1","during",0,0,"must",1,"L",4,""),
-    T("Beach Day: first aid on site","F9","during",0,0,"must",1,"M",4,""),
-    T("Beach Day: photos and video","C8","during",0,0,"should",2,"M",4,""),
-    T("Unity Night: set up projector and seating","C3","during",1,480,"must",2,"M",5,""),
-    T("Unity Night: welcome and registration","C2","during",1,570,"must",2,"M",5,""),
-    T("Unity Night: host the trivia","C1","during",1,600,"must",1,"L",5,""),
-    T("Unity Night: keep score and check answers","C7","during",1,600,"must",1,"M",5,""),
-    T("Unity Night: pack down","F2","during",1,780,"must",3,"M",5,""),
-    T("Thank-you message and feedback form","D9","after",2,null,"must",1,"S",6,"thanks"),
-    T("Thank partners and sponsors","E8","after",4,null,"must",1,"S",6,""),
-    T("Count money and record costs","G1","after",5,null,"must",1,"M",6,""),
-    T("Edit the highlights video","D3","after",7,null,"should",1,"L",6,""),
-    T("Debrief: what worked, what to change","A2","after",10,null,"must",1,"S",6,"")
+  december:{name:"December Flagship (2 days, outdoor)",start:"09:00",cps:[["Dates and beach site locked",-55],["Permits and partners confirmed",-40],["Tickets live and promo out",-21],["Game checked and run through",-10],["Crew and safety plan ready",-7],["Beach Day",0],["Unity Night",1],["Report done",10]],tasks:[
+    T("Lock the dates and the beach site","A2","before",-60,null,"must",1,"M",0,"",false),
+    T("Apply for permits","F9","before",-50,null,"must",1,"M",1,"",false),
+    T("Bring in running-club partners","E8","before",-45,null,"must",1,"M",1,"",false),
+    T("Find sponsors","E7","before",-42,null,"should",1,"L",1,"",false),
+    T("Diaspora outreach plan","B1","before",-40,null,"must",1,"M",1,"",false),
+    T("Create the Luma event pages","E1","before",-25,null,"must",1,"S",2,"",false),
+    T("Design the flyers","D5","before",-24,null,"must",1,"M",2,"",false),
+    T("Announce on socials and WhatsApp","D1","before",-21,null,"must",1,"S",2,"announce",false),
+    T("Quality check the game: fits the audience and the room, every answer verified","F7","before",-21,null,"must",1,"M",3,"",false),
+    T("Game check day: run the full game with the whole crew","C9","before",-10,null,"must",1,"M",3,"",true),
+    T("First aid, safety and weather plan","F9","before",-10,null,"must",1,"M",4,"",false),
+    T("Outdoor projector, power and sound","F3","before",-8,null,"must",1,"M",4,"",false),
+    T("Cleanup supplies, water and prizes","C10","before",-7,null,"must",1,"M",4,"",false),
+    T("Offer tasks and confirm the crew","I1","before",-7,null,"must",1,"S",4,"",false),
+    T("Reminder to registered guests","D9","before",-1,null,"should",1,"S",4,"remind",false),
+    T("Beach Day: floor manager","C9","during",0,-60,"must",1,"L",5,"",false),
+    T("Beach Day: set up the site","C5","during",0,-60,"must",4,"M",5,"",false),
+    T("Beach Day: welcome and registration","C2","during",0,-15,"must",2,"M",5,"",false),
+    T("Beach Day: host the games","C1","during",0,0,"must",1,"L",5,"",false),
+    T("Beach Day: first aid on site","F9","during",0,0,"must",1,"M",5,"",false),
+    T("Beach Day: photos and video","C8","during",0,0,"should",2,"M",5,"",false),
+    T("Unity Night: set up projector and seating","C3","during",1,480,"must",2,"M",6,"",false),
+    T("Unity Night: welcome and registration","C2","during",1,570,"must",2,"M",6,"",false),
+    T("Unity Night: host the trivia","C1","during",1,600,"must",1,"L",6,"",false),
+    T("Unity Night: keep score and check answers","C7","during",1,600,"must",1,"M",6,"",false),
+    T("Unity Night: pack down","F2","during",1,780,"must",3,"M",6,"",false),
+    T("Thank-you message and feedback form","D9","after",2,null,"must",1,"S",7,"thanks",false),
+    T("Thank partners and sponsors","E8","after",4,null,"must",1,"S",7,"",false),
+    T("Count money and record costs","G1","after",5,null,"must",1,"M",7,"",false),
+    T("Edit the highlights video","D3","after",7,null,"should",1,"L",7,"",false),
+    T("Debrief: what worked, what to change","A2","after",10,null,"must",1,"S",7,"",false)
   ]}
 };
 var TEMPLATE_ORDER=["flagship","welcome","standard","december"];
 // Keep Must for what makes or breaks the event (about a third); everything else starts as Should.
-var MUST_KEEP=["Brief Global Games and make the game","Review the game and verify every answer","Review the game and verify answers","Lock the venue and terms","Create the Luma event page","Announce on socials and WhatsApp",
+var MUST_KEEP=["Quality check the game: fits the audience and the room, every answer verified","Game check day: run the full game with the whole crew","Brief Global Games and make the game","Review the game and verify every answer","Review the game and verify answers","Lock the venue and terms","Create the Luma event page","Announce on socials and WhatsApp",
   "Offer tasks and confirm the crew","Floor manager","Doors open: welcome and registration","Host the three rounds","Keep score and check answers","Count money and record costs",
   "Send the quote and proposal","Deposit received","Brief Global Games and make the custom game","Client signs off the game","Host the welcome game","Host the game","Invoice and follow up payment",
   "Lock the dates and the beach site","Apply for permits","Make the Beach Day games and cleanup game","Make the Unity Night trivia (current events)","First aid, safety and weather plan","Create the Luma event pages",
@@ -1845,7 +1854,7 @@ function eventLoad(ev,skip){
 var evTimers={},evDirty={};
 function cleanTask(t){
   return {id:t.id,title:clean(t.title).slice(0,120),job:FN[t.job]?t.job:"",phase:t.phase||"before",d:t.d==null||t.d===""?null:Number(t.d),m:t.m==null||t.m===""?null:Number(t.m),
-    pri:PRI[t.pri]?t.pri:"should",size:SIZE[t.size]?t.size:"M",cp:t.cp==null?null:Number(t.cp),msg:t.msg||"",group:t.group||"",helper:clean(t.helper).slice(0,60),
+    pri:PRI[t.pri]?t.pri:"should",size:SIZE[t.size]?t.size:"M",cp:t.cp==null?null:Number(t.cp),msg:t.msg||"",all:!!t.all,group:t.group||"",helper:clean(t.helper).slice(0,60),
     owner:t.owner||"",offered:!!t.offered,ots:t.ots||"",manual:t.manual||"",mts:t.mts||{},passed:(t.passed||[]).slice(0,30),handDone:t.handDone||{}};
 }
 function saveEvent(ev,now){
@@ -1869,7 +1878,7 @@ function fromTemplate(key,name,date,start){
     cps:tp.cps.map(function(c){return {name:c[0],d:c[1]};}),tasks:[]};
   tp.tasks.forEach(function(x){
     var g=newId("g");
-    for(var i=0;i<(x.need||1);i++)ev.tasks.push({id:newId("t"),title:x.title,job:x.job,phase:x.phase,d:x.d,m:x.m,pri:x.pri,size:x.size,cp:x.cp,msg:x.msg,group:g,owner:"",offered:false,manual:"",passed:[]});
+    for(var i=0;i<(x.need||1);i++)ev.tasks.push({id:newId("t"),title:x.title,job:x.job,phase:x.phase,d:x.d,m:x.m,pri:x.pri,size:x.size,cp:x.cp,msg:x.msg,all:!!x.all,group:g,owner:"",offered:false,manual:"",passed:[]});
   });
   return ev;
 }
@@ -2088,7 +2097,7 @@ function adminTask(ev,t,cur){
   return h("div",{class:"task","data-s":st,id:"task-"+ev.id+"-"+t.id},
     h("div",{class:"task-top"},priBadge(t.pri),title,statusPill(st)),
     h("p",{class:"meta"},due?[h("span",{text:(t.phase==="during"?"🕒 "+fmtClock(due):"📅 "+fmtWhen(due))+" · "}),st==="done"?h("span",{text:"done "+fmtWhen(doneAt(ev,t))}):clockSpan(due)]:"No date",slotLabel(ev,t)?" · "+slotLabel(ev,t):"",t.helper?" · helper: "+t.helper:"",
-      r&&r.plan&&st!=="done"?" · 🗓 plans "+fmtDate(r.plan):""),
+      r&&r.plan&&st!=="done"?" · 🗓 plans "+fmtDate(r.plan):"",t.all?" · 👥 whole crew takes part, "+(t.owner?nameOf(t.owner):"someone")+" runs it":""),
     sel,
     why&&why.why.length?h("div",{class:"chips"},why.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
     r&&(r.note||r.comment)?h("p",{class:"sub"},h("b",{text:nameOf(t.owner)+": "}),[r.mood||"",r.comment||r.note].join(" ")):null,
@@ -2272,6 +2281,7 @@ function drawTasks(root){
   var top=open.filter(function(x){return x.st!=="offered";})[0]||open[0];
   var calSt=h("span",{class:"status"}),seenHelp=lsGet("gcg-help-tasks")==="1";
   var mineCal=mine.filter(function(x){var s=taskState(x.ev,x.t);return s!=="done"&&s!=="passed"&&s!=="offered";}).map(function(x){return calItem(x.ev,x.t);}).filter(Boolean);
+  var evSeen={};mine.forEach(function(x){if(evSeen[x.ev.id])return;evSeen[x.ev.id]=1;crewWide(x.ev).forEach(function(t){if(t.owner!==S.uid){var c=calItem(x.ev,t,true);if(c)mineCal.push(c);}});});
   root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"My tasks"}),h("h2",{class:"q",text:mine.length?"Your tasks":"No tasks for you right now"}),
     h("details",{class:"howto",open:seenHelp?null:true,ontoggle:function(e){if(!e.currentTarget.open)lsSet("gcg-help-tasks","1");}},h("summary",{text:"How this works"}),
       h("ol",{class:"steps"},
@@ -2287,6 +2297,7 @@ function drawTasks(root){
     root.append(h("div",{class:"card",style:"margin-top:14px"},
       h("div",null,h("h3",{class:"q",text:ev.name||"Event"}),h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")})),
       progressTimeline(ev,renderTasks),
+      crewDates(ev),
       (links.luma||links.group)?h("div",{class:"row"},links.luma?h("a",{class:"btn small",href:links.luma,target:"_blank",rel:"noopener",text:"Luma page"}):null,links.group?h("a",{class:"btn small",href:links.group,target:"_blank",rel:"noopener",text:"Crew group"}):null):null,
       g.ts.map(function(t){return myTaskCard(ev,t,me);}),
       h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"🕒 Run sheet",onclick:function(){S.run={eid:ev.id};renderTasks();var b=$("runBoxT");if(b&&b.scrollIntoView)b.scrollIntoView({block:"start"});}}),
@@ -2524,9 +2535,20 @@ function renderProfile(){
 }
 
 /* ---------- Calendar: tasks go into people's own calendars ---------- */
-function calItem(ev,t){
-  var r=S.uid?latestReply(ev.id,t.id,S.uid):null,due=taskDue(ev,t),start,end,desc=[];
-  if(r&&r.plan){start=new Date(r.plan+"T10:00:00");end=new Date(start.getTime()+36e5);}
+// Dates the whole crew of an event attends (like the game check day), shown to everyone with a task there.
+function crewWide(ev){return (ev.tasks||[]).filter(function(t){return t.all&&taskState(ev,t)!=="done";});}
+function crewDates(ev){
+  var list=crewWide(ev);if(!list.length)return null;
+  return h("div",{class:"box crewdates"},h("h3",{text:"👥 Whole crew"}),list.map(function(t){
+    var d=taskDue(ev,t),st=h("span",{class:"status"}),x=calItem(ev,t,true);
+    return h("div",{class:"msgrow"},h("b",{text:t.title}),h("p",{class:"meta",text:(d?fmtWhen(d)+" · ":"")+(t.owner?"run by "+nameOf(t.owner):"host to be confirmed")}),
+      x?h("div",{class:"row calrow"},h("a",{class:"btn small",href:googleCal(x),target:"_blank",rel:"noopener",text:"📅 Google"}),h("button",{type:"button",class:"btn small",text:"📅 Apple / Outlook",onclick:function(){saveIcs("GCG-"+slug(t.title)+".ics",[x],st);}}),st):null);
+  }));
+}
+function calItem(ev,t,crew){
+  var r=S.uid&&!crew?latestReply(ev.id,t.id,S.uid):null,due=taskDue(ev,t),start,end,desc=[];
+  if(crew&&due){start=due;end=new Date(due.getTime()+2*36e5);}
+  else if(r&&r.plan){start=new Date(r.plan+"T10:00:00");end=new Date(start.getTime()+36e5);}
   else if(due){start=t.phase==="during"?due:new Date(due.getTime()-36e5);end=t.phase==="during"?new Date(due.getTime()+36e5):due;}
   if(!start||isNaN(start))return null;
   desc.push((ev.name||"GCG event")+(ev.place?", "+ev.place:""));
