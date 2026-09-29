@@ -785,6 +785,39 @@ body.has-nav{padding-bottom:88px}
 .placetop .pl-type{font-size:19px}
 .placetop .pl-n{margin:0;font-size:14px;color:var(--muted)}
 .placetop .btn.link{justify-self:start;text-align:left;padding:0;min-height:0;font-size:14px}
+
+/* Home: name card and phased to-do */
+.pt-head .avatar{flex:none}
+.pt-who{display:grid;gap:1px;flex:1;min-width:0}
+.pt-hi{font-size:13px;color:var(--muted);font-weight:600}
+.pt-name{font:600 24px/1.15 var(--font-display)}
+.placetop .pl-type{font-size:15px;font-weight:600;color:var(--muted);font-family:var(--font-body)}
+.phasehead{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:4px 2px 10px}
+.phasepill{background:var(--ink);color:var(--bg);border-radius:999px;padding:6px 14px;font:700 13px var(--font-body);letter-spacing:.02em}
+.trow{appearance:none;display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:14px 0;text-align:left;color:var(--ink);cursor:pointer;min-height:56px}
+.trow .tr-t{flex:1;display:grid;gap:2px;font-size:15.5px}
+.trow.late .sub{color:var(--bad,#b3261e);font-weight:600}
+.trow .ico{color:var(--muted);flex:none}
+.tr-pri{font:700 11.5px var(--font-body);letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted)}
+.hlist>*:last-child.trow{border-bottom:0}
+.tlist{display:grid;margin-top:4px}
+.hrow-d.locked summary{color:var(--muted)}
+
+.notes{margin:0 0 14px;padding:0;border:1.5px solid var(--red,#d7263d);overflow:hidden;gap:0}
+.notes-h{display:flex;align-items:center;gap:10px;padding:12px 16px;background:color-mix(in srgb,var(--red,#d7263d) 9%,var(--card))}
+.notes-h .ico{color:var(--red,#d7263d)}
+.notes-n{margin-left:auto;min-width:24px;height:24px;border-radius:999px;background:var(--red,#d7263d);color:#fff;font:700 13px var(--font-body);display:grid;place-items:center;padding:0 7px}
+.note{padding:14px 16px;border-top:1px solid var(--line);display:grid;gap:4px}
+.note p{margin:0}
+.note-k{font:700 11.5px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--red,#d7263d)}
+.note-t{font-weight:600;font-size:15.5px}
+.notes>.btn.link{margin:0 16px 12px}
+.hrow-d.locked summary::before{-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='10.5' width='14' height='10' rx='2'/%3E%3Cpath d='M8 10.5V8a4 4 0 0 1 8 0v2.5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='10.5' width='14' height='10' rx='2'/%3E%3Cpath d='M8 10.5V8a4 4 0 0 1 8 0v2.5'/%3E%3C/svg%3E") center/contain no-repeat}
+.notebar{appearance:none;display:flex;align-items:center;gap:10px;width:100%;background:color-mix(in srgb,var(--red,#d7263d) 9%,var(--card));border:0;padding:13px 16px;color:var(--ink);font:600 15.5px var(--font-body);cursor:pointer;text-align:left;min-height:52px}
+.notebar .ico:first-child{color:var(--red,#d7263d)}
+.notebar .nb-t{flex:1}
+.notes-n{margin-left:0}
+.notes{margin-bottom:12px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -2791,16 +2824,38 @@ function openLinkedTask(){
   setTimeout(function(){var el=$("task-"+g.eid+"-"+g.tid);if(el){el.classList.add("flash");if(el.scrollIntoView)el.scrollIntoView({block:"center"});}},80);
 }
 function myPings(){return (S.pings||[]).filter(function(p){return p.to===S.uid&&!(S.acks&&S.acks[p.id]);}).sort(function(a,b){return String(b.at).localeCompare(String(a.at));});}
-function pingBanners(){
-  return myPings().map(function(p){
+// Notifications: things that need the person's attention, shown at the top of Home.
+function ackNote(id){
+  S.acks=Object.assign({},S.acks);S.acks[id]=nowIso();
+  if(S.db&&S.uid)S.db.doc("acks/"+S.uid).set({ids:S.acks}).catch(function(){});
+  refresh();
+}
+function myNotes(){
+  var out=[];
+  myPings().forEach(function(p){
     var ev=p.eid?evById(p.eid):null,t=ev?(ev.tasks||[]).filter(function(x){return x.id===p.tid;})[0]:null;
-    return h("div",{class:"ping"},h("p",null,h("b",{text:"From Hinda: "}),p.text||""),t?h("p",{class:"sub",text:(ev.name||"")+" · "+t.title}):null,
-      h("div",{class:"row"},t?h("button",{type:"button",class:"btn small go",text:"Open it →",onclick:function(){S.goTask={eid:p.eid,tid:p.tid};openLinkedTask();}}):null,
-        h("button",{type:"button",class:"btn small",text:"Got it ",onclick:function(){
-          S.acks=Object.assign({},S.acks);S.acks[p.id]=nowIso();
-          if(S.db&&S.uid)S.db.doc("acks/"+S.uid).set({ids:S.acks}).catch(function(){});
-          refresh();}})));
+    out.push({id:p.id,kind:"From Hinda",title:p.text||"",sub:t?(ev.name||"")+" · "+t.title:"",
+      act:t?{label:"Open it",fn:function(){S.goTask={eid:p.eid,tid:p.tid};openLinkedTask();}}:null});
   });
+  var offered=myOpenItems().filter(function(x){return x.st==="offered";});
+  if(offered.length)out.push({id:"",kind:"New",title:offered.length===1?"You've been suggested for a task":offered.length+" tasks are waiting for your answer",sub:offered[0].t.title+" · "+(offered[0].ev.name||""),
+    act:{label:"Answer",fn:function(){S.evSel=offered[0].ev.id;S.goTask={eid:offered[0].ev.id,tid:offered[0].t.id};showView("mevents");openLinkedTask();}}});
+  ideaItems(S.uid).forEach(function(i){
+    var id="idea:"+i.id+":"+i.status;
+    if((i.reply||i.status==="done")&&!(S.acks&&S.acks[id]))out.push({id:id,kind:"Reply",title:i.reply?"Hinda replied to your "+kindName(i.kind).toLowerCase()+": "+i.reply:"Your "+kindName(i.kind).toLowerCase()+" was marked done",sub:i.text.slice(0,70)});
+  });
+  return out;
+}
+function noteCount(){return myNotes().length;}
+function noteBox(){
+  var notes=myNotes();if(!notes.length)return null;
+  var open=!!S.panel.notesOpen;
+  var bar=h("button",{type:"button",class:"notebar","aria-expanded":String(open),onclick:function(){S.panel.notesOpen=!open;renderHome();}},
+    ico("bell",20),h("span",{class:"nb-t",text:notes.length===1?"1 notification":notes.length+" notifications"}),h("span",{class:"notes-n",text:String(notes.length)}),ico(open?"chevD":"chevR",18));
+  return h("section",{class:"card notes","aria-label":"Notifications"},bar,open?notes.map(function(n){
+    return h("div",{class:"note"},h("p",{class:"note-k",text:n.kind}),h("p",{class:"note-t",text:n.title}),n.sub?h("p",{class:"sub",text:n.sub}):null,
+      h("div",{class:"row"},n.act?h("button",{type:"button",class:"btn small go",text:n.act.label,onclick:n.act.fn}):null,
+        n.id?h("button",{type:"button",class:"btn small",text:"Got it",onclick:function(){ackNote(n.id);}}):null));}):null);
 }
 function sendPing(pid,text,eid,tid,st){
   if(!S.db){say(st,"Pings need the live page.","warn");return null;}
@@ -3016,7 +3071,7 @@ function renderInsights(){
 }
 
 /* ---------- Game Plan navigation: Home · Events · Me for the team; Today · Events · Team · Insights · Me for Hinda ---------- */
-var NAV_MEMBER=[["home","home","Home"],["plan","compass","Plan"],["mevents","flag","Events"],["crew","users","Crew"],["me","user","Me"]];
+var NAV_MEMBER=[["home","home","Home"],["plan","compass","Plan"],["mevents","flag","Tasks"],["crew","users","Crew"],["me","user","Me"]];
 var NAV_ADMIN=[["today","target","Today"],["plan","compass","Plan"],["events","flag","Events"],["team","users","Team"],["insights","chart","Insights"],["me","user","Me"]];
 S.evSel="";S.teamTab="people";
 function onboarded(){return !!S.sentAt;}
@@ -3025,7 +3080,7 @@ function renderNav(){
   var nav=$("bottomnav");if(!nav)return;clear(nav);
   var show=(onboarded()||S.isAdmin)&&!(S.view==="flow"&&!S.extraMode&&S.screen!=="profile"&&S.screen!=="intro");nav.hidden=!show;document.body.classList.toggle("has-nav",show);
   if(!show)return;
-  var np=pendingCount()+myPings().length;
+  var np=S.isAdmin?0:noteCount();
   navItems().forEach(function(n){
     var cur=S.view===n[0]||(n[0]==="me"&&S.view==="flow");
     nav.append(h("button",{type:"button",class:"navb","aria-current":cur?"page":null,onclick:function(){go2(n[0]);}},
@@ -3106,12 +3161,22 @@ var STAGE_IDX={plan:0,prep:1,check:2,play:3,report:4};
 function taskStageIdx(ev,t){if(t.cp!=null&&ev.cps&&ev.cps[t.cp])return STAGE_IDX[stageOfCp(ev,t.cp)];return t.phase==="during"?3:t.phase==="after"?4:1;}
 function curStageIdx(ev){var c=currentCp(ev);return c<(ev.cps||[]).length?STAGE_IDX[stageOfCp(ev,c)]:4;}
 function stageName(i){return STAGES[i]?STAGES[i][2]:"";}
-function isNow(ev,t){var due=taskDue(ev,t);if(due&&due<Date.now()+7*864e5)return true;return taskStageIdx(ev,t)<=curStageIdx(ev);}
+// Before / during / after the event. Plan, Prep and Check are "before".
+var PHASE_NAME=["Before the event","During the event","After the event"];
+function phaseOf(i){return i<=2?0:i===3?1:2;}
+function taskPhase(ev,t){return phaseOf(taskStageIdx(ev,t));}
+function curPhase(ev){
+  var p=phaseOf(curStageIdx(ev));
+  if(ev.date){var d=new Date(ev.date+"T00:00:00");if(!isNaN(d)){var n=Date.now();if(n>=d.getTime()+864e5)p=Math.max(p,2);else if(n>=d.getTime())p=Math.max(p,1);}}
+  return p;
+}
+// Only the current phase (plus anything overdue from an earlier one) counts as "now"; later phases stay folded.
+function isNow(ev,t){return taskPhase(ev,t)<=curPhase(ev);}
 function laterItems(){var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if((x.t.offered||x.t.manual)&&!isNow(ev,x.t))out.push(x);});});return out;}
 
 /* ---------- Team member Home ---------- */
-// Chronology: what is behind first, then what is due soonest; priority only breaks ties.
-function byTime(a,b){var da=a.due?a.due.getTime():Infinity,db=b.due?b.due.getTime():Infinity;return (b.late-a.late)||(da-db)||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o);}
+// Importance: what is overdue first, then Must before Should before Nice, then what is due soonest.
+function byTime(a,b){var da=a.due?a.due.getTime():Infinity,db=b.due?b.due.getTime():Infinity;return (b.late-a.late)||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o)||(da-db);}
 function myOpenItems(){
   var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if((x.t.offered||x.t.manual)&&isNow(ev,x.t))out.push(x);});});
   return out.sort(byTime);
@@ -3133,7 +3198,7 @@ function nextMoveCard(x,st){
       h("button",{type:"button",class:"btn go big",text:"I'll take it",onclick:function(){writeReply(ev,t,{answer:"take"},st);}}),
       h("button",{type:"button",class:"btn",text:"Can't do it",onclick:function(){writeReply(ev,t,{answer:"pass"},st);}})]
     :[h("button",{type:"button",class:"btn go big",text:"Go to this task →",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}})];
-  return h("div",{class:"hero-move"},h("p",{class:"k",text:"Your next move"}),h("h2",{class:"hm-t",text:t.title}),
+  return h("div",{class:"hero-move"},h("p",{class:"k",text:"Do this first"}),h("h2",{class:"hm-t",text:t.title}),
     h("p",{class:"hm-m"},(ev.name||"")+" · ",due?(x.late?["",clockSpan(due)]:[""+fmtWhen(due)+" · ",clockSpan(due)]):"no deadline"),
     (function(){var me=personById(S.uid)||Object.assign(payload(),{id:S.uid}),m=taskMatch(me,t.job,ev.id);if(!m||!m.why.length)return null;
       return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),lc1(m.why[0].replace(/^\S+\s/,"")));})(),
@@ -3144,24 +3209,48 @@ function drawHome(root){
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),items=myOpenItems(),st=h("p",{class:"status",role:"status","aria-live":"polite"});
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
   var nEv=Object.keys(evCount).length,mp=prof?missingProfile():0;
-  root.append(h("p",{class:"hello"},S.photo?h("img",{class:"avatar sm",src:S.photo,alt:""}):null,greeting()+", "+(clean(S.name)||"there")));
+  var nm=clean(S.name)||"there";
   if(prof)root.append(h("section",{class:"card place placetop"},
-    h("button",{type:"button",class:"pt-head",onclick:function(){showView("me");}},h("span",{class:"pl-type",text:prof.title}),ico("chevR",18)),
+    h("button",{type:"button",class:"pt-head",onclick:function(){showView("me");}},
+      S.photo?h("img",{class:"avatar sm",src:S.photo,alt:""}):null,
+      h("span",{class:"pt-who"},h("span",{class:"pt-hi",text:greeting()}),h("span",{class:"pt-name",text:nm}),h("span",{class:"pl-type",text:prof.title})),ico("chevR",18)),
     h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});}),prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
     h("p",{class:"pl-n",text:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+nEv+" event"+(nEv===1?"":"s"):"Your trail starts with your first task."}),
-    mp?h("button",{type:"button",class:"btn link",text:"Finish your profile ("+mp+" left) ›",onclick:function(){startExtra();}}):null));
+    null));
+  else root.append(h("p",{class:"hello"},S.photo?h("img",{class:"avatar sm",src:S.photo,alt:""}):null,greeting()+", "+nm));
+  root.append(noteBox());
   root.append(h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):"You're good for now."}));
-  pingBanners().forEach(function(b){root.append(b);});
+  var top=items[0];
+  function open(x){S.evSel=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("mevents");openLinkedTask();}
+  function line(x,locked){
+    var due=x.due,pr=x.t.pri||"should";
+    return h("button",{type:"button",class:"trow"+(x.late?" late":""),onclick:function(){open(x);}},
+      h("span",{class:"tr-t"},h("b",{text:x.t.title}),h("span",{class:"sub",text:(x.ev.name||"")+(due?" · "+(x.late?"overdue, was ":"")+fmtWhen(due):"")})),
+      pr==="must"?h("span",{class:"tr-pri",text:"Must"}):null,ico("chevR",16));
+  }
   if(items.length){
-    root.append(nextMoveCard(items[0],st));
-    if(items.length>1)root.append(h("button",{type:"button",class:"then",onclick:function(){S.evSel=items[1].ev.id;showView("mevents");}},h("span",{class:"k",text:"Then"}),h("b",{text:items[1].t.title}),items.length>2?h("span",{class:"sub",text:"+"+(items.length-2)+" more now ›"}):null));
+    var ph=curPhase(top.ev);
+    root.append(h("div",{class:"phasehead"},h("span",{class:"phasepill",text:PHASE_NAME[ph]}),h("span",{class:"sub",text:(top.ev.name||"")+(daysTo(top.ev.date)?" · "+daysTo(top.ev.date):"")})));
+    root.append(nextMoveCard(top,st));
+    var rest=items.slice(1);
+    if(rest.length)root.append(h("p",{class:"hgroup",text:"Also "+PHASE_NAME[ph].toLowerCase()+" · "+rest.length}),h("section",{class:"card hlist"},rest.map(function(x){return line(x);})));
   }else{
     var ev0=myEvents()[0],doneHere=ev0?(ev0.tasks||[]).filter(function(t){return t.owner===S.uid&&taskState(ev0,t)==="done";}).length:0;
     root.append(h("div",{class:"hero-move clear"},h("p",{class:"k",text:"You're good"}),h("h2",{class:"hm-t",text:"Nothing needs you right now."}),
       ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+" is "+eventPct(ev0)+"% ready."+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
   }
+  // Coming up: later phases stay folded, one tap to look
   var later=laterItems();
-  if(later.length)root.append(h("p",{class:"laternote",text:""+later.length+" more task"+(later.length>1?"s":"")+" later in the plan. They open up as the event moves on."}));
+  if(later.length){
+    var groups={};later.forEach(function(x){var ph=taskPhase(x.ev,x.t);(groups[ph]=groups[ph]||[]).push(x);});
+    var cp=-1;
+    root.append(h("p",{class:"hgroup",text:"Coming up"}),h("section",{class:"card hlist"},
+      [0,1,2].filter(function(k){return groups[k];}).map(function(k){
+        var g=groups[k].sort(byTime),key="home:ph"+k;
+        var d=h("details",{class:"hrow-d locked"},h("summary",{text:(k===cp?"Later before the event":PHASE_NAME[k])+" · "+g.length+" task"+(g.length>1?"s":"")}),
+          h("div",{class:"tlist"},g.map(function(x){return line(x,true);})));
+        d.open=!!S.panel[key];d.addEventListener("toggle",function(){S.panel[key]=d.open;});return d;})));
+  }
   // More: quiet shortcuts in one list (the event itself lives in Plan and Events)
   var evs=myEvents();
   var crew=[];evs.forEach(function(e){crewWide(e).forEach(function(t){var d=taskDue(e,t);if(d&&d>Date.now())crew.push({ev:e,t:t,d:d});});});
@@ -3174,6 +3263,8 @@ function drawHome(root){
   if(crew.length)rows.push(row("users",crew[0].t.title,fmtWhen(crew[0].d),function(){showView("plan");}));
   if(grabs.length)rows.push(row("hand",grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs","",function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}));
   if(upcoming.length)rows.push(h("button",{type:"button",class:"hrow",onclick:function(){saveIcs("GCG-upcoming.ics",upcoming,calSt);}},ico("calendar",20),h("span",{class:"hr-t",text:"Add my dates to calendar"}),calSt));
+  var mp2=prof?missingProfile():0;
+  if(mp2)rows.push(row("user","Finish your profile",mp2+" quick question"+(mp2>1?"s":"")+" left",function(){startExtra();}));
   if(S.uid&&!S.isAdmin)rows.push(ideaBox(true));
   if(rows.length)root.append(h("p",{class:"hgroup",text:"More"}),h("section",{class:"card hlist"},rows));
 }
