@@ -1,85 +1,71 @@
-# GCG Role Finder: system overview
+# GCG Game Plan: system overview
 
-*For Gold Coast Games (GCG). One web page, `gcg-role-finder.html`. Written so another person or AI can review it without seeing the code.*
+*For Gold Coast Games (GCG). One web page, `gcg-game-plan.html`. Written so another person or AI can review it without seeing the code.*
 
-## 1. What it is, in one paragraph
+## 1. What it is
 
-A single web page that works as GCG's team operating system. New people **onboard by playing a short game** (about 10–15 minutes) that produces a **player card**: their natural strengths, what they have done, how they like to work, and which GCG jobs suit them. Hinda (founder, creative director) sees everyone's cards, gives people **titles**, and plans **events** from templates. The page breaks each event into tasks with deadlines, **suggests the best person for each task** from their card, and people say yes or no, plan their own dates, add tasks to their calendars, tick them done and say how it went. Everyone sees a **progress timeline** for each event and who did what. Over time it builds a **history of every contribution**, which GCG needs for fair credit once money comes in.
+GCG's team operating system. People onboard by playing a six-minute game ("Find where you fit") that produces a **player card**. From then on, each person has a **Home** that answers three questions within seconds:
+
+1. What is GCG doing right now?
+2. Where do I fit?
+3. What do you need from me?
+
+Hinda (founder, creative director) plans **events from templates**. The system breaks each event into tasks, **suggests the best person for each and explains why**, and shows every event as a **journey**: Plan → Prep → Check → Play → Report. People take tasks, tick them done, and every contribution leaves a **visible trail**, recorded for fair credit when GCG earns.
+
+**Product rule:** the system does the thinking; the person does the doing. If a feature does not save a team member time, improve their understanding, or make their contribution visible, it does not belong in this version.
 
 ## 2. Why it is necessary
 
-- **GCG is small, early and mostly unpaid.** Many people hold several jobs at once. Without a system, work lives in WhatsApp and in Hinda's head.
-- **Every event repeats the same ~30–40 tasks.** Rebuilding the plan each time wastes effort and things get missed.
-- **People need to feel seen.** The onboarding gives each person a card that describes them fairly, with CV-ready strengths, and lets them say what they would rather not do.
-- **The right person for each task.** Matching uses what people said yes to, what they have done, what they bring, their title and their GCG track record, not just who replies first on WhatsApp.
-- **Credit and fairness later.** Every finished task is timestamped and sized, so when GCG earns, contributions are on record, not remembered.
-- **Learning.** Timings show where plans are unrealistic, so each event runs better than the last.
+- GCG is small, early and mostly unpaid. Without a system, work lives in WhatsApp and in Hinda's head.
+- Every event repeats the same 30 to 40 tasks. Rebuilding the plan each time wastes effort and things get missed.
+- People need to feel seen and matched fairly, and able to say no.
+- Contributions need to be on record for fair credit later.
 
-## 3. Company context the page is built on
+## 3. Company context
 
-- **GCG runs events.** **Global Games Network (GGN)**, the parent company, designs games and licenses them to GCG. GCG does no game design. An event goes into the system once its game exists.
-- **Two lines of work:**
-  1. **Flagship nights**: GCG's own game nights, each built around a field or profession, typically 6:30–9:30 PM.
-  2. **Corporate**: for event companies and corporations, either a **welcome game** or a **full GCG game (three rounds)**, run at the client's event or conference.
-- **Every event has a quality check** of the game (about 2 weeks before) and a **game check day**: a full run of the game with the whole crew (about 1 week before).
+- **GCG runs events.** **Global Games Network (GGN)**, the parent company, designs games and licenses them to GCG. GCG does no game design; an event goes in once its game exists.
+- **Flagship nights** (GCG's own nights around a field or profession) and **corporate** work (a welcome game or a full three-round GCG game at a client's event).
+- Every event has a **quality check** of the game (about two weeks before) and a **game check day**: a full run-through with the whole crew (about one week before).
 
-## 4. Who uses it and what they see
+## 4. Two worlds
 
-### Everyone (team members)
-| Tab | What it does |
+| Team member: MY world | Hinda: GCG's world |
 |---|---|
-| **My card / Onboarding** | The onboarding game. Five levels: warm-up → 8 situations (pick what is most and least like you) → experience (what you have done, what you bring, proudest work) → jobs that might suit you (yes / maybe / not for me) → about you (how you work best, why you are here). Ends with a **player card**, a "does this sound like you?" check, **strengths for your CV**, and a PDF to download or share. |
-| **My profile** | After onboarding: title(s) and what falls under them, live tasks, about me, likes and dislikes, and **what I have done at GCG** (history). Private: only the person and Hinda see it. |
-| **My tasks** | A "how this works" guide, **your #1 right now**, each event with its **progress timeline**, whole-crew dates (like the game check day), each task with **why you were picked**, take / pass, **your own plan date**, **add to calendar** (Google or Apple/Outlook), start, done (when, how it went, comment), I am stuck, need an extra hand, a live **run sheet** on the night, and **up for grabs** tasks anyone can claim. |
+| **Home**: next move (one button), GCG right now (event journey + your part), your place (type, strengths, tasks and events done), next crew date, up for grabs | **Today**: active events, what needs attention, answers waiting, coverage gaps; **Needs you** (max five, one action each); her own next move; every event's journey |
+| **Events**: only their events → event page: goal, crew chat link, journey, your part (task cards), crew contributions, run sheet | **Events**: create from a template → event page: goal, journey, needs attention, suggest people, send offers; everything else folded (all tasks, add a task, guests and messages, debrief, more actions) |
+| **Me**: player card (shareable), finish your profile, title, likes and dislikes, **GCG trail**, about me and CV strengths folded | **Team**: People (cards, pings, paste-in), **Coverage** (wings as tiles with a dot per person; red means no one or only one), Titles |
+| | **Insights**: how fast things get done, on-time rates, where plans are unrealistic |
 
-### Hinda (master view)
-| Tab | What it does |
-|---|---|
-| **Team** | Headline numbers, **🎖 titles** (bundle jobs into a title, give it to people, see best fits), **📣 ping** a person (they see it on opening the page; Hinda sees when it is seen), a **team map** (every person × every wing of the company), everyone's full card, who said yes to each job, draft role owners (next phase), and paste-in for results sent by message. CSV export. |
-| **Events** | Create an event from a template and date → every task, checkpoint and deadline appears. Suggest people, send offers, assign directly, ping, copy a link to a task, extra slots, outside helpers. **Priority now** (top 5 at risk), **progress timeline**, **run sheet**, due-soon WhatsApp message, guest message drafts (Luma / WhatsApp / SMS), guest numbers, debrief, **who-is-doing-what PDF**, **event report PDF** with credit per person. |
-| **Insights** | How fast things really get done: time to answer offers, time to finish, on-time rates, checkpoint lateness, guest show rates, suggested template changes, per-person view (Hinda only, for support not ranking). CSV export. |
+Team members never see Team, Coverage, Titles, Insights or anyone else's profile.
 
-## 5. How an event runs (the core loop)
+## 5. Key behaviours
 
-1. **Create**: pick a template (Flagship night, Corporate welcome game, Corporate full game, Two-day outdoor event) and a date. All tasks and deadlines appear, counted back from the date.
-2. **Add what is unique**: place, time, lead, links; add, remove or change tasks.
-3. **Staff it**: ✨ Suggest people → adjust → 📣 Send offers (or 📌 assign directly).
-4. **People act**: yes or no → plan their date → calendar → tick done with a comment. Stuck or overloaded? One tap.
-5. **Hinda steers**: watches Priority now and the next checkpoint, sends the weekly due-soon message, pings, hands passed tasks to the next best person.
-6. **After**: guest numbers and debrief → event report PDF → Insights improve the templates.
+- **Onboarding** is about six minutes: warm-up → seven situations (most / least like me) → six job cards → player card → save. Progress is saved; returning shows "You're 40% through… pick up where you left off". The rest of the profile (what you have done, what you bring, proudest work, how you work, why you are here) is asked later as "Finish your profile: N quick questions".
+- **Task cards** read in two seconds: deadline first, task, event, why you, "🔒 Needed for: [checkpoint]" on Must tasks, one big button (Take it / Done), quieter secondary options (Can't do it, Not really me; plan date, calendar, stuck, extra hand and crew chat under More).
+- **Declining never hides a task.** "Can't do it" sends it straight back to the pool: it appears in Hinda's Needs you and in Up for grabs. Optional reason: not available / not my thing / need help.
+- **"Not really me"** updates the person's card so fewer tasks like it come their way. The system listens rather than labels people permanently.
+- **All clear**: when nothing needs you, Home says so and shows how the event is going and what you have done for it.
+- **Recognition without ranking**: crew contributions per event and each person's GCG trail list names and work, never leaderboards or points.
+- **Communication stays in WhatsApp**: the event's crew chat link is on the event page and inside tasks. No chat is built in.
+- **Priorities**: 🔴 Must (about a third), 🟡 Should, ⚪ Nice. Colour always comes with text.
 
-**Checkpoints** (flagship example): venue, partner and host locked (−21 days) → tickets live and promo out (−14) → game checked and run through (−7) → crew confirmed and tested (−2) → event night → report done (+7). Tasks after an uncleared checkpoint show "waiting on …".
+## 6. Privacy
 
-**Priorities**: 🔴 Must (kept to about a third), 🟡 Should, ⚪ Nice. **Sizes**: Small / Medium / Large, used for credit.
+Profiles are private: each person sees only their own; Hinda sees everyone's. People can share their own card as a PDF. Shared with the team: names, event tasks and their status, who finished what, titles. Hinda only: everyone's cards, motivations, card corrections, per-person timing data.
 
-## 6. The job map (63 jobs in 10 wings)
+## 7. Technology and cost
 
-Leadership · Strategy (marketing, comms, content, brand, community) · Live event delivery (hosting, door, tech, sound, room, run sheet, scoring, photo, floor manager, food and prizes, guest hosts) · Content work (social, capture, editing, design, invitations, testimonials, guest messages, press) · Sales and partnerships (ticketing, outreach, pricing, corporate sales, client management, venues, sponsorship, community partners) · Operations (project management, logistics, equipment, documentation, data, tools, game review and fit check, outdoor and safety) · Money, legal and compliance · Funding and growth · People and team (scheduling, host training, onboarding, team updates) · Tech and digital.
+- Now: one HTML file published on Claude, using Claude's sign-in and shared data. Cost $0; teammates need a free Claude account.
+- Next (after a pilot): GitHub Pages plus Firebase free tier with name-and-password login and phone notifications, roughly $0 to $5 a month plus a domain.
 
-Each job has a plain description and a "good fit if" line, and is marked Now / Soon / Later.
+## 8. Deliberately not in this version
 
-## 7. Privacy and data
+Availability or capacity tracking, a chat system, complex calendars, points, badges or leaderboards, a social feed, heavy analytics. Revisit availability after real use shows whether declines cluster around overload.
 
-- **Profiles are private.** Each person reads and writes only their own card; only Hinda reads all of them. People can share their own PDF if they choose.
-- **Shared with the team:** names, event tasks and their status, who finished what (this is the incentive), titles.
-- **Hinda only:** everyone's cards, motivations, card corrections, per-person speed data.
-- No email addresses are collected by the page itself.
+## 9. Not yet proven
 
-## 8. Technology and cost
-
-- **Now:** one HTML file published on Claude (claude.ai). Shared data and sign-in come from Claude. Teammates need a free Claude account. Cost: $0.
-- **Next (after a pilot):** the same page on GitHub Pages (free) with Firebase (free tier) for data and name-plus-password login; installable on phones with push notifications. Roughly $0–5 a month plus a domain.
-- **Later, only if needed:** app-store apps ($99/year Apple, $25 once Google).
-
-## 9. What is honestly not done or not proven
-
-- **Nobody has used it for a real event yet.** Everything is tested with sample data only.
-- Templates can only be changed in code, not inside the page (per-event edits work fully).
-- No automatic phone notifications yet (pings show when the page is opened; WhatsApp text is generated to paste).
-- Task links may not jump to the exact task when opened inside Claude; they will on GitHub Pages.
-- **Layout issues seen in the screenshots:** on phones the tab buttons wrap into a stack of pills, and the header title squeezes onto several lines; the admin event page is long (many tasks on one scroll); timestamps record when people tap, not always when work happened.
+Nobody has used it for a real event yet; everything is tested with sample data. Templates can only be changed in code. Pings show when the page is opened (no push notifications yet). Timestamps record when people tap, not always when the work happened.
 
 ## 10. Screens
 
-See `docs/screens/` (phone width, sample data with made-up names and a sample event):
-01 intro · 02 warm-up · 03 situation · 04 job card · 05 player card · 06 CV strengths · 07 event header · 08 progress timeline · 09 priority now · 10 admin task · 11 team numbers · 12 team map · 13 title · 14 person card · 15 my tasks · 16 task card · 17 whole-crew dates · 18 my profile · 19 insights.
+`docs/screens/` and `docs/GCG-Game-Plan-screens.pdf` (phone width, sample data with made-up names and a sample event).
