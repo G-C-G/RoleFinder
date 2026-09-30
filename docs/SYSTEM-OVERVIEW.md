@@ -63,6 +63,8 @@ Team members never see Team, Coverage, Titles or Insights. They see other people
 
 **Adding and confirming later.** Hinda can add a task to any event at any time, even after publishing, and either ask a specific person or leave it up for grabs. She can also record a task as done for the person who did it, with the date, including a task nobody was assigned; only she (an admin) or the person themselves can mark a task done. Anyone can be kept off automatic suggestions (a toggle on their card in Team) and still take tasks from Up for grabs, which admins can do from Today.
 
+**Kinds of event.** When Hinda creates an event she picks who it is for and which game: Corporate or Public event, with a welcome game, the standard GCG game (3 rounds), a custom game, or a team-building game (a custom game with its own price list). Welcome and standard games already exist. A custom or team-building game has to be briefed, handed to Global Games, delivered and signed off first, so those events start about five weeks out instead of three. There is also a two-day outdoor event and a blank event.
+
 ## 6. Privacy
 
 **Sharing is each person's choice.** Every person's **About** (name, photo, type, strengths, title) is always visible to the crew, so newcomers can see who does what. Everything else is opt-in and off by default: jobs I'm up for, what I've done, what I bring, my proudest work, how I work best, my CV or link. People set this at the end of onboarding and can change it any time under Me, Who sees what. **Never shared, whatever the person chooses:** jobs they would rather not do, why they are here, and their card corrections. The crew sees a separate public card, so switching something off removes it from view.

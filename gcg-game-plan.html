@@ -2329,14 +2329,56 @@ var TEMPLATES={
     T("Debrief: what worked, what to change","A2","after",10,null,"must",1,"S",7,"",false)
   ]}
 };
-var TEMPLATE_ORDER=["flagship","welcome","standard","outdoor"];
+/* Game kinds x who it is for. Welcome and standard games already exist (Global Games makes them).
+   A custom or team-building game has to be briefed, made by Global Games and signed off first, so those events start earlier. */
+function cloneTpl(src,name,start){return {name:name,start:start||src.start,cps:src.cps.map(function(c){return [c[0],c[1]];}),tasks:src.tasks.map(function(x){return Object.assign({},x);})};}
+function insertCp(tpl,at,name,d){tpl.cps.splice(at,0,[name,d]);tpl.tasks.forEach(function(x){if(x.cp!=null&&x.cp>=at)x.cp++;});}
+function renameTask(tpl,from,to,d){tpl.tasks.forEach(function(x){if(x.title===from){x.title=to;if(d!=null)x.d=d;}});}
+function dropTasks(tpl,titles){tpl.tasks=tpl.tasks.filter(function(x){return titles.indexOf(x.title)<0;});}
+function customGame(base,key,name,label,price){
+  var tp=cloneTpl(TEMPLATES[base],name);var corp=(base==="standard");
+  if(corp){
+    insertCp(tp,2,"Game delivered and signed off",-18);
+    tp.cps[0][1]=-30;tp.cps[1][1]=-26;
+    renameTask(tp,"Take the client brief","Take the client brief and the game brief",-34);
+    renameTask(tp,"Send the quote and proposal",price?"Send the quote (team-building price list)":"Send the quote and proposal",-32);
+    renameTask(tp,"Agreement signed","Agreement signed",-28);renameTask(tp,"Deposit received","Deposit received",-28);
+    renameTask(tp,"Host the game","Host the "+label);
+    tp.tasks.push(T("Hand the game brief to Global Games","A2","before",-30,null,"must",1,"S",0,"",false),
+      T("Game delivered by Global Games","A2","before",-21,null,"must",1,"S",2,"",false),
+      T("Client signs off the game","E5","before",-18,null,"must",1,"S",2,"",false));
+  }else{
+    insertCp(tp,1,"Game delivered and signed off",-17);
+    tp.tasks.forEach(function(x){if(x.cp===0&&x.d!=null)x.d-=7;});tp.cps[0][1]=-28;
+    renameTask(tp,"Host the three rounds","Host the "+label);
+    dropTasks(tp,["Welcome game"]);
+    tp.tasks.push(T("Take the game brief from the organiser or partner","E8","before",-34,null,"must",1,"S",0,"",false),
+      T("Hand the game brief to Global Games","A2","before",-30,null,"must",1,"S",0,"",false),
+      T("Game delivered by Global Games","A2","before",-21,null,"must",1,"S",1,"",false),
+      T("Organiser or partner signs off the game","E8","before",-18,null,"must",1,"S",1,"",false));
+  }
+  TEMPLATES[key]=tp;
+}
+customGame("standard","c_custom","Corporate: custom game (made by Global Games)","custom game",false);
+customGame("standard","c_team","Corporate: team-building game (custom, own price)","team-building game",true);
+customGame("flagship","p_custom","Public event: custom game (made by Global Games)","custom game",false);
+customGame("flagship","p_team","Public event: team-building game (custom, own price)","team-building game",true);
+(function(){var tp=cloneTpl(TEMPLATES.flagship,"Public event: welcome game");dropTasks(tp,["Host the three rounds","Keep score and check answers"]);
+  renameTask(tp,"Welcome game","Host the welcome game");tp.tasks.forEach(function(x){if(x.title==="Host the welcome game"){x.pri="must";x.size="M";}});TEMPLATES.p_welcome=tp;})();
+TEMPLATES.welcome.name="Corporate: welcome game";TEMPLATES.standard.name="Corporate: standard GCG game (3 rounds)";TEMPLATES.flagship.name="Public event: flagship night (standard game)";
+var TEMPLATE_ORDER=["welcome","standard","c_custom","c_team","flagship","p_welcome","p_custom","p_team","outdoor"];
 // One line on what each kind of event is for, so anyone joining halfway knows the mission. Editable per event.
 var GOALS={flagship:"Bring a community together for a relaxed night of games, food and new connections.",
   welcome:"Break the ice at the client's event so guests arrive, connect and warm up fast.",
   standard:"Give the client's guests a memorable three-round game they talk about afterwards.",
-  outdoor:"Two days outdoors that bring many communities together."};
+  outdoor:"Two days outdoors that bring many communities together.",
+  c_custom:"Give the client a game made for them, built by Global Games, that fits their people and their goal.",
+  c_team:"Bring the client's team closer with a team-building game made for them, priced on our team-building list.",
+  p_welcome:"Break the ice at a public event so guests arrive, connect and warm up fast.",
+  p_custom:"Run a game made for this event, built by Global Games, that fits the partner and the crowd.",
+  p_team:"Run a team-building game made for this group, priced on our team-building list."};
 // Keep Must for what makes or breaks the event (about a third); everything else starts as Should.
-var MUST_KEEP=["Quality check the game: fits the audience and the room, every answer verified","Game check day: run the full game with the whole crew","Brief Global Games and make the game","Review the game and verify every answer","Review the game and verify answers","Lock the venue and terms","Create the Luma event page","Announce on socials and WhatsApp",
+var MUST_KEEP=["Hand the game brief to Global Games","Game delivered by Global Games","Take the client brief and the game brief","Take the game brief from the organiser or partner","Organiser or partner signs off the game","Host the custom game","Host the team-building game","Send the quote (team-building price list)","Quality check the game: fits the audience and the room, every answer verified","Game check day: run the full game with the whole crew","Brief Global Games and make the game","Review the game and verify every answer","Review the game and verify answers","Lock the venue and terms","Create the Luma event page","Announce on socials and WhatsApp",
   "Offer tasks and confirm the crew","Floor manager","Doors open: welcome and registration","Host the three rounds","Keep score and check answers","Count money and record costs",
   "Send the quote and proposal","Deposit received","Brief Global Games and make the custom game","Client signs off the game","Host the welcome game","Host the game","Invoice and follow up payment",
   "Lock the dates and the site","Apply for permits","First aid, safety and weather plan","Create the Luma event pages",
