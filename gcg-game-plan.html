@@ -872,6 +872,9 @@ button.chip.on{outline:2px solid var(--ink)}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
 .covered-line{margin:4px 0}
+.viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
+.viewsw[hidden]{display:none}
+.viewsw:not([hidden])+.bellbtn{margin-left:4px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -879,6 +882,7 @@ button.chip.on{outline:2px solid var(--ink)}
     <span class="mark" id="miniFb" aria-hidden="true">GCG</span>
     <img class="mini" id="miniLogo" alt="" hidden>
     <div class="bt">Game Plan</div>
+    <button type="button" class="viewsw" id="viewSw" hidden></button>
     <button type="button" class="bellbtn" id="bellBtn" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="false" hidden></button>
     <div class="notepop" id="notePop" role="dialog" aria-label="Notifications" hidden></div>
   </div>
@@ -3319,8 +3323,17 @@ var NAV_ADMIN=[["today","target","Today"],["plan","compass","Plan"],["events","f
 S.evSel="";S.teamTab="people";
 function onboarded(){return !!S.sentAt;}
 function navItems(){return S.isAdmin?NAV_ADMIN:NAV_MEMBER;}
+// An admin who is also a team member can switch between the two views. Saved on this device only.
+function setAsMember(on){
+  if(!S.realAdmin)return;
+  S.asMember=!!on;S.isAdmin=S.realAdmin&&!on;lsSet("gcg_asmember",on?"1":"0");
+  S.events=visibleEvents(S.rawEvents||S.events);S.evOpen="";S.evSel="";S.panel.notesOpen=false;
+  showView(homeView());
+}
 function renderNav(){
   renderBell();
+  var sw=$("viewSw");if(sw){sw.hidden=!S.realAdmin||!((onboarded()||S.realAdmin)&&!(S.view==="flow"&&!S.extraMode&&S.screen!=="profile"&&S.screen!=="intro"));
+    sw.textContent=S.isAdmin?"Team view":"Admin view";sw.setAttribute("aria-label",S.isAdmin?"Switch to the team member view":"Switch back to the admin view");sw.onclick=function(){setAsMember(S.isAdmin);};}
   var nav=$("bottomnav");if(!nav)return;clear(nav);
   var show=(onboarded()||S.isAdmin)&&!(S.view==="flow"&&!S.extraMode&&S.screen!=="profile"&&S.screen!=="intro");nav.hidden=!show;document.body.classList.toggle("has-nav",show);
   if(!show)return;
@@ -3479,7 +3492,7 @@ function drawHome(root){
   if(items.length){
     var ph=curPhase(top.ev);
     var doneNow=myTasks().filter(function(x){return taskState(x.ev,x.t)==="done"&&taskPhase(x.ev,x.t)===ph;}),total=doneNow.length+items.length;
-    root.append(h("div",{class:"phasehead"},h("span",{class:"phasepill",text:PHASE_NAME[ph]}),h("span",{class:"sub",text:(multi?"":(top.ev.name||"")+(daysTo(top.ev.date)?" · "+daysTo(top.ev.date)+" · ":""))+doneNow.length+" of "+total+" done"})));
+    root.append(h("div",{class:"phasehead"},h("span",{class:"phasepill",text:PHASE_NAME[ph]}),h("span",{class:"sub",text:[multi?"":(top.ev.name||""),multi?"":daysTo(top.ev.date),doneNow.length+" of "+total+" done"].filter(Boolean).join(" · ")})));
     root.append(h("div",{class:"pbar","aria-hidden":"true"},h("i",{style:"width:"+Math.round(doneNow.length/total*100)+"%"})));
     root.append(nextMoveCard(top,st,multi));
     var rest=items.slice(1);
@@ -4027,7 +4040,8 @@ function initCaps(){
     S.db=r[0];var user=r[1];S.dl=r[2];
     if(!user||!S.db){if(S.screen==="profile")render();return;}
     return Promise.all([user.id(),user.canEdit(),user.isOwner(),user.can("data.write")]).then(function(v){
-      S.uid=v[0];S.isAdmin=!!(v[1]||v[2]);S.canWrite=v[3];
+      S.uid=v[0];S.isAdmin=!!(v[1]||v[2]);S.realAdmin=S.isAdmin;S.canWrite=v[3];
+      if(S.realAdmin&&lsGet("gcg_asmember")==="1"){S.asMember=true;S.isAdmin=false;}
       updateTabs();
       if(S.uid&&S.canWrite!==false){
         S.db.doc("responses/"+S.uid).get().then(function(snap){
@@ -4052,9 +4066,10 @@ function initCaps(){
       },function(){});
       S.db.collection("events").onSnapshot(function(snap){
         S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
-          .concat(S.events.filter(function(e){return evDirty[e.id]&&!snap.docs.some(function(d){return d.id===e.id;});}));
+          .concat((S.rawEvents||S.events).filter(function(e){return evDirty[e.id]&&!snap.docs.some(function(d){return d.id===e.id;});}));
+        S.rawEvents=S.events;S.events=visibleEvents(S.rawEvents);applyClaims();
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
-        S.events=visibleEvents(S.events);applyClaims();openLinkedTask();
+        openLinkedTask();
       },function(){});
       S.db.collection("replies").onSnapshot(function(snap){
         S.replies=snap.docs.map(function(d){return thaw(d.data());}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
@@ -4114,7 +4129,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,noAutoOn:noAutoOn,toggleNoAuto:toggleNoAuto,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,setAsMember:setAsMember,noAutoOn:noAutoOn,toggleNoAuto:toggleNoAuto,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();
