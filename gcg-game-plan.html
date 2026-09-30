@@ -2073,8 +2073,18 @@ function renderCov(){
 }
 
 /* ---------- Draft roles (next phase) ---------- */
+// If someone said "not for me" to two or more jobs in an area and said yes or maybe to none there,
+// the whole area is off the table for jobs they never rated. They can still take one from Up for grabs.
+function areaTurnedDown(p,id){
+  var a=FN[id]&&FN[id].area;if(!a)return false;
+  var inArea=function(x){return FN[x]&&FN[x].area===a;};
+  var no=(p.no||[]).filter(inArea).length;
+  var pos=(p.top||[]).concat(p.good||[],p.curious||[]).filter(inArea).length;
+  return no>=2&&!pos;
+}
 function scoreOf(p,id){
   if((p.no||[]).indexOf(id)>-1)return -100;
+  if(areaTurnedDown(p,id))return -100;
   if((p.top||[]).indexOf(id)>-1)return SCORE.top;
   if((p.good||[]).indexOf(id)>-1)return SCORE.good;
   if((p.curious||[]).indexOf(id)>-1)return SCORE.curious;
@@ -2515,9 +2525,13 @@ function fromTemplate(key,name,date,start){
 }
 function suggestEvent(ev){
   var n=0;
-  (ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="open"||t.helper)return;var r=rankFor(ev,t,eventLoad(ev,t))[0];if(r){t.owner=r.p.id;t.offered=false;n++;}});
+  var left=0;
+  (ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="open"||t.helper)return;
+    var r=rankFor(ev,t,eventLoad(ev,t))[0];
+    // Only suggest someone with a real reason (said yes or maybe, title, experience, brings, did it before). A personality guess alone is not enough.
+    if(r&&r.m.why.some(function(w){return !/^Strong in /.test(w);})){t.owner=r.p.id;t.offered=false;n++;}else left++;});
   saveEvent(ev,true);renderEvents();
-  say($("evStatus"),n?"Suggested people for "+n+" task"+(n>1?"s":"")+". Check them, then send the offers.":"Nothing to suggest. Every task has someone, or nobody fits yet.",n?"ok":"");
+  say($("evStatus"),(n?"Suggested people for "+n+" task"+(n>1?"s":"")+". Check them, then send the offers.":"Nothing to suggest.")+(left?" "+left+" task"+(left>1?"s":"")+" left open because nobody has said they want it. They go to Up for grabs.":""),n?"ok":"");
 }
 function nextBest(ev,t){
   if(t.owner&&(t.passed||[]).indexOf(t.owner)<0)(t.passed=t.passed||[]).push(t.owner);
@@ -2927,7 +2941,10 @@ function upForGrabs(){
   var out=[],cut=Date.now()-864e5;
   S.events.forEach(function(ev){var d=dateAt(ev,0,null);if(d&&d<cut)return;
     (ev.tasks||[]).forEach(function(t){var st=taskState(ev,t);if((st==="open"||st==="passed")&&!t.helper&&t.owner!==S.uid&&!(t.group&&(ev.tasks||[]).some(function(o){return o!==t&&o.group===t.group&&o.owner===S.uid;})))out.push({ev:ev,t:t});});});
-  return out;
+  // Best fit first; jobs the person turned down go last, but stay available if they choose to take one.
+  var me=personById(S.uid)||Object.assign(payload(),{id:S.uid});
+  out.forEach(function(x){var m=taskMatch(me,x.t.job,x.ev.id);x.fit=m?m.pts:-99;});
+  return out.sort(function(a,b){return b.fit-a.fit;});
 }
 function myReply(ev,t){return latestReply(ev.id,t.id,S.uid);}
 function writeReply(ev,t,patch,st){
@@ -3491,7 +3508,7 @@ function drawMyEvents(root){
     root.append(h("section",{class:"card",id:"grabs",style:"margin-top:14px"},h("h3",{class:"q",text:"Up for grabs"}),h("p",{class:"sub",text:"Nobody has these yet. First come, first served: tap to take one and it is yours."}),
       grabs.map(function(x){var r=myReply(x.ev,x.t),asked=r&&r.answer==="claim",st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
         return h("div",{class:"task","data-s":"open"},h("div",{class:"task-top"},priBadge(x.t.pri),h("b",{class:"ttl",text:x.t.title})),
-          h("p",{class:"meta",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")}),
+          h("p",{class:"meta",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")+(x.fit===-99?" · Outside what you usually do":"")}),
           h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));})));
   }
 }
@@ -4055,7 +4072,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();
