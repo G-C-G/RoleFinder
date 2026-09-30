@@ -865,6 +865,7 @@ button.chip.on{outline:2px solid var(--ink)}
 .lvlpick{margin-top:10px}
 .toast{bottom:88px;z-index:60;display:flex;align-items:center;max-width:calc(100% - 32px);border-radius:18px}
 .plan-left{margin:0 0 10px;font-size:15px}.plan-open{color:var(--gold-ink);font-weight:600}
+.helpbtn{margin-top:4px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -2387,7 +2388,20 @@ function passersOf(ev,t){
   S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===t.id&&r.answer==="pass"&&out.indexOf(r.pid)<0)out.push(r.pid);});
   return out;
 }
-function claimsOf(ev,t){return S.replies.filter(function(r){return r.eid===ev.id&&r.tid===t.id&&r.answer==="claim"&&r.pid!==t.owner;});}
+// First come, first served. A free task (no owner, or its owner passed) goes to whoever claimed it first.
+// Computed from the replies on every screen, so nobody needs an admin online to settle it.
+function applyClaims(){
+  S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(t){
+    if(t.manual==="done"||t.manual==="pass")return;
+    var cur=t.owner?latestReply(ev.id,t.id,t.owner):null;
+    if(t.owner&&!(cur&&cur.answer==="pass"))return;
+    var c=S.replies.filter(function(r){return r.eid===ev.id&&r.tid===t.id&&r.pid&&r.pid!==t.owner&&(r.answer==="claim"||r.answer==="take");});
+    if(!c.length)return;
+    c.sort(function(a,b){return String((a.ts&&a.ts.answered)||a.at).localeCompare(String((b.ts&&b.ts.answered)||b.at));});
+    t.owner=c[0].pid;t.offered=true;
+  });});
+}
+function claimsOf(ev,t){return [];}
 function gcgCount(pid,job,skipEid){
   var n=0;S.events.forEach(function(ev){if(ev.id===skipEid)return;(ev.tasks||[]).forEach(function(t){if(t.job===job&&t.owner===pid&&ACTIVE[taskState(ev,t)])n++;});});return n;
 }
@@ -2869,7 +2883,7 @@ function pendingCount(){return myTasks().filter(function(x){return taskState(x.e
 function upForGrabs(){
   var out=[],cut=Date.now()-864e5;
   S.events.forEach(function(ev){var d=dateAt(ev,0,null);if(d&&d<cut)return;
-    (ev.tasks||[]).forEach(function(t){var st=taskState(ev,t);if((st==="open"||st==="passed")&&!t.helper&&t.owner!==S.uid)out.push({ev:ev,t:t});});});
+    (ev.tasks||[]).forEach(function(t){var st=taskState(ev,t);if((st==="open"||st==="passed")&&!t.helper&&t.owner!==S.uid&&!(t.group&&(ev.tasks||[]).some(function(o){return o!==t&&o.group===t.group&&o.owner===S.uid;})))out.push({ev:ev,t:t});});});
   return out;
 }
 function myReply(ev,t){return latestReply(ev.id,t.id,S.uid);}
@@ -2882,7 +2896,7 @@ function writeReply(ev,t,patch,st){
   if(patch.hand)r.hand=patch.hand;
   S.db.doc("replies/"+ev.id+"__"+t.id+"__"+S.uid).set(r).then(function(){
     S.replies=S.replies.filter(function(x){return !(x.eid===r.eid&&x.tid===r.tid&&x.pid===r.pid);}).concat([r]);
-    renderTasks();updateTabs();
+    applyClaims();renderTasks();updateTabs();
   },function(){say(st,"Could not save. Tell Hinda directly.","warn");});
 }
 /* ---------- Pings and links: Hinda nudges a person to a specific thing ---------- */
@@ -2898,9 +2912,20 @@ function openLinkedTask(){
 }
 function myPings(){return (S.pings||[]).filter(function(p){return p.to===S.uid&&!(S.acks&&S.acks[p.id]);}).sort(function(a,b){return String(b.at).localeCompare(String(a.at));});}
 // Notifications: things that need the person's attention, shown at the top of Home.
-function ackNote(id){
+// Help requests: one small doc per sender, readable by the team, so the person asked sees it in their bell.
+S.help={};
+function helpItems(uid){var d=S.help&&S.help[uid];return d&&Array.isArray(d.items)?d.items:[];}
+function sendHelp(ev,t,to,note,st){
+  if(!S.db||!S.uid||S.canWrite===false){say(st,"Sending needs the live page.","warn");return;}
+  var items=helpItems(S.uid).slice();items.push({id:"h"+Date.now().toString(36),to:to,eid:ev.id,tid:t.id,text:clean(note).slice(0,140),at:nowIso()});
+  var doc={name:clean(S.name).slice(0,60),items:items.slice(-30),updated:nowIso()};
+  S.help[S.uid]=doc;
+  S.db.doc("help/"+S.uid).set(doc).then(function(){toast("Sent to "+nameOf(to)+". They will see it in their notifications.");},function(){say(st,"Could not send the request.","warn");});
+}
+function ackNote(id,after){
   S.acks=Object.assign({},S.acks);S.acks[id]=nowIso();
   if(S.db&&S.uid)S.db.doc("acks/"+S.uid).set({ids:S.acks}).catch(function(){});
+  if(after)after();
   refresh();
 }
 function myNotes(){
@@ -2909,6 +2934,19 @@ function myNotes(){
     var ev=p.eid?evById(p.eid):null,t=ev?(ev.tasks||[]).filter(function(x){return x.id===p.tid;})[0]:null;
     out.push({id:p.id,kind:"From Hinda",title:p.text||"",sub:t?(ev.name||"")+" · "+t.title:"",
       act:t?{label:"Open it",fn:function(){S.goTask={eid:p.eid,tid:p.tid};openLinkedTask();}}:null});
+  });
+  Object.keys(S.help||{}).forEach(function(uid){helpItems(uid).forEach(function(i){
+    var id="help:"+i.id,ev=evById(i.eid),tk=ev?(ev.tasks||[]).filter(function(x){return x.id===i.tid;})[0]:null;
+    if(i.to!==S.uid||(S.acks&&S.acks[id])||!tk)return;
+    var chat=ev.links&&safeUrl(ev.links.group);
+    out.push({id:id,kind:"Help request",title:nameOf(uid)+" asked for your help with "+tk.title,sub:(i.text?i.text+" · ":"")+(ev.name||""),
+      act:chat?{label:"Open crew chat",fn:function(){window.open(chat,"_blank","noopener");}}:null});
+  });});
+  S.replies.filter(function(r){return r.pid===S.uid&&r.answer==="claim";}).forEach(function(r){
+    var ev=evById(r.eid),tk=ev?(ev.tasks||[]).filter(function(x){return x.id===r.tid;})[0]:null,id="lost:"+r.eid+":"+r.tid;
+    if(!tk||!tk.owner||tk.owner===S.uid||(S.acks&&S.acks[id]))return;
+    out.push({id:id,kind:"Update",title:nameOf(tk.owner)+" took "+tk.title+" first",sub:"It is theirs now. Have a look at what is still up for grabs.",
+      after:function(){writeReply(ev,tk,{answer:"pass",reason:"Someone else took it first"},null);}});
   });
   var offered=myOpenItems().filter(function(x){return x.st==="offered";});
   if(offered.length)out.push({id:"",kind:"New",title:offered.length===1?"You've been suggested for a task":offered.length+" tasks are waiting for your answer",sub:offered[0].t.title+" · "+(offered[0].ev.name||""),
@@ -2934,7 +2972,7 @@ function renderBell(){
   notes.forEach(function(n){
     pop.append(h("div",{class:"note"},h("p",{class:"note-k",text:n.kind}),h("p",{class:"note-t",text:n.title}),n.sub?h("p",{class:"sub",text:n.sub}):null,
       h("div",{class:"row"},n.act?h("button",{type:"button",class:"btn small go",text:n.act.label,onclick:function(){S.panel.notesOpen=false;n.act.fn();renderBell();}}):null,
-        n.id?h("button",{type:"button",class:"btn small",text:"Got it",onclick:function(){ackNote(n.id);}}):null)));
+        n.id?h("button",{type:"button",class:"btn small",text:"Got it",onclick:function(){ackNote(n.id,n.after);}}):null)));
   });
 }
 (function(){
@@ -3407,11 +3445,11 @@ function drawMyEvents(root){
   });
   var grabs=upForGrabs();
   if(grabs.length){
-    root.append(h("section",{class:"card",id:"grabs",style:"margin-top:14px"},h("h3",{class:"q",text:"Up for grabs"}),h("p",{class:"sub",text:"Nobody has these yet. Tap to offer, and Hinda confirms."}),
+    root.append(h("section",{class:"card",id:"grabs",style:"margin-top:14px"},h("h3",{class:"q",text:"Up for grabs"}),h("p",{class:"sub",text:"Nobody has these yet. First come, first served: tap to take one and it is yours."}),
       grabs.map(function(x){var r=myReply(x.ev,x.t),asked=r&&r.answer==="claim",st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
         return h("div",{class:"task","data-s":"open"},h("div",{class:"task-top"},priBadge(x.t.pri),h("b",{class:"ttl",text:x.t.title})),
           h("p",{class:"meta",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")}),
-          h("div",{class:"row"},asked?h("span",{class:"pill","data-s":"offered",text:"Offered waiting for Hinda"}):h("button",{type:"button",class:"btn small go",text:"I can take this",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));})));
+          h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));})));
   }
 }
 function drawMemberEvent(root,ev){
@@ -3692,21 +3730,31 @@ function myTaskCard(ev,t,me){
         h("button",{type:"button",class:"btn go wide",text:"Save as done ",onclick:function(){
           var at=new Date();if(when==="yesterday")at.setDate(at.getDate()-1);if(when==="earlier"&&dr.date){at=new Date(dr.date+"T17:00:00");}
           S.panel[key]="";writeReply(ev,t,{state:"done",doneAt:at.toISOString(),mood:dr.mood||"",comment:clean(dr.comment)},stat);}})));
-    }else body.push(h("button",{type:"button",class:"btn green big wide",text:"Done",onclick:function(){S.panel[key]="done";renderTasks();}}));
+    }else body.push(h("button",{type:"button",class:"btn green big wide",text:"Done",onclick:function(){S.panel[key]="done";renderTasks();}}),
+      h("button",{type:"button",class:"btn link helpbtn",text:panel==="hand"?"Cancel help request":"I need help",onclick:function(){S.panel[key]=panel==="hand"?"":"hand";renderTasks();}}));
+    if(panel==="hand"){
+      var others=Object.keys(S.crew||{}).filter(function(id){return id!==S.uid;}).sort(function(a,b){return nameOf(a).localeCompare(nameOf(b));});
+      var sel=h("select",{"aria-label":"Who can help","data-k":"helpto-"+key},h("option",{value:"",text:"Anyone (Hinda will find someone)"}),others.map(function(id){return h("option",{value:id,text:nameOf(id)});}));
+      sel.value=dr.helpTo||"";sel.addEventListener("change",function(){dr.helpTo=sel.value;});
+      body.push(h("div",{class:"box"},h("b",{text:"Who do you need?"}),sel,inp("hand","What do you need help with? (one line)"),
+        h("button",{type:"button",class:"btn go wide",text:"Send help request",onclick:function(){
+          S.panel[key]="";
+          if(dr.helpTo)sendHelp(ev,t,dr.helpTo,dr.hand,stat);
+          else writeReply(ev,t,{hand:{at:nowIso(),note:clean(dr.hand)}},stat);}})));
+    }
     var planIn=h("input",{type:"date","aria-label":"My plan for "+t.title,"data-k":"plan-"+key,value:(r&&r.plan)||""});
     planIn.addEventListener("change",function(){writeReply(ev,t,{plan:planIn.value},stat);});
     var planLate=r&&r.plan&&due&&new Date(r.plan+"T10:00:00")>due;
-    var more=h("details",{class:"more",open:panel==="stuck"||panel==="hand"?true:null},h("summary",{text:"More: plan, calendar, stuck, help"}),
+    var more=h("details",{class:"more",open:panel==="stuck"?true:null},h("summary",{text:"More: plan, calendar, stuck"}),
       h("div",{class:"plan"},h("label",{text:"When will you do it?"}),planIn,planLate?h("span",{class:"stuck",text:"That is after the deadline."}):null),
       calButtons(ev,t,stat),
       h("div",{class:"row"},
         st==="taken"?h("button",{type:"button",class:"btn small",text:"→ I've started",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):null,
         st==="stuck"?h("button",{type:"button",class:"btn small",text:"Unstuck",onclick:function(){writeReply(ev,t,{state:"started"},stat);}}):h("button",{type:"button",class:"btn small",text:"I'm stuck",onclick:function(){S.panel[key]=panel==="stuck"?"":"stuck";renderTasks();}}),
-        h("button",{type:"button",class:"btn small",text:"Need an extra hand",onclick:function(){S.panel[key]=panel==="hand"?"":"hand";renderTasks();}}),
         ev.links&&safeUrl(ev.links.group)?h("a",{class:"btn small",href:safeUrl(ev.links.group),target:"_blank",rel:"noopener",text:"Ask in crew chat"}):null,
         t.msg?h("button",{type:"button",class:"btn small",text:"Guest message",onclick:function(){copyText(guestMessage(ev,t.msg),stat,"Guest message copied. Paste it into Luma, WhatsApp or SMS.");}}):null),
       panel==="stuck"?h("div",{class:"box"},inp("stuck","What is blocking you?"),h("button",{type:"button",class:"btn small",text:"Flag as stuck",onclick:function(){S.panel[key]="";writeReply(ev,t,{state:"stuck",stuck:clean(dr.stuck)},stat);}})):null,
-      panel==="hand"?h("div",{class:"box"},inp("hand","What do you need help with?"),h("button",{type:"button",class:"btn small",text:"Ask for an extra hand",onclick:function(){S.panel[key]="";writeReply(ev,t,{hand:{at:nowIso(),note:clean(dr.hand)}},stat);}})):null);
+      null);
     body.push(more);
   }else if(st==="done"){
     body.push(h("p",{class:"sub",text:"Done "+fmtWhen(doneAt(ev,t))+(r&&r.mood?" · "+moodText(r.mood):"")+(r&&r.comment?" · "+r.comment:"")}),
@@ -3902,10 +3950,11 @@ function initCaps(){
         S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
           .concat(S.events.filter(function(e){return evDirty[e.id]&&!snap.docs.some(function(d){return d.id===e.id;});}));
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
-        openLinkedTask();
+        applyClaims();openLinkedTask();
       },function(){});
       S.db.collection("replies").onSnapshot(function(snap){
         S.replies=snap.docs.map(function(d){return thaw(d.data());}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
+        applyClaims();
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
       },function(){});
       S.db.collection("people").onSnapshot(function(snap){
@@ -3922,6 +3971,7 @@ function initCaps(){
       },function(){});
       if(S.uid&&!S.isAdmin)S.db.doc("ideas/"+S.uid).onSnapshot(function(snap){S.ideas={};if(snap.exists)S.ideas[S.uid]=thaw(snap.data());if(S.view==="home")renderHome();},function(){});
       if(S.isAdmin)S.db.collection("ideas").onSnapshot(function(snap){S.ideas={};snap.docs.forEach(function(d){S.ideas[d.id]=thaw(d.data());});if(S.view==="team"&&S.teamTab==="ideas")renderInbox();if(S.view==="today")renderToday();if(S.view==="home")renderHome();},function(){});
+      S.db.collection("help").onSnapshot(function(snap){S.help={};snap.docs.forEach(function(d){S.help[d.id]=thaw(d.data());});renderBell();refresh();},function(){});
       S.db.doc("settings/app").onSnapshot(function(snap){if(snap.exists&&snap.data().url)S.appUrl=clean(snap.data().url);},function(){});
       S.db.collection("pings").onSnapshot(function(snap){
         S.pings=snap.docs.map(function(d){var o=thaw(d.data());o.id=d.id;return o;});
@@ -3959,7 +4009,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();

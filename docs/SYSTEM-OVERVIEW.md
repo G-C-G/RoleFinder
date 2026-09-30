@@ -55,6 +55,10 @@ Team members never see Team, Coverage, Titles or Insights. They see other people
 
 **Records for a year-end review (Hinda only, Insights and Team).** Export all task data (CSV): every task with event, person, status, offered, answered, started, done, due, days late, stuck and comment. Export contributions by person and year (CSV): events, tasks done, small/medium/large and on-time rate per person per year. Export everyone (CSV): profiles. On each person card in Team: Export their records (CSV), one person across every event. Event report and Who is doing what: PDFs per event. Each person's own trail is on their Me tab.
 
+**First come, first served.** Anything nobody has yet shows to everyone under Up for grabs. Tapping Take it makes it yours; if two people tap at once, the earlier tap wins and the other is told. A task that needs several people is several slots, and one person can hold only one slot of the same task.
+
+**I need help.** On any task they hold, a person can ask a specific teammate (or "anyone", which goes to Hinda). The teammate sees a notification with the task, the note and a link to the crew chat. The conversation itself happens in the crew chat.
+
 ## 6. Privacy
 
 **Sharing is each person's choice.** Every person's **About** (name, photo, type, strengths, title) is always visible to the crew, so newcomers can see who does what. Everything else is opt-in and off by default: jobs I'm up for, what I've done, what I bring, my proudest work, how I work best, my CV or link. People set this at the end of onboarding and can change it any time under Me, Who sees what. **Never shared, whatever the person chooses:** jobs they would rather not do, why they are here, and their card corrections. The crew sees a separate public card, so switching something off removes it from view.
