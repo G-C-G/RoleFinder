@@ -31,11 +31,11 @@ Hinda (founder, creative director) plans **events from templates**. The system b
 
 | Team member: MY world | Hinda: GCG's world |
 |---|---|
-| **Home**: next move (one button), GCG right now (event journey + your part), your place (type, strengths, tasks and events done), next crew date, up for grabs | **Today**: active events, what needs attention, answers waiting, coverage gaps; **Needs you** (max five, one action each); her own next move; every event's journey |
-| **Events**: only their events → event page: goal, crew chat link, journey, your part (task cards), crew contributions, run sheet | **Events**: create from a template → event page: goal, journey, needs attention, suggest people, send offers; everything else folded (all tasks, add a task, guests and messages, debrief, more actions) |
-| **Crew**: who does what (titles and their holders), then everyone's About, expandable to whatever each person chose to share |
-| **Me**: player card (shareable), finish your profile, **who sees what**, title, likes and dislikes, **GCG trail**, about me and CV strengths folded | **Team**: People (cards, pings, paste-in), **Coverage** (wings as tiles with a dot per person; red means no one or only one), Titles |
-| | **Insights**: how fast things get done, on-time rates, where plans are unrealistic |
+| **Home**: dark banner (name and bio), bell for notifications, what to do now for the current phase (before, during or after the event) with a suggested first task and a tick on each, later phases folded, a short More list | **Today**: active events, what needs attention, answers waiting, coverage gaps; **Needs you** (max five, one action each); her own next move |
+| **Plan**: each event as a timeline with stages, how ready it is, days to go and what is next | **Plan**: all active events as timelines |
+| **Tasks**: only their events; every task for the current phase, most important first; later phases folded | **Events**: create from a template; suggest people; send offers for now; everything else folded |
+| **Crew**: who does what, then everyone's About, expandable to whatever each person chose to share | **Team**: People, Coverage, Titles, Ideas inbox |
+| **Me**: player card, finish your profile, who sees what, trail | **Insights**: how fast things get done |
 
 Team members never see Team, Coverage, Titles or Insights. They see other people only through the Crew tab, and only what each person chose to share.
 
