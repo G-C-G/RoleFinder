@@ -53,7 +53,7 @@ Team members never see Team, Coverage, Titles or Insights. They see other people
 
 **Ideas, leads and feedback.** At the bottom of Home, anyone can send an idea, a lead or something to fix. Hinda reads all of them (Team, Ideas), sees who sent each one, can reply and mark it seen or done. Senders see only their own notes and her replies.
 
-**Records for a year-end review (Hinda only, Insights and Team).** Export all task data (CSV): every task with event, person, status, offered, answered, started, done, due, days late, stuck and comment. Export contributions by person and year (CSV): events, tasks done, small/medium/large and on-time rate per person per year. Export everyone (CSV): profiles. Event report and Who is doing what: PDFs per event. Each person's own trail is on their Me tab.
+**Records for a year-end review (Hinda only, Insights and Team).** Export all task data (CSV): every task with event, person, status, offered, answered, started, done, due, days late, stuck and comment. Export contributions by person and year (CSV): events, tasks done, small/medium/large and on-time rate per person per year. Export everyone (CSV): profiles. On each person card in Team: Export their records (CSV), one person across every event. Event report and Who is doing what: PDFs per event. Each person's own trail is on their Me tab.
 
 ## 6. Privacy
 

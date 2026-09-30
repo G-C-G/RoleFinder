@@ -2025,7 +2025,8 @@ function renderPeople(){
       sl.map(function(l){return h("p",null,h("b",{text:l[0]+": "}),l[1]);}),
       p.extra?h("p",null,h("b",{text:"Also good at: "}),p.extra):null,
       p.cv?h("p",null,h("b",{text:"CV or LinkedIn: "}),p.cv):null,
-      h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy notes",onclick:function(){copyText(personNotes(p),$("t-exportStatus"),"Copied notes for "+pname(p)+".");}}),del)));
+      h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy notes",onclick:function(){copyText(personNotes(p),$("t-exportStatus"),"Copied notes for "+pname(p)+".");}}),
+        h("button",{type:"button",class:"btn small",text:"Export their records (CSV)",onclick:function(){exportPerson(p.id,$("t-exportStatus"));}}),del)));
   });
 }
 function personNotes(p){
@@ -2133,7 +2134,7 @@ function toggleCritical(id,on){
 }
 function csv(rows){
   return rows.map(function(r){return r.map(function(c){
-    var s=String(c==null?"":c);if(/^[=+\-@]/.test(s))s="'"+s;
+    var s=String(c==null?"":c);if(/^[=+\-@]/.test(s)&&!/^-?\d+(\.\d+)?$/.test(s))s="'"+s;
     return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
   }).join(",");}).join("\r\n");
 }
@@ -3111,6 +3112,19 @@ function avg(a){a=a.filter(function(x){return x!=null&&isFinite(x);});return a.l
 function f1(x,u){return x==null?"–":(Math.round(x*10)/10)+(u||"");}
 function pct(a){return a.length?Math.round(a.filter(Boolean).length/a.length*100)+"%":"–";}
 function table(head,rows){return h("div",{class:"mapwrap"},h("table",{class:"map ins"},h("thead",null,h("tr",null,head.map(function(x,i){return h("th",{scope:"col",style:i?"":"text-align:left",text:x});}))),h("tbody",null,rows.map(function(r){return h("tr",null,r.map(function(c,i){return i?h("td",{text:String(c)}):h("th",{scope:"row",text:String(c)});}));}))));}
+function taskCsvRows(list){
+  var rows=[["Event","Event date","Task","Phase","Priority","Size","Person","Status","Offered","Answered","Started","Done","Due","Days late","Stuck","Mood","Comment"]];
+  list.forEach(function(x){var r=replyOf(x.ev,x.t),ts=(r&&r.ts)||{};
+    rows.push([x.ev.name,x.ev.date,x.t.title,x.t.phase,x.t.pri,x.t.size,x.pid?nameOf(x.pid):x.t.helper||"",x.st,x.t.ots||"",ts.answered||"",ts.started||"",x.done?x.done.toISOString():"",x.due?x.due.toISOString():"",x.late==null?"":f1(x.late),r&&r.stuck||"",x.mood,r&&(r.comment||r.note)||""]);});
+  return rows;
+}
+// One person's full record across every event, for a year-end review or a thank-you.
+function exportPerson(pid,st){
+  var mine=taskRecords().filter(function(x){return x.pid===pid&&ACTIVE[x.st];});
+  var slug=String(nameOf(pid)||"person").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"person";
+  if(!mine.length){say(st,nameOf(pid)+" has no tasks on record yet.","warn");return;}
+  saveFile("gcg-"+slug+"-records.csv",csv(taskCsvRows(mine)),st);
+}
 function renderInsights(){
   var root=$("insBody");if(!root||!S.isAdmin)return;clear(root);
   var recs=taskRecords(),done=recs.filter(function(r){return r.done;});
@@ -3151,10 +3165,7 @@ function renderInsights(){
       return [nameOf(pid),a.length,d.length,pct(w.map(function(r){return r.late<=0.5;})),f1(avg(a.map(function(r){return r.resp;}))),a.filter(function(r){return r.stuck;}).length,sz.S+"/"+sz.M+"/"+sz.L];}))));
   var st=h("span",{class:"status"});
   root.append(h("div",{class:"row",style:"margin-top:14px"},h("button",{type:"button",class:"btn small",text:"Export all task data (CSV)",onclick:function(){
-    var rows=[["Event","Event date","Task","Phase","Priority","Size","Person","Status","Offered","Answered","Started","Done","Due","Days late","Stuck","Mood","Comment"]];
-    recs.forEach(function(x){var r=replyOf(x.ev,x.t),ts=(r&&r.ts)||{};
-      rows.push([x.ev.name,x.ev.date,x.t.title,x.t.phase,x.t.pri,x.t.size,x.pid?nameOf(x.pid):x.t.helper||"",x.st,x.t.ots||"",ts.answered||"",ts.started||"",x.done?x.done.toISOString():"",x.due?x.due.toISOString():"",x.late==null?"":f1(x.late),r&&r.stuck||"",x.mood,r&&(r.comment||r.note)||""]);});
-    saveFile("gcg-task-data.csv",csv(rows),st);}}),
+    saveFile("gcg-task-data.csv",csv(taskCsvRows(recs)),st);}}),
     h("button",{type:"button",class:"btn small",text:"Export contributions by person and year (CSV)",onclick:function(){
       var by={};recs.forEach(function(x){if(!x.pid||x.st!=="done")return;var yr=String(x.ev.date||"").slice(0,4)||"Undated",k=x.pid+"|"+yr;
         var o=by[k]=by[k]||{pid:x.pid,yr:yr,evs:{},n:0,S:0,M:0,L:0,onTime:0,timed:0,tasks:[]};
