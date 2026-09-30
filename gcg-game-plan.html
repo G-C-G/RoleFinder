@@ -859,6 +859,11 @@ body.home-band .bellbtn:not([hidden]){display:grid}
 .pop-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;position:sticky;top:0;background:var(--card)}
 .pop-empty{padding:4px 16px 18px;margin:0}
 .notepop .note:first-of-type{border-top:1px solid var(--line)}
+.toast-undo{appearance:none;background:none;border:0;color:var(--gold);font:700 15px var(--font-body);text-decoration:underline;cursor:pointer;padding:6px 4px;margin-left:6px}
+button.chip{cursor:pointer;font-family:inherit}
+button.chip.on{outline:2px solid var(--ink)}
+.lvlpick{margin-top:10px}
+.toast{bottom:88px;z-index:60;display:flex;align-items:center;max-width:calc(100% - 32px);border-radius:18px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -1479,6 +1484,11 @@ function copyText(text,statusEl,okMsg){
 
 /* ---------- Flow ---------- */
 function levelOf(sc){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].screens.indexOf(sc)>-1)return i;}return sc==="profile"?LEVELS.length:-1;}
+function toastUndo(text,fn){
+  var old=document.querySelector(".toast");if(old)old.remove();
+  var t=h("div",{class:"toast",role:"status"},h("span",{text:text+" "}),h("button",{type:"button",class:"toast-undo",text:"Undo",onclick:function(){t.remove();fn();}}));document.body.append(t);
+  setTimeout(function(){if(t.parentNode)t.remove();},7000);
+}
 function toast(text){
   var old=document.querySelector(".toast");if(old)old.remove();
   var t=h("div",{class:"toast",role:"status",text:text});document.body.append(t);
@@ -3697,9 +3707,13 @@ function crewCredits(ev){
 }
 // "Not really me": the person tells the page to stop sending this kind of task, and their card updates.
 function notMe(ev,t,stat){
+  var prev=FN[t.job]?S.levels[t.job]:undefined;
   if(FN[t.job]){S.levels[t.job]="no";saveDraft();if(S.db&&S.uid){var p=payload();S.db.doc("responses/"+S.uid).set(p).catch(function(){});}}
   writeReply(ev,t,{answer:"pass",reason:"Not my thing"},stat);
-  toast("Got it. Fewer tasks like this.");
+  toastUndo("Got it. Fewer tasks like this.",function(){
+    if(FN[t.job]){if(prev)S.levels[t.job]=prev;else delete S.levels[t.job];saveDraft();if(S.db&&S.uid)S.db.doc("responses/"+S.uid).set(payload()).catch(function(){});}
+    writeReply(ev,t,{answer:"",reason:""},stat);
+  });
 }
 
 /* ---------- Me ---------- */
@@ -3729,11 +3743,19 @@ function drawMe(root){
     ts.length?ts.map(function(x){return h("div",{class:"box"},h("b",{text:x.name}),x.desc?h("p",{text:x.desc}):null,
       h("details",{class:"more"},h("summary",{text:"What falls under it ("+sanitizeIds(x.jobs).length+")"}),h("ul",{class:"crew"},sanitizeIds(x.jobs).map(function(j){return h("li",null,h("b",{text:FN[j].name+": "}),FN[j].covers);}))));})
       :h("p",{class:"sub",text:"For now you help across several jobs. When Hinda gives you a title, it shows here."})));
-  // likes
-  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"What I like and don't"}),
-    yes.length?h("p",{class:"lab",text:"Up for"}):null,yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name});})):null,
-    g.curious.length?h("p",{class:"lab",text:"Would try"}):null,g.curious.length?h("div",{class:"chips"},g.curious.map(function(i){return h("span",{class:"chip curious",text:FN[i].name});})):null,
-    g.no.length?h("p",{class:"lab",text:"Rather not"}):null,g.no.length?h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:FN[i].name});})):null,
+  // likes: tap any job to change your answer
+  function jobChips(list,cls){return h("div",{class:"chips"},list.map(function(i){var open=S.panel.lvl===i;
+    return h("button",{type:"button",class:"chip "+cls+(open?" on":""),"aria-expanded":String(open),text:FN[i].name,onclick:function(){S.panel.lvl=open?"":i;renderProfile();}});}));}
+  var picker=null;
+  if(S.panel.lvl&&FN[S.panel.lvl]){var cur=S.levels[S.panel.lvl];
+    picker=h("div",{class:"box lvlpick"},h("b",{text:FN[S.panel.lvl].name}),h("p",{class:"sub",text:FN[S.panel.lvl].covers}),
+      h("div",{class:"seg3"},[["good","Up for it"],["curious","Would try"],["no","Rather not"]].map(function(o){
+        return h("button",{type:"button",class:"sb","data-c":o[0]==="no"?"no":"yes","aria-pressed":String(cur===o[0]),text:o[1],onclick:function(){S.levels[S.panel.lvl]=o[0];S.panel.lvl="";saveDraft();saveResponse();renderProfile();}});})));
+  }
+  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"What I like and don't"}),h("p",{class:"sub",text:"Tap any job to change your answer."}),
+    yes.length?h("p",{class:"lab",text:"Up for"}):null,yes.length?jobChips(yes,"good"):null,
+    g.curious.length?h("p",{class:"lab",text:"Would try"}):null,g.curious.length?jobChips(g.curious,"curious"):null,
+    g.no.length?h("p",{class:"lab",text:"Rather not"}):null,g.no.length?jobChips(g.no,"no"):null,picker,
     workStyle(st)?h("p",{class:"sub",text:"Works best: "+workStyle(st)}):null));
   // the GCG trail: everything you've helped make happen
   var byEv={};hist.forEach(function(x){(byEv[x.ev.id]=byEv[x.ev.id]||{ev:x.ev,ts:[]}).ts.push(x.t.title);});
