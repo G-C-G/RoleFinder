@@ -3154,7 +3154,14 @@ function renderInsights(){
     var rows=[["Event","Event date","Task","Phase","Priority","Size","Person","Status","Offered","Answered","Started","Done","Due","Days late","Stuck","Mood","Comment"]];
     recs.forEach(function(x){var r=replyOf(x.ev,x.t),ts=(r&&r.ts)||{};
       rows.push([x.ev.name,x.ev.date,x.t.title,x.t.phase,x.t.pri,x.t.size,x.pid?nameOf(x.pid):x.t.helper||"",x.st,x.t.ots||"",ts.answered||"",ts.started||"",x.done?x.done.toISOString():"",x.due?x.due.toISOString():"",x.late==null?"":f1(x.late),r&&r.stuck||"",x.mood,r&&(r.comment||r.note)||""]);});
-    saveFile("gcg-task-data.csv",csv(rows),st);}}),st));
+    saveFile("gcg-task-data.csv",csv(rows),st);}}),
+    h("button",{type:"button",class:"btn small",text:"Export contributions by person and year (CSV)",onclick:function(){
+      var by={};recs.forEach(function(x){if(!x.pid||x.st!=="done")return;var yr=String(x.ev.date||"").slice(0,4)||"Undated",k=x.pid+"|"+yr;
+        var o=by[k]=by[k]||{pid:x.pid,yr:yr,evs:{},n:0,S:0,M:0,L:0,onTime:0,timed:0,tasks:[]};
+        o.evs[x.ev.id]=x.ev.name||"Event";o.n++;o[x.t.size||"M"]++;if(x.late!=null){o.timed++;if(x.late<=0.5)o.onTime++;}o.tasks.push(x.t.title);});
+      var rows=[["Person","Year","Events","Event names","Tasks done","Small","Medium","Large","On time","Tasks"]];
+      Object.keys(by).sort().forEach(function(k){var o=by[k];rows.push([nameOf(o.pid),o.yr,Object.keys(o.evs).length,Object.keys(o.evs).map(function(e){return o.evs[e];}).join("; "),o.n,o.S,o.M,o.L,o.timed?Math.round(o.onTime/o.timed*100)+"%":"",o.tasks.join("; ")]);});
+      saveFile("gcg-contributions-by-person.csv",csv(rows),st);}}),st));
 }
 
 /* ---------- Game Plan navigation: Home · Events · Me for the team; Today · Events · Team · Insights · Me for Hinda ---------- */

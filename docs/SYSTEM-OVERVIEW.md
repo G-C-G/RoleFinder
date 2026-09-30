@@ -53,6 +53,8 @@ Team members never see Team, Coverage, Titles or Insights. They see other people
 
 **Ideas, leads and feedback.** At the bottom of Home, anyone can send an idea, a lead or something to fix. Hinda reads all of them (Team, Ideas), sees who sent each one, can reply and mark it seen or done. Senders see only their own notes and her replies.
 
+**Records for a year-end review (Hinda only, Insights and Team).** Export all task data (CSV): every task with event, person, status, offered, answered, started, done, due, days late, stuck and comment. Export contributions by person and year (CSV): events, tasks done, small/medium/large and on-time rate per person per year. Export everyone (CSV): profiles. Event report and Who is doing what: PDFs per event. Each person's own trail is on their Me tab.
+
 ## 6. Privacy
 
 **Sharing is each person's choice.** Every person's **About** (name, photo, type, strengths, title) is always visible to the crew, so newcomers can see who does what. Everything else is opt-in and off by default: jobs I'm up for, what I've done, what I bring, my proudest work, how I work best, my CV or link. People set this at the end of onboarding and can change it any time under Me, Who sees what. **Never shared, whatever the person chooses:** jobs they would rather not do, why they are here, and their card corrections. The crew sees a separate public card, so switching something off removes it from view.
