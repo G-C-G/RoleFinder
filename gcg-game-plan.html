@@ -2034,7 +2034,8 @@ function renderPeople(){
       p.extra?h("p",null,h("b",{text:"Also good at: "}),p.extra):null,
       p.cv?h("p",null,h("b",{text:"CV or LinkedIn: "}),p.cv):null,
       h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy notes",onclick:function(){copyText(personNotes(p),$("t-exportStatus"),"Copied notes for "+pname(p)+".");}}),
-        h("button",{type:"button",class:"btn small",text:"Export their records (CSV)",onclick:function(){exportPerson(p.id,$("t-exportStatus"));}}),del)));
+        h("button",{type:"button",class:"btn small",text:"Export their records (CSV)",onclick:function(){exportPerson(p.id,$("t-exportStatus"));}}),
+        h("button",{type:"button",class:"btn small","aria-pressed":String(noAutoOn(p.id)),text:noAutoOn(p.id)?"Kept off auto-assign (tap to allow)":"Keep off auto-assign",onclick:function(){toggleNoAuto(p.id);}}),del)));
   });
 }
 function personNotes(p){
@@ -2523,11 +2524,15 @@ function fromTemplate(key,name,date,start){
   ev.squeezed=squeezeDates(ev);
   return ev;
 }
+// People kept out of automatic suggestions. They can still take tasks from Up for grabs, and Hinda can still assign them by hand.
+S.noAuto={};
+function noAutoOn(id){return !!(S.noAuto&&S.noAuto[id]);}
+function toggleNoAuto(id){S.noAuto=Object.assign({},S.noAuto);if(S.noAuto[id])delete S.noAuto[id];else S.noAuto[id]=true;if(S.db)S.db.doc("settings/noauto").set({ids:S.noAuto}).catch(function(){});renderTeam();}
 function suggestEvent(ev){
   var n=0;
   var left=0;
   (ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="open"||t.helper)return;
-    var r=rankFor(ev,t,eventLoad(ev,t))[0];
+    var r=rankFor(ev,t,eventLoad(ev,t)).filter(function(x){return !noAutoOn(x.p.id);})[0];
     // Only suggest someone with a real reason (said yes or maybe, title, experience, brings, did it before). A personality guess alone is not enough.
     if(r&&r.m.why.some(function(w){return !/^Strong in /.test(w);})){t.owner=r.p.id;t.offered=false;n++;}else left++;});
   saveEvent(ev,true);renderEvents();
@@ -2536,7 +2541,7 @@ function suggestEvent(ev){
 function nextBest(ev,t){
   if(t.owner&&(t.passed||[]).indexOf(t.owner)<0)(t.passed=t.passed||[]).push(t.owner);
   // The next best person gets the offer straight away, so a declined task never sits waiting.
-  t.manual="";var r=rankFor(ev,t,eventLoad(ev,t))[0];t.owner=r?r.p.id:"";t.offered=!!r;t.ots=r?nowIso():"";
+  t.manual="";var r=rankFor(ev,t,eventLoad(ev,t)).filter(function(x){return !noAutoOn(x.p.id);})[0];t.owner=r?r.p.id:"";t.offered=!!r;t.ots=r?nowIso():"";
   saveEvent(ev,true);renderEvents();
 }
 function giveTo(ev,t,pid){t.owner=pid;t.offered=true;t.ots=nowIso();t.manual="";saveEvent(ev,true);renderEvents();}
@@ -2720,12 +2725,16 @@ function drawEvents(root){
   var pSel=h("select",{"aria-label":"Priority"},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].l});}));pSel.value=dr.pri;pSel.addEventListener("change",function(){dr.pri=pSel.value;});
   root.append(h("details",{class:"card fold",id:"addTaskBox",style:"margin-top:14px",open:S.panel.addtask?true:null,ontoggle:function(e){S.panel.addtask=e.currentTarget.open;}},h("summary",{class:"fold-h",text:"Add a task"}),custom,
     h("div",{class:"two-col"},jobSelect(dr.job,function(v){dr.job=v;},"Closest job for the new task"),phSel),h("div",{class:"two-col"},dIn,pSel),
+    (function(){var w=h("select",{"aria-label":"Who is it for"},h("option",{value:"",text:"Up for grabs (anyone can take it)"}),S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).map(function(p){return h("option",{value:p.id,text:"Ask "+pname(p)});}));w.value=dr.who||"";w.addEventListener("change",function(){dr.who=w.value;});return w;})(),
     h("button",{type:"button",class:"btn small",text:"Add this task",onclick:function(){
-      if(!clean(custom.value)){custom.focus();return;}if(!dr.job){say($("evStatus"),"Pick the closest job so the page knows who fits.","warn");return;}
+      if(!clean(custom.value)){custom.focus();return;}
       var d=dr.d===""?null:Number(dr.d);
-      ts.push({id:newId("t"),title:clean(custom.value),job:dr.job,phase:dr.phase,d:d,m:null,pri:dr.pri,size:"M",cp:null,msg:"",group:"",owner:"",offered:false,manual:"",passed:[]});
-      S.evDraft=null;saveEvent(ev,true);renderEvents();}}),
-    h("p",{class:"sub",text:"The closest job tells the page who fits: people who said yes to it, hold it, or have done that kind of work."})));
+      var nt={id:newId("t"),title:clean(custom.value),job:dr.job||"",phase:dr.phase,d:d,m:null,pri:dr.pri,size:"M",cp:null,msg:"",group:"",owner:"",offered:false,manual:"",passed:[]};
+      if(dr.who){nt.owner=dr.who;nt.offered=true;nt.ots=nowIso();}
+      ts.push(nt);
+      var msg=dr.who?"Added, and offered to "+nameOf(dr.who)+".":(ev.published===false?"Added.":"Added. It shows under Up for grabs until someone takes it.");
+      S.evDraft=null;S.panel.alltasks=true;saveEvent(ev,true);renderEvents();toast(msg);}}),
+    h("p",{class:"sub",text:"The closest job is optional. It tells the page who fits. Leave \"who\" as up for grabs and anyone can take it, first come, first served."})));
   // guests, links, debrief
   root.append(h("details",{class:"card fold",style:"margin-top:14px"},h("summary",{class:"fold-h",text:"Guests, links and guest messages"}),
     h("div",{class:"two-col"},field("Luma event link","url",ev.links.luma,function(v){ev.links.luma=v;},"luma"),field("Feedback form link","url",ev.links.form,function(v){ev.links.form=v;},"form")),
@@ -2761,6 +2770,18 @@ function drawEventList(root){
       h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")+(TEMPLATES[e.type]?" · "+TEMPLATES[e.type].name:"")}),
       h("span",{class:"evmeta",text:(e.published===false?"Draft, hidden from the team · ":"")+done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")}));
   })));
+}
+// Hinda can record that a task is done, for the person who did it. Only they or an admin can do this.
+function doneForm(ev,t){
+  var day=h("input",{type:"date","aria-label":"Done on",value:new Date().toISOString().slice(0,10),"data-k":"md-"+t.id});
+  var who=null;
+  if(!t.owner&&!t.helper)who=h("select",{"aria-label":"Who did it"},h("option",{value:"",text:"Who did it?"}),S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).map(function(p){return h("option",{value:p.id,text:pname(p)});}));
+  return h("div",{class:"box"},h("b",{text:"Mark done"+(t.owner?" for "+nameOf(t.owner):"")}),h("label",{class:"lab",text:"Done on"}),day,who,
+    h("button",{type:"button",class:"btn go small",text:"Save as done",onclick:function(){
+      if(who&&!who.value){who.focus();return;}
+      if(who){t.owner=who.value;t.offered=true;}
+      t.manual="done";t.mts=Object.assign({},t.mts,{done:(day.value?new Date(day.value+"T17:00:00"):new Date()).toISOString(),by:S.uid});
+      S.panel["md"+t.id]=false;saveEvent(ev,true);renderEvents();}}));
 }
 function adminTask(ev,t,cur){
   var st=taskState(ev,t),rank=rankFor(ev,t,eventLoad(ev,t)),owner=t.owner?personById(t.owner):null,due=taskDue(ev,t);
@@ -2798,10 +2819,11 @@ function adminTask(ev,t,cur){
       t.owner&&(st==="draft"||st==="offered")?h("button",{type:"button",class:"btn small",text:"Assign directly",title:"Give it to them without asking",onclick:function(){t.offered=true;t.ots=t.ots||nowIso();t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
       t.owner?h("button",{type:"button",class:"btn small",text:"Ping",onclick:function(){S.panel[pk]=!S.panel[pk];renderEvents();}}):null,
       h("button",{type:"button",class:"btn small",text:"Link",onclick:function(){copyText(taskLink(ev.id,t.id),lk,"Task link copied.");}}),lk,
-      (t.owner||t.helper)&&st!=="done"?h("button",{type:"button",class:"btn small",text:"Mark done",onclick:function(){t.manual="done";t.mts=Object.assign({},t.mts,{done:nowIso()});saveEvent(ev,true);renderEvents();}}):null,
+      st!=="done"?h("button",{type:"button",class:"btn small",text:S.panel["md"+t.id]?"Cancel":"Mark done",onclick:function(){S.panel["md"+t.id]=!S.panel["md"+t.id];renderEvents();}}):null,
       st==="done"&&t.manual==="done"?h("button",{type:"button",class:"btn link",text:"Undo done",onclick:function(){t.manual="";saveEvent(ev,true);renderEvents();}}):null,
       t.owner&&st!=="passed"&&st!=="open"&&st!=="done"?h("button",{type:"button",class:"btn link",text:"Mark can't do it",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null),
     S.panel[pk]&&t.owner?pingPanel(t.owner,ev.id,t.id,"please check this task: "+t.title):null,
+    S.panel["md"+t.id]?doneForm(ev,t):null,
     more);
 }
 
@@ -2939,11 +2961,11 @@ function myTasks(){
 function pendingCount(){return myTasks().filter(function(x){return taskState(x.ev,x.t)==="offered"&&isNow(x.ev,x.t);}).length;}
 function upForGrabs(){
   var out=[],cut=Date.now()-864e5;
-  S.events.forEach(function(ev){var d=dateAt(ev,0,null);if(d&&d<cut)return;
+  S.events.forEach(function(ev){if(ev.published===false)return;var d=dateAt(ev,0,null);if(d&&d<cut)return;
     (ev.tasks||[]).forEach(function(t){var st=taskState(ev,t);if((st==="open"||st==="passed")&&!t.helper&&t.owner!==S.uid&&!(t.group&&(ev.tasks||[]).some(function(o){return o!==t&&o.group===t.group&&o.owner===S.uid;})))out.push({ev:ev,t:t});});});
   // Best fit first; jobs the person turned down go last, but stay available if they choose to take one.
   var me=personById(S.uid)||Object.assign(payload(),{id:S.uid});
-  out.forEach(function(x){var m=taskMatch(me,x.t.job,x.ev.id);x.fit=m?m.pts:-99;});
+  out.forEach(function(x){var m=taskMatch(me,x.t.job,x.ev.id);x.fit=!FN[x.t.job]?0:m?m.pts:-99;});
   return out.sort(function(a,b){return b.fit-a.fit;});
 }
 function myReply(ev,t){return latestReply(ev.id,t.id,S.uid);}
@@ -3596,6 +3618,15 @@ function drawToday(root){
     evs.length?evs.map(function(ev){return h("button",{type:"button",class:"evrow",onclick:function(){S.evOpen=ev.id;showView("events");}},
       h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),h("span",{class:"sub",text:readyText(ev)}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
     h("button",{type:"button",class:"btn small go",text:"Plan an event",onclick:function(){S.evOpen="";showView("events");}})));
+  var gr=upForGrabs();
+  if(gr.length){
+    var gst=h("span",{class:"status"});
+    var gd=h("details",{class:"card hsec grabsbox"},h("summary",{class:"fold-h",text:"Up for grabs · "+gr.length}),
+      h("p",{class:"sub",text:"Nobody has these yet. You can take one, first come, first served, like anyone else."}),
+      gr.slice(0,12).map(function(x){var d=taskDue(x.ev,x.t);return h("div",{class:"cvline"},h("span",{class:"cv-t"},h("b",{text:x.t.title}),h("span",{class:"sub",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")})),
+        h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},gst);}}));}),gst);
+    gd.open=!!S.panel.adminGrabs;gd.addEventListener("toggle",function(){S.panel.adminGrabs=gd.open;});root.append(gd);
+  }
   if(newIdeaCount())root.append(h("button",{type:"button",class:"grabs-link",onclick:function(){S.teamTab="ideas";showView("team");}},newIdeaCount()+" new idea"+(newIdeaCount()>1?"s":"")+", leads or feedback ›"));
 }
 
@@ -4035,6 +4066,7 @@ function initCaps(){
       if(S.uid&&!S.isAdmin)S.db.doc("ideas/"+S.uid).onSnapshot(function(snap){S.ideas={};if(snap.exists)S.ideas[S.uid]=thaw(snap.data());if(S.view==="home")renderHome();},function(){});
       if(S.isAdmin)S.db.collection("ideas").onSnapshot(function(snap){S.ideas={};snap.docs.forEach(function(d){S.ideas[d.id]=thaw(d.data());});if(S.view==="team"&&S.teamTab==="ideas")renderInbox();if(S.view==="today")renderToday();if(S.view==="home")renderHome();},function(){});
       S.db.collection("help").onSnapshot(function(snap){S.help={};snap.docs.forEach(function(d){S.help[d.id]=thaw(d.data());});renderBell();refresh();},function(){});
+      S.db.doc("settings/noauto").onSnapshot(function(snap){S.noAuto=snap.exists?thaw(snap.data().ids||{}):{};if(S.view==="team")renderTeam();},function(){});
       S.db.doc("settings/app").onSnapshot(function(snap){if(snap.exists&&snap.data().url)S.appUrl=clean(snap.data().url);},function(){});
       S.db.collection("pings").onSnapshot(function(snap){
         S.pings=snap.docs.map(function(d){var o=thaw(d.data());o.id=d.id;return o;});
@@ -4072,7 +4104,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,noAutoOn:noAutoOn,toggleNoAuto:toggleNoAuto,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();
