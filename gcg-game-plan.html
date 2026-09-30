@@ -1949,7 +1949,7 @@ function downloadPdf(share,stEl){share=share===true;
     S.dl.save({filename:name,data:bytes}).then(function(){say(st,"Saved "+name+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the PDF here.","warn");});
     return;
   }
-  try{var bl=new Blob([bytes],{type:"application/pdf"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved "+name+" to your downloads.","ok");}
+  try{var bl=new Blob([bytes],{type:"application/pdf"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Tried to save "+name+". If nothing downloaded, this view cannot save files.","warn");}
   catch(e){say(st,"Could not save the PDF here.","warn");}
 }
 
@@ -2160,7 +2160,7 @@ function csv(rows){
 function saveFile(name,text,st){
   st=st||$("t-exportStatus");
   if(S.dl){S.dl.save({filename:name,data:text}).then(function(){say(st,"Saved "+name+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the file here.","warn");});return;}
-  try{var bl=new Blob([text],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved "+name+".","ok");}
+  try{var bl=new Blob([text],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Tried to save "+name+". If nothing downloaded, this view cannot save files.","warn");}
   catch(e){say(st,"Could not save the file here.","warn");}
 }
 function exportPeople(){
@@ -2596,9 +2596,10 @@ function setupCard(ev){
     h("details",{class:"more",open:open?true:null,ontoggle:function(e){S.panel["cover:"+ev.id]=e.currentTarget.open;}},h("summary",{text:"What is already covered? ("+todo+" left to fill"+(cov?", "+cov+" covered":"")+")"}),list),
     cov?h("div",{class:"covered-list"},h("p",{class:"lab",text:"Covered"}),(ev.covered||[]).map(function(c,i){return h("div",{class:"cvline"},h("span",{class:"cv-t"},h("b",{text:c.title}),c.note?h("span",{class:"sub",text:c.note}):null),h("button",{type:"button",class:"btn link",text:"Bring back",onclick:function(){bringBack(ev,i);}}));})):null,
     h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Add a task",onclick:function(){S.panel.addtask=true;renderEvents();var d=$("addTaskBox");if(d&&d.scrollIntoView)d.scrollIntoView({block:"start"});}}),
-      h("button",{type:"button",class:"btn go",text:"Publish to the team",onclick:function(){
-        if(!confirm("Publish \""+(ev.name||"this event")+"\" to the team? "+todo+" task"+(todo===1?"":"s")+" to fill"+(cov?", "+cov+" already covered":"")+". Unassigned tasks will show as up for grabs."))return;
-        ev.published=true;saveEvent(ev,true);renderEvents();}})));
+      (function(){var armed=!!S.panel["pub:"+ev.id];
+        return h("button",{type:"button",class:"btn go","aria-pressed":String(armed),text:armed?"Tap again to publish ("+todo+" to fill"+(cov?", "+cov+" covered":"")+")":"Publish to the team",onclick:function(){
+          if(!armed){S.panel["pub:"+ev.id]=true;renderEvents();setTimeout(function(){if(S.panel["pub:"+ev.id]){S.panel["pub:"+ev.id]=false;renderEvents();}},6000);return;}
+          S.panel["pub:"+ev.id]=false;ev.published=true;saveEvent(ev,true);renderEvents();toast("Published. The team can see it now.");}});})()));
 }
 function sendOffers(ev,all){
   var n=0,ts=nowIso();(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"&&(all||offerNow(ev,t))){t.offered=true;t.ots=ts;n++;}});
@@ -2893,7 +2894,7 @@ function renderRunSheet(){
 function savePdf(name,blocks,st){
   var bytes;try{bytes=buildPdf(blocks);}catch(e){say(st,"Could not make the PDF here.","warn");return;}
   if(S.dl){S.dl.save({filename:name,data:bytes}).then(function(){say(st,"Saved "+name+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the PDF here.","warn");});return;}
-  try{var bl=new Blob([bytes],{type:"application/pdf"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved "+name+" to your downloads.","ok");}
+  try{var bl=new Blob([bytes],{type:"application/pdf"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Tried to save "+name+". If nothing downloaded, this view cannot save files.","warn");}
   catch(e){say(st,"Could not save the PDF here.","warn");}
 }
 function slug(s){return (String(s||"event").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"event");}
@@ -3037,7 +3038,7 @@ function myNotes(){
     if(i.to!==S.uid||(S.acks&&S.acks[id])||!tk)return;
     var chat=ev.links&&safeUrl(ev.links.group);
     out.push({id:id,kind:"Help request",title:nameOf(uid)+" asked for your help with "+tk.title,sub:(i.text?i.text+" · ":"")+(ev.name||""),
-      act:chat?{label:"Open crew chat",fn:function(){window.open(chat,"_blank","noopener");}}:null});
+      act:chat?{label:"Open crew chat",href:chat}:null});
   });});
   S.replies.filter(function(r){return r.pid===S.uid&&r.answer==="claim";}).forEach(function(r){
     var ev=evById(r.eid),tk=ev?(ev.tasks||[]).filter(function(x){return x.id===r.tid;})[0]:null,id="lost:"+r.eid+":"+r.tid;
@@ -3068,7 +3069,7 @@ function renderBell(){
   if(!notes.length)pop.append(h("p",{class:"sub pop-empty",text:"Nothing new."}));
   notes.forEach(function(n){
     pop.append(h("div",{class:"note"},h("p",{class:"note-k",text:n.kind}),h("p",{class:"note-t",text:n.title}),n.sub?h("p",{class:"sub",text:n.sub}):null,
-      h("div",{class:"row"},n.act?h("button",{type:"button",class:"btn small go",text:n.act.label,onclick:function(){S.panel.notesOpen=false;n.act.fn();renderBell();}}):null,
+      h("div",{class:"row"},n.act?(n.act.href?h("a",{class:"btn small go",href:n.act.href,target:"_blank",rel:"noopener",text:n.act.label}):h("button",{type:"button",class:"btn small go",text:n.act.label,onclick:function(){S.panel.notesOpen=false;n.act.fn();renderBell();}})):null,
         n.id?h("button",{type:"button",class:"btn small",text:"Got it",onclick:function(){ackNote(n.id,n.after);}}):null)));
   });
 }
@@ -3221,15 +3222,16 @@ function googleCal(x){
 function saveIcs(name,items,st){
   if(!items.length){say(st,"Nothing with a date to add yet.","warn");return;}
   var text=icsFile(items);
-  if(S.dl){S.dl.save({filename:name,data:text}).then(function(){say(st,"Saved. Open the file to add it to your calendar.","ok");},function(e){say(st,e&&e.code==="declined"?"Cancelled.":"Could not save here.","warn");});return;}
-  try{var bl=new Blob([text],{type:"text/calendar"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Saved. Open the file to add it to your calendar.","ok");}
+  if(S.dl){S.dl.save({filename:name,data:text}).then(function(){say(st,"Saved. Open the file to add it to your calendar.","ok");},function(e){say(st,e&&e.code==="declined"?"Cancelled.":(e&&/extension/.test(String(e.code))?"This view cannot save calendar files. Use the Google button instead.":"Could not save here."),"warn");});return;}
+  try{var bl=new Blob([text],{type:"text/calendar"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove();say(st,"Tried to save the calendar file. If nothing downloaded, use the Google button.","warn");}
   catch(e){say(st,"Could not save here.","warn");}
 }
 function calButtons(ev,t,stat){
   var x=calItem(ev,t);if(!x)return null;
   return h("div",{class:"row calrow"},h("span",{class:"k",text:"Add to calendar:"}),
     h("a",{class:"btn small",href:googleCal(x),target:"_blank",rel:"noopener",text:"Google"}),
-    h("button",{type:"button",class:"btn small",text:"Apple / Outlook",onclick:function(){saveIcs("GCG-"+slug(t.title)+".ics",[x],stat);}}));
+    h("button",{type:"button",class:"btn small",text:"Apple / Outlook",onclick:function(){saveIcs("GCG-"+slug(t.title)+".ics",[x],stat);}}),
+    h("span",{class:"sub",text:"Google adds it in one tap."}));
 }
 
 /* ---------- Insights (Hinda): how fast things really get done ---------- */
@@ -3516,7 +3518,6 @@ function drawHome(root){
   function row(icon,text,sub,fn){return h("button",{type:"button",class:"hrow",onclick:fn},ico(icon,20),h("span",{class:"hr-t"},text,sub?h("span",{class:"hr-s",text:sub}):null),ico("chevR",18));}
   if(crew.length)rows.push(row("users",crew[0].t.title,fmtWhen(crew[0].d),function(){showView("plan");}));
   if(grabs.length)rows.push(row("hand",grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs","",function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}));
-  if(upcoming.length)rows.push(h("button",{type:"button",class:"hrow",onclick:function(){saveIcs("GCG-upcoming.ics",upcoming,calSt);}},ico("calendar",20),h("span",{class:"hr-t",text:"Add my dates to calendar"}),calSt));
   var mp2=prof?missingProfile():0;
   if(mp2)rows.push(row("user","Finish your profile",mp2+" quick question"+(mp2>1?"s":"")+" left",function(){startExtra();}));
   if(S.uid&&!S.isAdmin)rows.push(ideaBox(true));
