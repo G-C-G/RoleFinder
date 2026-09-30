@@ -3909,6 +3909,8 @@ function renderProfile(){
   try{drawMe(root);}finally{focusRestore(root,keep);}
 }
 function drawMe(root){
+  // Access is granted by the page owner in the Share menu; nobody can claim it from their profile. This line confirms what the page sees.
+  root.append(h("p",{class:"sub accessline"},h("b",{text:"Your access: "}),S.realAdmin?"Admin. You can run events, see the team and export records."+(S.asMember?" You are viewing as a team member right now.":""):"Team member. You can see your tasks, the plan and the crew."));
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),g=grouped(S),yes=g.top.concat(g.good),st=sanitizeStory(p.story),ts=titlesOf(S.uid);
   if(!prof){
     root.append(h("div",{class:"card"},h("h2",{class:"q",text:"Make your player card"}),h("p",{class:"sub",text:"About 6 minutes. It is how the page knows which tasks suit you."}),
