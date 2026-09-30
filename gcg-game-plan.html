@@ -864,6 +864,7 @@ button.chip{cursor:pointer;font-family:inherit}
 button.chip.on{outline:2px solid var(--ink)}
 .lvlpick{margin-top:10px}
 .toast{bottom:88px;z-index:60;display:flex;align-items:center;max-width:calc(100% - 32px);border-radius:18px}
+.plan-left{margin:0 0 10px;font-size:15px}.plan-open{color:var(--gold-ink);font-weight:600}
 </style>
 
 <div class="wrap" id="wrap">
@@ -3568,8 +3569,9 @@ function renderPlan(){
 }
 function drawPlan(root){
   root.append(h("h1",{class:"h-sum",text:"The plan"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Where each event is, how ready it is, and where it is heading."}));
-  var evs=S.isAdmin?activeEvents():myEvents();
-  if(!evs.length)evs=activeEvents().filter(function(e){var d=dateAt(e,0,null);return d&&d>Date.now();}).slice(0,1);
+  // Everyone sees every active event, so the whole team can see what is going on and what is left. Your own events come first.
+  var mineIds={};myEvents().forEach(function(e){mineIds[e.id]=1;});
+  var evs=activeEvents().slice().sort(function(a,b){return (mineIds[b.id]?1:0)-(mineIds[a.id]?1:0);});
   if(!evs.length){root.append(h("p",{class:"sub",text:"No events yet. When one is planned, its timeline shows here."}));return;}
   evs.forEach(function(ev){
     var st=stageData(ev),pct=eventPct(ev),cur=st.filter(function(s){return s.cur;})[0],late=st.filter(function(s){return s.late;})[0];
@@ -3578,10 +3580,12 @@ function drawPlan(root){
     var head=h("div",{class:"plan-head"},h("b",{class:"plan-name",text:ev.name||"Event"}),
       h("span",{class:"plan-when",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")}),
       h("span",{class:"plan-days",text:daysTo(ev.date)}));
-    var card=h("section",{class:"card hsec plan-card"},head,journey(ev,{vertical:true,rerender:renderPlan}),
+    var tk=ev.tasks||[],nDone=tk.filter(function(x){return taskState(ev,x)==="done";}).length,nOpen=tk.filter(function(x){return taskState(ev,x)==="open";}).length;
+    var left=h("p",{class:"plan-left"},h("b",{text:(tk.length-nDone)+" tasks left"}),nDone?" · "+nDone+" done":"",nOpen?" · ":"",nOpen?h("span",{class:"plan-open",text:nOpen+" still need someone"}):null);
+    var card=h("section",{class:"card hsec plan-card"},head,left,journey(ev,{vertical:true,rerender:renderPlan}),
       line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
       next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
-      h("button",{type:"button",class:"btn small",text:S.isAdmin?"Open event":"Open my tasks",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}));
+      S.isAdmin||mineIds[ev.id]?h("button",{type:"button",class:"btn small",text:S.isAdmin?"Open event":"Open my tasks",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}):null);
     root.append(card);
   });
 }
