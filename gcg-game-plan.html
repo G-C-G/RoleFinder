@@ -866,6 +866,12 @@ button.chip.on{outline:2px solid var(--ink)}
 .toast{bottom:88px;z-index:60;display:flex;align-items:center;max-width:calc(100% - 32px);border-radius:18px}
 .plan-left{margin:0 0 10px;font-size:15px}.plan-open{color:var(--gold-ink);font-weight:600}
 .helpbtn{margin-top:4px}
+.setup{border:1.5px dashed var(--edge,#1a1611)}
+.setup-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
+.cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0}
+.cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
+.covered-line{margin:4px 0}
 </style>
 
 <div class="wrap" id="wrap">
@@ -2390,6 +2396,8 @@ function passersOf(ev,t){
 }
 // First come, first served. A free task (no owner, or its owner passed) goes to whoever claimed it first.
 // Computed from the replies on every screen, so nobody needs an admin online to settle it.
+// A draft event is hidden from team members until Hinda publishes it.
+function visibleEvents(list){return S.isAdmin?list:list.filter(function(e){return e.published!==false;});}
 function applyClaims(){
   S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(t){
     if(t.manual==="done"||t.manual==="pass")return;
@@ -2475,7 +2483,9 @@ function saveEvent(ev,now){
       guests:{registered:ev.guests&&ev.guests.registered||"",attended:ev.guests&&ev.guests.attended||"",feedback:ev.guests&&ev.guests.feedback||""},
       debrief:{worked:clean(ev.debrief&&ev.debrief.worked).slice(0,800),didnt:clean(ev.debrief&&ev.debrief.didnt).slice(0,800),change:clean(ev.debrief&&ev.debrief.change).slice(0,800)},
       cps:(ev.cps||[]).map(function(c){return {name:clean(c.name).slice(0,80),d:Number(c.d)||0};}),
-      tasks:(ev.tasks||[]).map(cleanTask),created:ev.created||nowIso(),updated:nowIso()};
+      tasks:(ev.tasks||[]).map(cleanTask),published:ev.published!==false,
+      covered:(ev.covered||[]).slice(0,60).map(function(c){return {title:clean(c.title).slice(0,120),note:clean(c.note).slice(0,120),tasks:(c.tasks||[]).slice(0,10).map(cleanTask)};}),
+      created:ev.created||nowIso(),updated:nowIso()};
     var id=ev.id,mark=evDirty[id];
     S.db.doc("events/"+id).set(doc).then(function(){if(evDirty[id]===mark)evDirty[id]=0;},function(){evDirty[id]=0;say($("evStatus"),"Could not save the event. Check that you have edit access.","warn");});
   }
@@ -2540,6 +2550,37 @@ function offerMessages(ev){
 // "For now": tasks due within a week, or in a stage the event has reached.
 function offerNow(ev,t){var due=taskDue(ev,t);return !!(due&&due<Date.now()+7*864e5)||taskStageIdx(ev,t)<=curStageIdx(ev);}
 function draftCount(ev,onlyNow){return (ev.tasks||[]).filter(function(t){return t.owner&&taskState(ev,t)==="draft"&&(!onlyNow||offerNow(ev,t));}).length;}
+// "Already covered": take these tasks out before anyone sees them, and remember what covers them.
+function coverGroup(ev,key,note){
+  var out=(ev.tasks||[]).filter(function(t){return (t.group||t.id)===key;});if(!out.length)return;
+  ev.tasks=ev.tasks.filter(function(t){return (t.group||t.id)!==key;});
+  (ev.covered=ev.covered||[]).push({title:out[0].title,note:clean(note).slice(0,120),tasks:out.map(cleanTask)});
+  saveEvent(ev,true);renderEvents();
+}
+function bringBack(ev,i){var c=(ev.covered||[])[i];if(!c)return;(c.tasks||[]).forEach(function(x){ev.tasks.push(x);});ev.covered.splice(i,1);saveEvent(ev,true);renderEvents();}
+function coveredLine(ev){var c=ev.covered||[];return c.length?h("p",{class:"sub covered-line"},h("b",{text:"Already sorted: "}),c.map(function(x){return x.title+(x.note?" ("+x.note+")":"");}).join(", ")):null;}
+function setupCard(ev){
+  var groups={},order=[];(ev.tasks||[]).forEach(function(t){var k=t.group||t.id;if(!groups[k]){groups[k]={key:k,t:t,n:0};order.push(k);}groups[k].n++;});
+  var open=S.panel["cover:"+ev.id],todo=order.length,cov=(ev.covered||[]).length;
+  var list=order.map(function(k){var g=groups[k],key="cv:"+ev.id+":"+k,asking=S.panel[key];
+    var note=h("input",{type:"text","aria-label":"Who or what covers "+g.t.title,placeholder:"Who or what covers it? (optional, e.g. Labadi Beach Hotel)","data-k":key});
+    return h("div",{class:"cvrow"},h("div",{class:"cvline"},h("span",{class:"cv-t"},h("b",{text:g.t.title}),g.n>1?h("span",{class:"sub",text:g.n+" people"}):null),
+      h("button",{type:"button",class:"btn small",text:asking?"Cancel":"Already covered",onclick:function(){S.panel[key]=!asking;renderEvents();}})),
+      asking?h("div",{class:"row"},note,h("button",{type:"button",class:"btn small go",text:"Take it off the list",onclick:function(){S.panel[key]=false;coverGroup(ev,k,note.value);}})):null);});
+  return h("section",{class:"card hsec setup"},
+    h("div",{class:"setup-h"},h("span",{class:"phasepill",text:"Draft"}),h("span",{class:"sub",text:"The team cannot see this event yet."})),
+    h("h3",{class:"q",text:"Get it right before anyone sees it"}),
+    h("ol",{class:"steps"},
+      h("li",null,h("b",{text:"Take off what is already covered."}),h("p",{class:"sub",text:"Venue booked? DJ sorted? Mark it and it never shows up as an ask."})),
+      h("li",null,h("b",{text:"Add anything extra this event needs."})),
+      h("li",null,h("b",{text:"Assign the people you have already agreed with, then publish."}))),
+    h("details",{class:"more",open:open?true:null,ontoggle:function(e){S.panel["cover:"+ev.id]=e.currentTarget.open;}},h("summary",{text:"What is already covered? ("+todo+" left to fill"+(cov?", "+cov+" covered":"")+")"}),list),
+    cov?h("div",{class:"covered-list"},h("p",{class:"lab",text:"Covered"}),(ev.covered||[]).map(function(c,i){return h("div",{class:"cvline"},h("span",{class:"cv-t"},h("b",{text:c.title}),c.note?h("span",{class:"sub",text:c.note}):null),h("button",{type:"button",class:"btn link",text:"Bring back",onclick:function(){bringBack(ev,i);}}));})):null,
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Add a task",onclick:function(){S.panel.addtask=true;renderEvents();var d=$("addTaskBox");if(d&&d.scrollIntoView)d.scrollIntoView({block:"start"});}}),
+      h("button",{type:"button",class:"btn go",text:"Publish to the team",onclick:function(){
+        if(!confirm("Publish \""+(ev.name||"this event")+"\" to the team? "+todo+" task"+(todo===1?"":"s")+" to fill"+(cov?", "+cov+" already covered":"")+". Unassigned tasks will show as up for grabs."))return;
+        ev.published=true;saveEvent(ev,true);renderEvents();}})));
+}
 function sendOffers(ev,all){
   var n=0,ts=nowIso();(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"&&(all||offerNow(ev,t))){t.offered=true;t.ots=ts;n++;}});
   saveEvent(ev,true);S.evMsgs={eid:ev.id,title:"Messages to nudge people",list:offerMessages(ev)};renderEvents();
@@ -2612,7 +2653,8 @@ function drawEvents(root){
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     ev.squeezed?h("p",{class:"sub"},"This event is closer than the template assumes, so the timeline was tightened to fit."):null,
     h("p",{class:"sub"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
-    h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
+    ev.published===false?setupCard(ev):null,
+    ev.published===false?null:h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
       risk.length?h("ol",{class:"needs"},risk.map(function(x){var now=x.late||x.st==="stuck"||x.st==="passed";
         return h("li",{"data-sev":now?"now":"soon"},h("span",{class:"sev",text:now?"Now":"Soon"}),
           h("div",null,h("b",{text:x.t.title}),h("p",{class:"sub",text:[(x.t.owner?nameOf(x.t.owner):x.t.helper||"no one"),riskWhyShort(x),x.waiting?"waits on "+x.waiting:""].filter(Boolean).join(" · ")}),x.due?clockSpan(x.due):null),
@@ -2627,7 +2669,8 @@ function drawEvents(root){
         h("button",{type:"button",class:"btn small",text:"Due-soon message",onclick:function(){S.evMsgs={eid:ev.id,title:"Due soon (paste in the team group)",list:[{text:dueSoonText(ev)}]};renderEvents();}}),
         h("button",{type:"button",class:"btn small",text:"Run sheet",onclick:function(){S.run={eid:ev.id};renderEvents();}}),
         h("button",{type:"button",class:"btn small",text:"Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
-        h("button",{type:"button",class:"btn small",text:"Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}}))),
+        h("button",{type:"button",class:"btn small",text:"Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}}),
+        ev.published===false?null:h("button",{type:"button",class:"btn small",text:"Hide from the team (back to draft)",onclick:function(){ev.published=false;S.panel["cover:"+ev.id]=true;saveEvent(ev,true);renderEvents();}}))),
     h("details",{class:"more",open:S.panel.evdetails?true:null,ontoggle:function(e){S.panel.evdetails=e.currentTarget.open;}},h("summary",{text:"Event details: name, date, place, lead"}),
       field("Event name","text",ev.name,function(v){ev.name=v;},"name"),
       field("Goal: what we are trying to make happen","text",ev.goal,function(v){ev.goal=v;},"goal"),
@@ -2661,7 +2704,7 @@ function drawEvents(root){
   var phSel=h("select",{"aria-label":"Phase"},PHASES.map(function(p){return h("option",{value:p[0],text:p[1]});}));phSel.value=dr.phase;phSel.addEventListener("change",function(){dr.phase=phSel.value;});
   var dIn=h("input",{type:"number","aria-label":"Days from the event (minus for before)",placeholder:"Days from event, e.g. -7","data-k":"custom-d",value:dr.d});dIn.addEventListener("input",function(){dr.d=dIn.value;});
   var pSel=h("select",{"aria-label":"Priority"},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].l});}));pSel.value=dr.pri;pSel.addEventListener("change",function(){dr.pri=pSel.value;});
-  root.append(h("details",{class:"card fold",style:"margin-top:14px"},h("summary",{class:"fold-h",text:"Add a task"}),custom,
+  root.append(h("details",{class:"card fold",id:"addTaskBox",style:"margin-top:14px",open:S.panel.addtask?true:null,ontoggle:function(e){S.panel.addtask=e.currentTarget.open;}},h("summary",{class:"fold-h",text:"Add a task"}),custom,
     h("div",{class:"two-col"},jobSelect(dr.job,function(v){dr.job=v;},"Closest job for the new task"),phSel),h("div",{class:"two-col"},dIn,pSel),
     h("button",{type:"button",class:"btn small",text:"Add this task",onclick:function(){
       if(!clean(custom.value)){custom.focus();return;}if(!dr.job){say($("evStatus"),"Pick the closest job so the page knows who fits.","warn");return;}
@@ -2694,7 +2737,7 @@ function drawEventList(root){
     h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Create event",onclick:function(){
       if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
       var e=tSel.value?fromTemplate(tSel.value,clean(nameIn.value),dateIn.value):{id:newId("e"),name:clean(nameIn.value)||"New event",type:"",date:dateIn.value,start:"18:30",place:"",lead:"",links:{},guests:{},debrief:{},cps:[],tasks:[],created:nowIso()};
-      S.events.push(e);S.evOpen=e.id;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
+      e.published=false;S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
   var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
   if(!list.length)root.append(h("p",{class:"sub",style:"margin-top:14px",text:"No events yet."}));
@@ -2702,7 +2745,7 @@ function drawEventList(root){
     var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
     return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
       h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")+(TEMPLATES[e.type]?" · "+TEMPLATES[e.type].name:"")}),
-      h("span",{class:"evmeta",text:done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")}));
+      h("span",{class:"evmeta",text:(e.published===false?"Draft, hidden from the team · ":"")+done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")}));
   })));
 }
 function adminTask(ev,t,cur){
@@ -3458,6 +3501,7 @@ function drawMemberEvent(root,ev){
   root.append(h("button",{type:"button",class:"btn small",text:"← Your events",onclick:function(){S.evSel="";renderMyEvents();}}),
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
+    coveredLine(ev),
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
     h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
@@ -3506,6 +3550,7 @@ function renderToday(){
 function drawToday(root){
   var evs=activeEvents(),need=[];
   evs.forEach(function(ev){
+    if(ev.published===false)return;
     atRisk(ev).forEach(function(x){if(claimsOf(ev,x.t).length)return;need.push({sev:x.late||x.st==="stuck"||x.st==="passed"?"now":"soon",ev:ev,t:x.t,st:x.st,due:x.due,why:riskWhy(x)});});
     (ev.tasks||[]).forEach(function(t){
       claimsOf(ev,t).forEach(function(c){need.push({sev:"soon",ev:ev,t:t,st:"claim",pid:c.pid,why:nameOf(c.pid)+" offered to take it"});});
@@ -3617,10 +3662,11 @@ function drawPlan(root){
     var line=late?late.name+" is behind: was due "+fmtWhen(late.due):pct>=100?"All stages complete":"";
     var head=h("div",{class:"plan-head"},h("b",{class:"plan-name",text:ev.name||"Event"}),
       h("span",{class:"plan-when",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")}),
-      h("span",{class:"plan-days",text:daysTo(ev.date)}));
+      h("span",{class:"plan-days",text:daysTo(ev.date)}),ev.published===false?h("span",{class:"phasepill",style:"justify-self:start",text:"Draft, hidden from the team"}):null);
     var tk=ev.tasks||[],nDone=tk.filter(function(x){return taskState(ev,x)==="done";}).length,nOpen=tk.filter(function(x){return taskState(ev,x)==="open";}).length;
+    var sorted=coveredLine(ev);
     var left=h("p",{class:"plan-left"},h("b",{text:(tk.length-nDone)+" tasks left"}),nDone?" · "+nDone+" done":"",nOpen?" · ":"",nOpen?h("span",{class:"plan-open",text:nOpen+" still need someone"}):null);
-    var card=h("section",{class:"card hsec plan-card"},head,left,journey(ev,{vertical:true,rerender:renderPlan}),
+    var card=h("section",{class:"card hsec plan-card"},head,left,sorted,journey(ev,{vertical:true,rerender:renderPlan}),
       line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
       next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
       S.isAdmin||mineIds[ev.id]?h("button",{type:"button",class:"btn small",text:S.isAdmin?"Open event":"Open my tasks",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}):null);
@@ -3950,7 +3996,7 @@ function initCaps(){
         S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
           .concat(S.events.filter(function(e){return evDirty[e.id]&&!snap.docs.some(function(d){return d.id===e.id;});}));
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
-        applyClaims();openLinkedTask();
+        S.events=visibleEvents(S.events);applyClaims();openLinkedTask();
       },function(){});
       S.db.collection("replies").onSnapshot(function(snap){
         S.replies=snap.docs.map(function(d){return thaw(d.data());}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
@@ -4009,7 +4055,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();

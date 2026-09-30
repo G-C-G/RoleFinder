@@ -59,6 +59,8 @@ Team members never see Team, Coverage, Titles or Insights. They see other people
 
 **I need help.** On any task they hold, a person can ask a specific teammate (or "anyone", which goes to Hinda). The teammate sees a notification with the task, the note and a link to the crew chat. The conversation itself happens in the crew chat.
 
+**Setting up an event before the team sees it.** Every new event starts as a draft, hidden from team members. On the draft, Hinda takes off what is already covered (venue, DJ and so on, with a note of who or what covers it), adds anything extra, assigns the people she has already agreed with, and then publishes. Covered items appear to the team as "Already sorted" instead of as asks. Nothing reaches team members until she publishes, and she can hide an event again.
+
 ## 6. Privacy
 
 **Sharing is each person's choice.** Every person's **About** (name, photo, type, strengths, title) is always visible to the crew, so newcomers can see who does what. Everything else is opt-in and off by default: jobs I'm up for, what I've done, what I bring, my proudest work, how I work best, my CV or link. People set this at the end of onboarding and can change it any time under Me, Who sees what. **Never shared, whatever the person chooses:** jobs they would rather not do, why they are here, and their card corrections. The crew sees a separate public card, so switching something off removes it from view.
