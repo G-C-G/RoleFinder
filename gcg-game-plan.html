@@ -3010,7 +3010,22 @@ function ackNote(id,after){
   if(after)after();
   refresh();
 }
+function adminNotes(){
+  var out=[];
+  Object.keys(S.ideas||{}).forEach(function(uid){ideaItems(uid).forEach(function(i){if(i.status!=="new")return;
+    out.push({id:"",kind:kindName(i.kind),title:nameOf(uid)+": "+i.text.slice(0,90),act:{label:"Open inbox",fn:function(){S.teamTab="ideas";showView("team");}}});});});
+  S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(tk){
+    S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===tk.id&&r.hand&&r.hand.at&&!(tk.handDone&&tk.handDone[r.pid+r.hand.at]))
+      out.push({id:"",kind:"Extra hand",title:nameOf(r.pid)+" needs an extra hand on "+tk.title,sub:(r.hand.note?r.hand.note+" · ":"")+(ev.name||""),
+        act:{label:"Add a slot",fn:function(){addSlot(ev,tk,r.pid+r.hand.at);}}});});});});
+  Object.keys(S.help||{}).forEach(function(uid){helpItems(uid).forEach(function(i){
+    var id="help:"+i.id,ev=evById(i.eid),tk=ev?(ev.tasks||[]).filter(function(x){return x.id===i.tid;})[0]:null;
+    if(i.to!==S.uid||(S.acks&&S.acks[id])||!tk)return;
+    out.push({id:id,kind:"Help request",title:nameOf(uid)+" asked for your help with "+tk.title,sub:(i.text?i.text+" · ":"")+(ev.name||"")});});});
+  return out;
+}
 function myNotes(){
+  if(S.isAdmin)return adminNotes();
   var out=[];
   myPings().forEach(function(p){
     var ev=p.eid?evById(p.eid):null,t=ev?(ev.tasks||[]).filter(function(x){return x.id===p.tid;})[0]:null;
@@ -3435,15 +3450,17 @@ function nextMoveCard(x,st,multi){
       return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),lc1(m.why[0].replace(/^\S+\s/,"")));})(),
     h("div",{class:"row"},btns),st);
 }
+function identityBand(name,bio){
+  return h("button",{type:"button",class:"pband","aria-label":"Your profile",onclick:function(){showView("me");}},
+    h("span",{class:"pb-who"},h("span",{class:"pb-name",text:name}),h("span",{class:"pb-bio",text:bio})),ico("chevR",18));
+}
 function drawHome(root){
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),items=myOpenItems(),st=h("p",{class:"status",role:"status","aria-live":"polite"});
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
   var nEv=Object.keys(evCount).length,mp=prof?missingProfile():0;
   var nm=clean(S.name)||"there";
   // Identity band: photo, name, one-line bio. Everything below it is the work.
-  root.append(h("button",{type:"button",class:"pband","aria-label":"Your profile",onclick:function(){showView("me");}},
-    h("span",{class:"pb-who"},h("span",{class:"pb-name",text:nm}),h("span",{class:"pb-bio",text:prof?prof.title:"Finish your profile to see your card"})),
-    ico("chevR",18)));
+  root.append(identityBand(nm,prof?prof.title:"Finish your profile to see your card"));
   root.append(h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):"You're good for now."}));
   var top=items[0];
   function open(x){S.evSel=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("mevents");openLinkedTask();}
@@ -3591,33 +3608,25 @@ function drawToday(root){
   evs.forEach(function(ev){
     if(ev.published===false)return;
     atRisk(ev).forEach(function(x){if(claimsOf(ev,x.t).length)return;need.push({sev:x.late||x.st==="stuck"||x.st==="passed"?"now":"soon",ev:ev,t:x.t,st:x.st,due:x.due,why:riskWhy(x)});});
-    (ev.tasks||[]).forEach(function(t){
-      claimsOf(ev,t).forEach(function(c){need.push({sev:"soon",ev:ev,t:t,st:"claim",pid:c.pid,why:nameOf(c.pid)+" offered to take it"});});
-      S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===t.id&&r.hand&&r.hand.at&&!(t.handDone&&t.handDone[r.pid+r.hand.at]))need.push({sev:"now",ev:ev,t:t,st:"hand",pid:r.pid,why:nameOf(r.pid)+" needs an extra hand"+(r.hand.note?": "+r.hand.note:"")});});
-    });
   });
   need.sort(function(a,b){return (a.sev==="now"?0:1)-(b.sev==="now"?0:1)||((a.due||Infinity)-(b.due||Infinity));});
   var waiting=0;evs.forEach(function(ev){(ev.tasks||[]).forEach(function(t){if(taskState(ev,t)==="offered")waiting++;});});
   var gaps=coverage().filter(function(c){return c.level==="none"||c.level==="thin";}).length;
   var mineItems=myOpenItems();
-  root.append(h("p",{class:"hello",text:greeting()+", "+(clean(S.name)||"Hinda")}),h("h1",{class:"h-sum",text:"GCG today"}),
-    h("div",{class:"tstats"},[[evs.length,"active events","events"],[need.length,"need attention",""],[waiting,"waiting for an answer","events"],[gaps,"wings with 0–1 people","team"]].map(function(s){
-      return h("button",{type:"button",class:"tstat"+(s[1]==="need attention"&&s[0]?" bad":""),onclick:s[2]?function(){showView(s[2]);if(s[2]==="team"){S.teamTab="coverage";renderTeam();}}:null},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));})));
-  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Needs you"}),
+  var coming=evs.filter(function(e){return e.published!==false;}).length,drafts=evs.length-coming;
+  root.append(identityBand(clean(S.name)||"Hinda","Admin"),h("h1",{class:"h-sum",text:"GCG today"}),
+    h("div",{class:"tstats"},[[coming,coming===1?"event coming up":"events coming up","events"],[need.length,"need attention","needs"],[waiting,"waiting for an answer","events"],[gaps,"wings with 0–1 people","team"]].map(function(s){
+      return h("button",{type:"button",class:"tstat"+(s[2]==="needs"&&s[0]?" bad":""),onclick:function(){if(s[2]==="needs"){var n=$("needsYou");if(n&&n.scrollIntoView)n.scrollIntoView({block:"start"});}else{showView(s[2]);if(s[2]==="team"){S.teamTab="coverage";renderTeam();}}}},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));})));
+  if(drafts)root.append(h("p",{class:"sub",style:"margin:8px 2px 0"},drafts+" draft event"+(drafts>1?"s":"")+" not yet shared with the team. ",h("button",{type:"button",class:"btn link",text:"Open Events ›",onclick:function(){showView("events");}})));
+  root.append(h("section",{class:"card hsec",id:"needsYou"},h("h3",{class:"q",text:"Needs you"}),
     need.length?h("ol",{class:"needs"},need.slice(0,5).map(function(n){
-      var act=n.st==="claim"?h("button",{type:"button",class:"btn small go",text:"Give to "+nameOf(n.pid),onclick:function(){giveTo(n.ev,n.t,n.pid);renderToday();}})
-        :n.st==="hand"?h("button",{type:"button",class:"btn small go",text:"Add a slot",onclick:function(){addSlot(n.ev,n.t,n.pid+(S.replies.filter(function(r){return r.eid===n.ev.id&&r.tid===n.t.id&&r.pid===n.pid;})[0]||{hand:{}}).hand.at);renderToday();}})
-        :n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
+      var act=n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
         :h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.evOpen=n.ev.id;S.goTask={eid:n.ev.id,tid:n.t.id};showView("events");openLinkedTask();}});
       return h("li",{"data-sev":n.sev},h("span",{class:"sev",text:n.sev==="now"?"Now":"Soon"}),
         h("div",null,h("b",{text:n.t.title}),h("p",{class:"sub",text:[(n.ev.name||""),(n.t.owner?nameOf(n.t.owner):"no one"),n.why==="overdue"?"":n.why].filter(Boolean).join(" · ")}),n.due?clockSpan(n.due):null),act);
     })):h("p",{class:"sub",text:"Nothing needs you right now. "}),
     need.length>5?h("p",{class:"sub",text:"+"+(need.length-5)+" more inside the events."}):null));
   if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st,true);nm.style.marginTop="14px";root.append(nm);}
-  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Events"}),
-    evs.length?evs.map(function(ev){return h("button",{type:"button",class:"evrow",onclick:function(){S.evOpen=ev.id;showView("events");}},
-      h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),h("span",{class:"sub",text:readyText(ev)}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
-    h("button",{type:"button",class:"btn small go",text:"Plan an event",onclick:function(){S.evOpen="";showView("events");}})));
   var gr=upForGrabs();
   if(gr.length){
     var gst=h("span",{class:"status"});
@@ -3627,7 +3636,7 @@ function drawToday(root){
         h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},gst);}}));}),gst);
     gd.open=!!S.panel.adminGrabs;gd.addEventListener("toggle",function(){S.panel.adminGrabs=gd.open;});root.append(gd);
   }
-  if(newIdeaCount())root.append(h("button",{type:"button",class:"grabs-link",onclick:function(){S.teamTab="ideas";showView("team");}},newIdeaCount()+" new idea"+(newIdeaCount()>1?"s":"")+", leads or feedback ›"));
+  renderBell();
 }
 
 /* ---------- Team: People · Coverage · Titles ---------- */
@@ -3726,7 +3735,7 @@ function drawPlan(root){
 var VIEWS=["home","plan","mevents","crew","me","flow","today","events","team","insights","tasks","mine"];
 function showView(v){
   S.view=v;
-  document.body.classList.toggle("home-band",v==="home"&&!S.isAdmin);
+  document.body.classList.toggle("home-band",(v==="home"&&!S.isAdmin)||(v==="today"&&S.isAdmin));
   VIEWS.forEach(function(k){var el=$("view-"+k);if(el)el.hidden=(k!==v);});
   $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="insights"||v==="today");
   if(v==="home")renderHome();if(v==="plan")renderPlan();if(v==="mevents")renderMyEvents();if(v==="crew")renderCrew();if(v==="me")renderProfile();if(v==="flow")render();

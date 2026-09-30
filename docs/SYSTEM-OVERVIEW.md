@@ -31,7 +31,7 @@ Hinda (founder, creative director) plans **events from templates**. The system b
 
 | Team member: MY world | Hinda: GCG's world |
 |---|---|
-| **Home**: dark banner (name and bio), bell for notifications, what to do now for the current phase (before, during or after the event) with a suggested first task and a tick on each, later phases folded, a short More list | **Today**: active events, what needs attention, answers waiting, coverage gaps; **Needs you** (max five, one action each); her own next move |
+| **Home**: dark banner (name and bio), bell for notifications, what to do now for the current phase (before, during or after the event) with a suggested first task and a tick on each, later phases folded, a short More list | **Today**: a bell for notifications (new ideas, extra-hand requests, help asked of her), four counts (events coming up, need attention, waiting for an answer, thin wings), **Needs you** (max five), **Up for grabs**, and her own next move only if she holds a task. No event list: events live under Events |
 | **Plan**: each event as a timeline with stages, how ready it is, days to go and what is next | **Plan**: all active events as timelines |
 | **Tasks**: only their events; every task for the current phase, most important first; later phases folded | **Events**: create from a template; suggest people; send offers for now; everything else folded |
 | **Crew**: who does what, then everyone's About, expandable to whatever each person chose to share | **Team**: People, Coverage, Titles, Ideas inbox |
