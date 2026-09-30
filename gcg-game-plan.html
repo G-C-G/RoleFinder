@@ -1279,7 +1279,7 @@ function ico(name,size){
 
 // Buttons and links get an icon by their label, so call sites stay simple.
 var BTN_ICONS=[[/^Share my card/,"share"],[/^(PDF|Download)/,"download"],[/(photo)$/i,"camera"],[/^(Add upcoming dates|Google|Apple)/,"calendar"],[/^(Ping|Send ping|Due-soon)/,"bell"],[/^Link$/,"link"],
- [/^Suggest people/,"sparkle"],[/^Send offers/,"send"],[/^Run sheet/,"clock"],[/^Who is doing what/,"printer"],[/^Event report/,"chart"],[/crew chat|^Guest message|^Draft guest/i,"message"],
+ [/^Suggest people/,"sparkle"],[/^Send (offers|all)/,"send"],[/^Run sheet/,"clock"],[/^Who is doing what/,"printer"],[/^Event report/,"chart"],[/crew chat|^Guest message|^Draft guest/i,"message"],
  [/^(Plan an event|New event|New title|Create event|Add this task)/,"plus"],[/^Copy for my CV/,"list"],[/^Assign directly/,"pin"],[/^Luma page|^Crew group/,"link"],[/^Update my answers/,"edit"]];
 function btnIcon(text){for(var i=0;i<BTN_ICONS.length;i++)if(BTN_ICONS[i][0].test(text))return BTN_ICONS[i][1];return "";}
 function initials(n){n=String(n||"").trim();if(!n)return "";var p=n.split(/\s+/);return (p[0].charAt(0)+(p.length>1?p[p.length-1].charAt(0):"")).toUpperCase();}
@@ -2455,6 +2455,18 @@ function saveEvent(ev,now){
   }
   if(now)go();else evTimers[ev.id]=setTimeout(go,600);
 }
+// If the event is closer than the template assumes, pull the "days before" offsets in so nothing starts overdue.
+function squeezeDates(ev){
+  if(!ev.date)return 0;
+  var day=new Date(ev.date+"T00:00:00"),today=new Date();today.setHours(0,0,0,0);if(isNaN(day))return 0;
+  var avail=Math.round((day-today)/864e5),minD=0;
+  ev.tasks.forEach(function(t){if(t.d<minD)minD=t.d;});ev.cps.forEach(function(c){if(c.d<minD)minD=c.d;});
+  var room=Math.max(0,avail-1);
+  if(!minD||-minD<=room)return 0;
+  var f=room/-minD;
+  ev.tasks.forEach(function(t){if(t.d<0)t.d=Math.round(t.d*f);});ev.cps.forEach(function(c){if(c.d<0)c.d=Math.round(c.d*f);});
+  return -minD;
+}
 function fromTemplate(key,name,date,start){
   var tp=TEMPLATES[key],ev={id:newId("e"),name:name||tp.name,type:key,goal:GOALS[key]||"",date:date||"",start:start||tp.start,place:"",lead:"",links:{},guests:{},debrief:{},created:nowIso(),
     cps:tp.cps.map(function(c){return {name:c[0],d:c[1]};}),tasks:[]};
@@ -2462,6 +2474,7 @@ function fromTemplate(key,name,date,start){
     var g=newId("g");
     for(var i=0;i<(x.need||1);i++)ev.tasks.push({id:newId("t"),title:x.title,job:x.job,phase:x.phase,d:x.d,m:x.m,pri:x.pri,size:x.size,cp:x.cp,msg:x.msg,all:!!x.all,group:g,owner:"",offered:false,manual:"",passed:[]});
   });
+  ev.squeezed=squeezeDates(ev);
   return ev;
 }
 function suggestEvent(ev){
@@ -2498,8 +2511,11 @@ function offerMessages(ev){
     return {pid:pid,name:nameOf(pid),text:L.join("\n")};
   });
 }
-function sendOffers(ev){
-  var n=0,ts=nowIso();(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"){t.offered=true;t.ots=ts;n++;}});
+// "For now": tasks due within a week, or in a stage the event has reached.
+function offerNow(ev,t){var due=taskDue(ev,t);return !!(due&&due<Date.now()+7*864e5)||taskStageIdx(ev,t)<=curStageIdx(ev);}
+function draftCount(ev,onlyNow){return (ev.tasks||[]).filter(function(t){return t.owner&&taskState(ev,t)==="draft"&&(!onlyNow||offerNow(ev,t));}).length;}
+function sendOffers(ev,all){
+  var n=0,ts=nowIso();(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"&&(all||offerNow(ev,t))){t.offered=true;t.ots=ts;n++;}});
   saveEvent(ev,true);S.evMsgs={eid:ev.id,title:"Messages to nudge people",list:offerMessages(ev)};renderEvents();
   say($("evStatus"),n?"Sent "+n+" offer"+(n>1?"s":"")+". People see them under My tasks. Copy a message below to nudge them on WhatsApp.":"No new offers to send.",n?"ok":"");
 }
@@ -2568,7 +2584,8 @@ function drawEvents(root){
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):h("p",{class:"sub",text:"Add a one-line goal under Event details."}),
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
-    h("p",{class:"sub"},eventPct(ev)+"% ready · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
+    ev.squeezed?h("p",{class:"sub"},"This event is closer than the template assumes, so the timeline was tightened to fit."):null,
+    h("p",{class:"sub"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
     h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
       risk.length?h("ol",{class:"needs"},risk.map(function(x){var now=x.late||x.st==="stuck"||x.st==="passed";
         return h("li",{"data-sev":now?"now":"soon"},h("span",{class:"sev",text:now?"Now":"Soon"}),
@@ -2576,7 +2593,8 @@ function drawEvents(root){
           h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.panel.alltasks=true;S.goTask={eid:ev.id,tid:x.t.id};renderEvents();openLinkedTask();}}));})):null),
     h("div",{class:"row actions"},
       h("button",{type:"button",class:"btn go",text:"Suggest people",onclick:function(){suggestEvent(ev);}}),
-      h("button",{type:"button",class:"btn green",text:"Send offers",onclick:function(){sendOffers(ev);}})),
+      h("button",{type:"button",class:"btn green",text:"Send offers for now ("+draftCount(ev,true)+")",onclick:function(){sendOffers(ev);}}),
+      draftCount(ev,false)>draftCount(ev,true)?h("button",{type:"button",class:"btn link",text:"Send all "+draftCount(ev,false)+" instead",onclick:function(){sendOffers(ev,true);}}):null),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"}),
     h("details",{class:"more"},h("summary",{text:"More actions: due-soon message, run sheet, PDFs"}),
       h("div",{class:"row"},
@@ -3177,6 +3195,7 @@ function stageData(ev){
     return {key:s[0],emo:s[1],name:s[2],idx:idx,tasks:tasks,done:!!done,cur:isCur,late:!done&&due&&due<now,due:due};
   }).filter(function(s){return s.idx.length||s.tasks.length;});
 }
+function readyText(ev){var p=eventPct(ev);return p===0?"Not started":p+"% ready";}
 function eventPct(ev){
   var g={};(ev.tasks||[]).forEach(function(t){var k=t.group||t.id;(g[k]=g[k]||[]).push(t);});
   var ks=Object.keys(g);if(!ks.length)return 0;
@@ -3200,7 +3219,7 @@ function journey(ev,opts){
   });
   var bar=h("div",{class:"jbar","aria-label":pct+"% ready"},h("i",{style:"width:"+pct+"%"}));
   var box=h("div",{class:"journey"},opts.vertical?bar:null,row,opts.vertical?null:bar,
-    h("p",{class:"jpct"},h("b",{text:pct+"% ready"}),(function(){var c=st.filter(function(s){return s.cur;})[0];return c&&c.due&&!opts.compact?[" · "+c.name+" ",clockSpan(c.due)]:"";})()));
+    h("p",{class:"jpct"},h("b",{text:pct===0?"Not started":pct+"% ready"}),(function(){var c=st.filter(function(s){return s.cur;})[0];return c&&c.due&&!opts.compact?[" · "+c.name+" ",clockSpan(c.due)]:"";})()));
   if(!opts.compact){
     st.forEach(function(s){
       if(!S.tlOpen[ev.id+":"+s.key])return;
@@ -3306,7 +3325,7 @@ function drawHome(root){
   }else{
     var ev0=myEvents()[0],doneHere=ev0?(ev0.tasks||[]).filter(function(t){return t.owner===S.uid&&taskState(ev0,t)==="done";}).length:0;
     root.append(h("div",{class:"hero-move clear"},h("p",{class:"k",text:"You're good"}),h("h2",{class:"hm-t",text:"Nothing needs you right now."}),
-      ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+" is "+eventPct(ev0)+"% ready."+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
+      ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+(eventPct(ev0)===0?" has not started yet.":" is "+eventPct(ev0)+"% ready.")+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
   }
   // Coming up: later phases stay folded, one tap to look
   var later=laterItems();
@@ -3391,15 +3410,13 @@ function yourPart(ev,mine,me){
   var now=[],later=[],done=[];
   mine.forEach(function(t){var s=taskState(ev,t);if(s==="done"||s==="passed")done.push(t);else if(isNow(ev,t))now.push(t);else later.push(t);});
   now.sort(function(a,b){var da=taskDue(ev,a),db=taskDue(ev,b),n=Date.now();return byTime({due:da,late:!!(da&&da<n),t:a},{due:db,late:!!(db&&db<n),t:b});});
-  var key="more:"+ev.id,showAll=!!S.panel[key],cs=curStageIdx(ev);
-  var box=h("section",{class:"card hsec"},h("p",{class:"k",text:"Your part · now: "+stageName(cs)}),
-    now.length?now.slice(0,showAll?now.length:3).map(function(t){return myTaskCard(ev,t,me);}):h("p",{class:"sub",text:"Nothing needed from you in this stage. "}),
-    now.length>3&&!showAll?h("button",{type:"button",class:"btn link",text:"Show "+(now.length-3)+" more for now",onclick:function(){S.panel[key]=true;renderMyEvents();}}):null);
+  var box=h("section",{class:"card hsec"},h("p",{class:"k",text:"Your tasks · "+PHASE_NAME[curPhase(ev)].toLowerCase()+" · "+now.length}),
+    now.length?now.map(function(t){return myTaskCard(ev,t,me);}):h("p",{class:"sub",text:"Nothing needed from you right now. "}));
   if(later.length){
-    var byStage={};later.forEach(function(t){var i=taskStageIdx(ev,t);(byStage[i]=byStage[i]||[]).push(t);});
-    box.append(h("details",{class:"more later",open:S.panel["later:"+ev.id]?true:null,ontoggle:function(e){S.panel["later:"+ev.id]=e.currentTarget.open;}},h("summary",{text:"Later in the plan ("+later.length+")"}),
-      h("p",{class:"sub",text:"These open up when the event gets there. No need to think about them yet."}),
-      Object.keys(byStage).sort().map(function(i){return h("div",{class:"laterstage"},h("b",{text:stageName(Number(i))}),
+    var byStage={};later.forEach(function(t){var i=taskPhase(ev,t);(byStage[i]=byStage[i]||[]).push(t);});
+    box.append(h("details",{class:"more later",open:S.panel["later:"+ev.id]?true:null,ontoggle:function(e){S.panel["later:"+ev.id]=e.currentTarget.open;}},h("summary",{text:"Coming up ("+later.length+")"}),
+      h("p",{class:"sub",text:"These open up when the event gets there. Tap a task to look at it early."}),
+      Object.keys(byStage).sort().map(function(i){return h("div",{class:"laterstage"},h("b",{text:PHASE_NAME[Number(i)]}),
         byStage[i].map(function(t){return myTaskCard(ev,t,me);}));})));
   }
   if(done.length)box.append(h("details",{class:"more"},h("summary",{text:"Done or passed ("+done.length+")"}),done.map(function(t){return myTaskCard(ev,t,me);})));
@@ -3448,7 +3465,7 @@ function drawToday(root){
   if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st,true);nm.style.marginTop="14px";root.append(nm);}
   root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Events"}),
     evs.length?evs.map(function(ev){return h("button",{type:"button",class:"evrow",onclick:function(){S.evOpen=ev.id;showView("events");}},
-      h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),h("span",{class:"sub",text:eventPct(ev)+"% ready"}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
+      h("div",{class:"evhead"},h("b",{text:ev.name||"Event"}),h("span",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+" ›"})),h("span",{class:"sub",text:readyText(ev)}));}):h("p",{class:"sub",text:"No events yet. Create one in Events."}),
     h("button",{type:"button",class:"btn small go",text:"Plan an event",onclick:function(){S.evOpen="";showView("events");}})));
   if(newIdeaCount())root.append(h("button",{type:"button",class:"grabs-link",onclick:function(){S.teamTab="ideas";showView("team");}},newIdeaCount()+" new idea"+(newIdeaCount()>1?"s":"")+", leads or feedback ›"));
 }
@@ -3609,6 +3626,12 @@ function urgency(due,st){
   if(days<3)return {k:"soon",t:"Due "+due.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})};
   return {k:"ok",t:"Due "+due.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
 }
+// True when the checkpoint just restates the task ("Lock the venue" / "Venue locked").
+function sameIdea(a,b){
+  function stems(s){return String(s||"").toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/).filter(function(w){return w.length>2&&!/^(the|and|for|our)$/.test(w);}).map(function(w){return w.replace(/(ing|ed|es|s|e)$/,"");});}
+  var A=stems(a),B=stems(b);if(!B.length)return false;
+  return B.every(function(w){return A.indexOf(w)>-1;});
+}
 function myTaskCard(ev,t,me){
   var st=taskState(ev,t),m=taskMatch(me,t.job,ev.id),r=myReply(ev,t),stat=h("p",{class:"status",role:"status","aria-live":"polite"}),due=taskDue(ev,t),key=ev.id+t.id;
   var dr=(S.noteDraft=S.noteDraft||{})[key]||(S.noteDraft[key]={});
@@ -3660,7 +3683,7 @@ function myTaskCard(ev,t,me){
   return h("div",{class:"task t2","data-s":st,id:"task-"+ev.id+"-"+t.id},
     h("p",{class:"urg","data-k":u.k,text:u.t+(r&&r.plan&&st!=="done"&&st!=="offered"?" · your plan "+fmtDate(r.plan):"")}),
     h("h3",{class:"t2-title",text:t.title}),
-    t.pri==="must"&&t.cp!=null&&ev.cps&&ev.cps[t.cp]&&st!=="done"?h("p",{class:"needed",text:"Needed for: "+ev.cps[t.cp].name}):null,
+    t.pri==="must"&&t.cp!=null&&ev.cps&&ev.cps[t.cp]&&st!=="done"&&!sameIdea(t.title,ev.cps[t.cp].name)?h("p",{class:"needed",text:"Needed for: "+ev.cps[t.cp].name}):null,
     h("p",{class:"t2-ev",text:(ev.name||"")+(t.phase==="during"&&due?" · on the day at "+fmtClock(due):"")+(slotLabel(ev,t)?" · "+slotLabel(ev,t):"")}),
     body,stat);
 }
@@ -3892,7 +3915,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();
