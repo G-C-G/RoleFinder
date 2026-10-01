@@ -23,7 +23,7 @@ Hinda (founder, creative director) plans **events from templates**. The system b
 
 ## 3. Company context
 
-- **GCG runs events.** **Global Games Network (GGN)**, the parent company, designs games and licenses them to GCG. GCG does no game design; an event goes in once its game exists.
+- **GCG runs events.** The page does not plan game design: an event goes in once its game exists.
 - **Flagship nights** (GCG's own nights around a field or profession) and **corporate** work (a welcome game or a full three-round GCG game at a client's event).
 - Every event has a **quality check** of the game (about two weeks before) and a **game check day**: a full run-through with the whole crew (about one week before).
 
@@ -63,7 +63,7 @@ Team members never see Team, Coverage, Titles or Insights. They see other people
 
 **Adding and confirming later.** Hinda can add a task to any event at any time, even after publishing, and either ask a specific person or leave it up for grabs. She can also record a task as done for the person who did it, with the date, including a task nobody was assigned; only she (an admin) or the person themselves can mark a task done. Anyone can be kept off automatic suggestions (a toggle on their card in Team) and still take tasks from Up for grabs, which admins can do from Today.
 
-**Kinds of event.** When Hinda creates an event she picks who it is for and which game: Corporate or Public event, with a welcome game, the standard GCG game (3 rounds), a custom game, or a team-building game (a custom game with its own price list). Welcome and standard games already exist. A custom or team-building game has to be briefed, handed to Global Games, delivered and signed off first, so those events start about five weeks out instead of three. There is also a two-day outdoor event and a blank event.
+**Kinds of event.** When Hinda creates an event she picks who it is for and which game: Corporate or Public event, with a welcome game, the standard GCG game (3 rounds), a custom game, or a team-building game (a custom game with its own price list). Welcome and standard games already exist. A custom or team-building game has to be briefed, handed over, delivered and signed off first, so those events start about five weeks out instead of three. There is also a two-day outdoor event and a blank event.
 
 ## 6. Privacy
 
