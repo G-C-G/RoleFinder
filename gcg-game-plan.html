@@ -1452,17 +1452,17 @@ function cvText(sections){return sections.map(function(s){return s[0]+"\n"+s[1].
 var LEVELS=[
  {name:"You",screens:["like"]},
  {name:"Situations",screens:ASK.map(function(_,i){return "s"+i;})},
- {name:"Jobs",screens:["deck","all","avoid","profile"]},
- {name:"Your profile",screens:["done","bring","proud","photo","work","why","share"]}
+ {name:"Jobs",screens:["deck","all","profile"]},
+ {name:"Your profile",screens:["done","bring","proud","photo","work","why","avoid","share"]}
 ];
 // Onboarding is creating your profile: the card game (about 6 minutes), then your profile (about 4 minutes).
 // Progress is saved at every step, so people can stop and come back.
-var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","avoid","profile","done","bring","proud","photo","work","why","share"]);
+var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","profile","done","bring","proud","photo","work","why","avoid","share"]);
 var DECK_N=6;
 // Light by default. A person can choose dark on their profile; the choice stays on this device.
 function applyTheme(){var v=null;try{v=localStorage.getItem("gcg_theme");}catch(e){}document.documentElement.setAttribute("data-gcg-theme",v==="dark"?"dark":"light");}
 applyTheme();
-var S={name:"",cv:"",extra:"",levels:{},top:[],q:new Array(NQ+2).fill(0),story:newStory(),confirm:"",confirmNote:"",
+var S={name:"",cv:"",extra:"",avoid:"",levels:{},top:[],q:new Array(NQ+2).fill(0),story:newStory(),confirm:"",confirmNote:"",
   screen:"intro",tmp:null,deck:null,deckSig:"",deckAt:0,returnTo:"deck",openArea:"",
   view:"flow",db:null,dl:null,uid:null,isAdmin:false,canWrite:null,people:[],roles:null,overrides:{},hydratedRoles:false,critical:CRITICAL_DEFAULT.slice(),sentAt:null};
 var DRAFT_KEY="gcg-game-plan-draft-v5",saveTimer=null,advTimer=null,deckTimer=null;
@@ -1477,13 +1477,13 @@ function payload(){
   var g=grouped(S);
   return {v:6,share:sanitizeShare(S.share),photo:cleanPhoto(S.photo),name:clean(S.name).slice(0,60),cv:clean(S.cv).slice(0,1500),extra:clean(S.extra).slice(0,600),
     top:g.top,good:g.good,curious:g.curious,no:g.no,q:normQ(S.q),story:sanitizeStory(S.story),
-    confirm:CONFIRM[S.confirm]?S.confirm:"",confirmNote:clean(S.confirmNote).slice(0,300),
+    confirm:CONFIRM[S.confirm]?S.confirm:"",confirmNote:clean(S.confirmNote).slice(0,300),avoid:clean(S.avoid).slice(0,250),
     updated:new Date().toISOString(),source:"app"};
 }
 function saveDraft(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(function(){
-    lsSet(DRAFT_KEY,JSON.stringify({share:S.share,photo:S.photo,extraMode:!!S.extraMode,name:S.name,cv:S.cv,extra:S.extra,levels:S.levels,q:S.q,story:S.story,confirm:S.confirm,confirmNote:S.confirmNote,
+    lsSet(DRAFT_KEY,JSON.stringify({share:S.share,photo:S.photo,extraMode:!!S.extraMode,name:S.name,cv:S.cv,extra:S.extra,avoid:S.avoid,levels:S.levels,q:S.q,story:S.story,confirm:S.confirm,confirmNote:S.confirmNote,
       screen:S.screen,deck:S.deck,deckSig:S.deckSig,deckAt:S.deckAt,savedAt:new Date().toISOString()}));
   },250);
 }
@@ -1494,7 +1494,7 @@ function applyRecord(d){
   sanitizeIds(d.top).concat(sanitizeIds(d.good)).forEach(function(i){S.levels[i]="good";});
   sanitizeIds(d.curious).forEach(function(i){S.levels[i]="curious";});
   sanitizeIds(d.no).forEach(function(i){S.levels[i]="no";});
-  S.q=normQ(d.q);S.story=sanitizeStory(d.story);S.confirm=CONFIRM[d.confirm]?d.confirm:"";S.confirmNote=d.confirmNote||"";
+  S.q=normQ(d.q);S.story=sanitizeStory(d.story);S.confirm=CONFIRM[d.confirm]?d.confirm:"";S.confirmNote=d.confirmNote||"";S.avoid=clean(d.avoid).slice(0,250);
 }
 
 /* ---------- Share text and the paste-in code ---------- */
@@ -1567,7 +1567,7 @@ function go(sc){
 }
 function next(){
   if(S.screen==="share"){finishOnboarding();return;}
-  if(S.screen==="why"&&!S.extraMode){go("share");return;}
+  if(S.screen==="why"&&!S.extraMode){go("avoid");return;}
   var e=EXTRA.indexOf(S.screen);if(S.extraMode&&e>-1){var rest=EXTRA.slice(e+1).filter(extraMissing);if(rest.length)go(rest[0]);else finishExtra();return;}
   var i=PATH.indexOf(S.screen);if(i>-1&&i<PATH.length-1)go(PATH[i+1]);}
 function back(){
@@ -1763,9 +1763,9 @@ var BUILD={
       var g=grouped(S),yes=g.top.concat(g.good);
       var hd=shell(card,"Jobs","Nice picks.",yes.length||g.curious.length?"Here is what you said yes and maybe to. Want to look at more?":"Nothing caught your eye yet. That is fine. Have a look at the full list, or carry on.");
       if(yes.length||g.curious.length)card.append(h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:""+FN[i].name});}),g.curious.map(function(i){return h("span",{class:"chip curious",text:""+FN[i].name});})));
-      card.append(g.no.length?h("div",null,h("p",{class:"lab",text:"Not for me"}),h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:""+FN[i].name});}))):h("p",{class:"sub",text:"Next you can mark anything that is not for you. It is optional."}));
+      card.append(g.no.length?h("div",null,h("p",{class:"lab",text:"Not for me"}),h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:""+FN[i].name});}))):h("p",{class:"sub",text:"No jobs that are not for you? That is fine. You can mark some any time under Me, and Hinda will see them on your profile."}));
       card.append(h("button",{type:"button",class:"btn",text:"See all "+FNS.filter(function(f){return f.when!=="Later";}).length+" jobs (optional)",onclick:function(){S.returnTo="deck";go("all");}}));
-      navRow(card,"Next →",function(){
+      navRow(card,"Reveal my card ",function(){
         if(answeredAsk(S.q)<ASK.length){var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});go("s"+k);setTimeout(function(){warn("One situation still needs an answer.");},50);return;}
         next();},{big:true});
       return hd;
@@ -1793,20 +1793,29 @@ var BUILD={
     return hd2;
   },
   avoid:function(card){
-    var hd=shell(card,"Jobs","Anything you would rather not do?","Tap any job that is not for you. We will never offer it to you. If nothing comes to mind, skip. You can change this any time under Me.");
-    card.append(h("button",{type:"button",class:"btn link",text:"Nothing to add: reveal my card",onclick:next}));
+    // The last question. Each job has three states, cycled by tapping: nothing, open to it, never offer. Jobs they said yes to are left out.
+    // They can still pick any job up themselves from Up for grabs.
+    var list=FNS.filter(function(f){return f.when!=="Later"&&S.levels[f.id]!=="good";});
+    var hd=shell(card,"Last question","Anything you want to settle for good?","Tap a job once if you are open to it, twice if you never want to be offered it, a third time to clear it. Whatever the reason, tried or not. Skip anything you have no feeling about. You can still pick any job up yourself from Up for grabs, and change all of this under Me.");
+    card.append(h("button",{type:"button",class:"btn link",text:"Nothing to add: skip",onclick:next}));
     var cnt=h("p",{class:"sub jhint",role:"status","aria-live":"polite"});
-    function paintCount(){var n=Object.keys(S.levels).filter(function(k){return S.levels[k]==="no";}).length;cnt.textContent=n?n+" marked as not for you":"Nothing marked yet. That is fine.";}
+    function paintCount(){var no=0,op=0;Object.keys(S.levels).forEach(function(k){if(S.levels[k]==="no")no++;else if(S.levels[k]==="curious")op++;});
+      cnt.textContent=(no||op)?(op?op+" open to it":"")+(no&&op?" · ":"")+(no?no+" never offer":""):"Nothing marked yet. That is fine.";}
+    function paintChip(b,f){var v=S.levels[f.id];b.className="chip"+(v==="no"?" no on":v==="curious"?" curious on":"");
+      b.setAttribute("aria-label",f.name+": "+(v==="no"?"never offer":v==="curious"?"open to it":"no feeling"));b.setAttribute("aria-pressed",String(!!v));}
     AREAS.forEach(function(A){
-      var js=FNS.filter(function(f){return f.area===A.id&&f.when!=="Later"&&S.levels[f.id]!=="good"&&S.levels[f.id]!=="curious";});if(!js.length)return;
+      var js=list.filter(function(f){return f.area===A.id;});if(!js.length)return;
       card.append(h("p",{class:"lab",text:A.short}),h("div",{class:"chips avoidchips"},js.map(function(f){
-        var b=h("button",{type:"button",class:"chip"+(S.levels[f.id]==="no"?" no on":""),"aria-pressed":String(S.levels[f.id]==="no"),text:f.name,onclick:function(){
-          if(S.levels[f.id]==="no")delete S.levels[f.id];else S.levels[f.id]="no";
-          saveDraft();b.className="chip"+(S.levels[f.id]==="no"?" no on":"");b.setAttribute("aria-pressed",String(S.levels[f.id]==="no"));paintCount();}});
-        return b;})));
+        var b=h("button",{type:"button",class:"chip",text:f.name,onclick:function(){
+          var v=S.levels[f.id];if(!v)S.levels[f.id]="curious";else if(v==="curious")S.levels[f.id]="no";else delete S.levels[f.id];
+          saveDraft();paintChip(b,f);paintCount();}});
+        paintChip(b,f);return b;})));
     });
     card.append(cnt);paintCount();
-    navRow(card,"Reveal my card ",next,{big:true});
+    var ta=h("textarea",{id:"avoidnote",rows:"2",maxlength:"250",placeholder:"Anything else you would rather avoid? Type it in your own words (optional)"});
+    ta.value=S.avoid||"";ta.addEventListener("input",function(){S.avoid=ta.value;saveDraft();});
+    card.append(h("div",{class:"field"},h("label",{for:"avoidnote",text:"In your own words"}),ta));
+    navRow(card,"Next →",next);
     return hd;
   },
   all:function(card){
@@ -2101,6 +2110,7 @@ function renderPeople(){
       prof?h("div",{class:"chips"},prof.chips.map(function(c,i){return h("span",{class:"chip t"+i,text:c});})):null,
       h("p",{class:"meta",text:[p.source==="pasted"?"Added by paste":"Sent from the page",p.confirm?"Card: "+CONFIRM[p.confirm]:"Card not checked"].join(" · ")}),
       p.confirmNote?h("p",null,h("b",{text:"What we missed: "}),p.confirmNote):null,
+      p.avoid?h("p",null,h("b",{text:"Would rather avoid (their words): "}),p.avoid):null,
       h("p",{class:"lab",text:"Said yes to ("+yes.length+")"}),
       yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name});})):h("p",{class:"meta",text:"None."}),
       (p.curious&&p.curious.length)?h("div",{class:"chips"},p.curious.map(function(i){return h("span",{class:"chip curious",text:FN[i].name});})):null,
@@ -4318,7 +4328,7 @@ function drawMe(root){
     root.append(h("section",{class:"card msec summary"},h("h3",{class:"msec-h",text:"You, in short"}),h("p",{class:"sub",text:"This is for you. Hinda sees your answers too. The crew only sees what you chose to share, and you can check that under Crew."}),
       prof.lines.map(function(l){return h("p",{text:l});}),
       line("Jobs you like",like.length?like.join(", "):"Nothing picked yet"),
-      line("Jobs that are not for you",no.length?no.join(", "):"None marked. You can add some below."),
+      line("Jobs that are not for you",no.length?no.join(", "):"None marked. You can add some below."),line("Would rather avoid, in your words",clean(p.avoid)),
       line("How you work best",ws),line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",st.future?M_FUTURE[st.future].label:""),
       line("What you have done",done.length?done.join("; "):""),line("What you bring",brings.join("; ")),line("Proudest work",st.proud),line("CV or link",clean(p.cv)),
       h("div",{class:"stats"},prof.stats.map(function(x){return h("div",{class:"stat"},h("span",{text:x.label}),h("span",{class:"bar light","aria-hidden":"true"},h("i",{style:"width:"+Math.round(x.v*100)+"%"})));}))));
@@ -4342,7 +4352,8 @@ function drawMe(root){
     yes.length?h("p",{class:"lab",text:"Jobs I like"}):null,yes.length?jobChips(yes,"good"):null,
     g.curious.length?h("p",{class:"lab",text:"Jobs I might try"}):null,g.curious.length?jobChips(g.curious,"curious"):null,
     h("p",{class:"lab",text:"Jobs that are not for me"}),g.no.length?jobChips(g.no,"no"):h("p",{class:"sub",text:"None marked yet. If some jobs are not for you, mark them below so we never offer them to you."}),
-    h("details",{class:"more",open:S.panel.avoidOpen?true:null,ontoggle:function(e){S.panel.avoidOpen=e.currentTarget.open;}},h("summary",{text:"Mark a job as not for me"}),
+    h("details",{class:"more",open:S.panel.avoidOpen?true:null,ontoggle:function(e){S.panel.avoidOpen=e.currentTarget.open;}},h("summary",{text:"Mark a job as not for me"}),h("p",{class:"sub",text:"Mark any job you never want to be offered, whether you have tried it or not. You can still pick it up yourself from Up for grabs."}),
+      (function(){var t=h("textarea",{rows:"2",maxlength:"250","aria-label":"Anything else you would rather avoid, in your own words",placeholder:"Anything else you would rather avoid? Type it (optional)"});t.value=S.avoid||"";t.addEventListener("change",function(){S.avoid=t.value;saveDraft();saveResponse();});return h("div",{class:"field"},t);})(),
       AREAS.map(function(A){var js=FNS.filter(function(f){return f.area===A.id&&S.levels[f.id]!=="no";});if(!js.length)return null;
         return h("div",null,h("p",{class:"lab",text:A.short}),h("div",{class:"chips"},js.map(function(f){return h("button",{type:"button",class:"chip",text:f.name,onclick:function(){S.levels[f.id]="no";saveDraft();saveResponse();renderProfile();}});})));})),
     picker,
@@ -4518,7 +4529,7 @@ function boot(){
   if(d){
     S.name=d.name||"";S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.share=sanitizeShare(d.share);S.extraMode=!!d.extraMode;
     S.levels={};Object.keys(d.levels||{}).forEach(function(k){if(FN[k]&&(d.levels[k]==="good"||d.levels[k]==="curious"||d.levels[k]==="no"))S.levels[k]=d.levels[k];});
-    S.q=normQ(d.q);S.story=sanitizeStory(d.story);S.confirm=CONFIRM[d.confirm]?d.confirm:"";S.confirmNote=d.confirmNote||"";
+    S.q=normQ(d.q);S.story=sanitizeStory(d.story);S.confirm=CONFIRM[d.confirm]?d.confirm:"";S.confirmNote=d.confirmNote||"";S.avoid=clean(d.avoid).slice(0,250);
     S.deck=Array.isArray(d.deck)?sanitizeIds(d.deck):null;S.deckSig=d.deckSig||"";S.deckAt=Math.max(0,Number(d.deckAt)||0);
     S.screen=(PATH.indexOf(d.screen)>-1||EXTRA.indexOf(d.screen)>-1||d.screen==="all")?d.screen:"intro";
     if(S.screen!=="intro"&&!clean(S.name))S.screen="intro";
