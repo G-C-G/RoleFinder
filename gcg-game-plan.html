@@ -1428,7 +1428,7 @@ function profileOf(r){
   }
   var likes=maskLabels(LIKE,r.q&&r.q[NQ+1]).map(lc1);
   if(likes.length)L.push(likes.length>3?"You are drawn to many kinds of work, including "+likes.slice(0,3).join(", ")+".":"You lose track of time "+likes.join(" or ")+".");
-  if(low&&ts[low]<0.4)L.push("You would rather not spend your days on "+TRAIT_LABEL[low].toLowerCase()+", and that is useful to know.");
+  if(low&&ts[low]<0.4)L.push("In the situations, "+TRAIT_LABEL[low].toLowerCase()+" was the least like you. We will not lean on you for it unless you say so.");
   if(st.future&&st.future!=="unsure")L.push("In a few years you see yourself "+lc1(M_FUTURE[st.future].label)+".");
   return {title:"The "+a1[0]+" & "+a2[0],chips:top.map(function(t){return ARCH[t][0];}),top:top,
     stats:ks.slice(0,5).map(function(t){return {label:TRAIT_LABEL[t],v:ts[t]};}),lines:L};
@@ -1763,6 +1763,7 @@ var BUILD={
       var g=grouped(S),yes=g.top.concat(g.good);
       var hd=shell(card,"Jobs","Nice picks.",yes.length||g.curious.length?"Here is what you said yes and maybe to. Want to look at more?":"Nothing caught your eye yet. That is fine. Have a look at the full list, or carry on.");
       if(yes.length||g.curious.length)card.append(h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:""+FN[i].name});}),g.curious.map(function(i){return h("span",{class:"chip curious",text:""+FN[i].name});})));
+      card.append(g.no.length?h("div",null,h("p",{class:"lab",text:"Not for me"}),h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:""+FN[i].name});}))):h("p",{class:"sub",text:"No jobs that are not for you? That is fine. You can mark some any time under Me, and Hinda will see them on your profile."}));
       card.append(h("button",{type:"button",class:"btn",text:"See all "+FNS.filter(function(f){return f.when!=="Later";}).length+" jobs (optional)",onclick:function(){S.returnTo="deck";go("all");}}));
       navRow(card,"Reveal my card ",function(){
         if(answeredAsk(S.q)<ASK.length){var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});go("s"+k);setTimeout(function(){warn("One situation still needs an answer.");},50);return;}
@@ -1986,7 +1987,7 @@ function summaryBlocks(){
   }
   cvOf(p,prof).forEach(function(s){B.push({t:"h",text:s[0]});s[1].forEach(function(x){B.push({t:"li",text:x});});});
   function grp(title,ids){if(!ids.length)return;B.push({t:"h",text:title});ids.forEach(function(i){B.push({t:"li",text:FN[i].name+": "+FN[i].covers});});}
-  grp("Jobs I said yes to",g.top.concat(g.good));grp("Jobs I might try",g.curious);grp("Jobs I would rather not do",g.no);
+  grp("Jobs I said yes to",g.top.concat(g.good));grp("Jobs I might try",g.curious);grp("Jobs that are not for me",g.no);
   var st=sanitizeStory(p.story);
   if(st.why.length){B.push({t:"h",text:"Why I am here"});labels(M_WHY,st.why).forEach(function(x){B.push({t:"li",text:x});});}
   if(st.future){B.push({t:"h",text:"In a few years"});B.push({t:"p",text:M_FUTURE[st.future].label});}
@@ -2086,7 +2087,7 @@ function renderPeople(){
       h("p",{class:"lab",text:"Said yes to ("+yes.length+")"}),
       yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name});})):h("p",{class:"meta",text:"None."}),
       (p.curious&&p.curious.length)?h("div",{class:"chips"},p.curious.map(function(i){return h("span",{class:"chip curious",text:FN[i].name});})):null,
-      (p.no&&p.no.length)?h("p",{class:"meta",text:"Not for them: "+listText(p.no)}):null,
+      (p.no&&p.no.length)?h("p",{class:"meta",text:"Not for them: "+listText(p.no)}):h("p",{class:"meta",text:"Has not marked any jobs as not for them."}),
       done.length?h("p",{class:"lab",text:"Has done"}):null,done.length?h("p",{text:done.join("; ")}):null,
       sl.map(function(l){return h("p",null,h("b",{text:l[0]+": "}),l[1]);}),
       p.extra?h("p",null,h("b",{text:"Also good at: "}),p.extra):null,
@@ -4292,6 +4293,19 @@ function drawMe(root){
   var miss=EXTRA.filter(extraMissing).length;
   if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
   root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"Who sees what"}),shareToggles(function(){saveResponse();})));
+  // Your summary: everything about you, in plain words. This is for you. The crew only sees what you chose to share (see Crew).
+  (function(){
+    var like=yes.concat(g.curious).map(function(i){return FN[i].name;}),no=g.no.map(function(i){return FN[i].name;}),ws=workStyle(st);
+    var done=maskLabels(EXP,p.q[NQ]),brings=labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]);
+    function line(label,val){return val?h("p",null,h("b",{text:label+": "}),val):null;}
+    root.append(h("section",{class:"card msec summary"},h("h3",{class:"msec-h",text:"You, in short"}),h("p",{class:"sub",text:"This is for you. Hinda sees your answers too. The crew only sees what you chose to share, and you can check that under Crew."}),
+      prof.lines.map(function(l){return h("p",{text:l});}),
+      line("Jobs you like",like.length?like.join(", "):"Nothing picked yet"),
+      line("Jobs that are not for you",no.length?no.join(", "):"None marked. You can add some below."),
+      line("How you work best",ws),line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",st.future?M_FUTURE[st.future].label:""),
+      line("What you have done",done.length?done.join("; "):""),line("What you bring",brings.join("; ")),line("Proudest work",st.proud),line("CV or link",clean(p.cv)),
+      h("div",{class:"stats"},prof.stats.map(function(x){return h("div",{class:"stat"},h("span",{text:x.label}),h("span",{class:"bar light","aria-hidden":"true"},h("i",{style:"width:"+Math.round(x.v*100)+"%"})));}))));
+  })();
   root.append(appearanceBox());
   // title
   root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"My title"}),
@@ -4304,13 +4318,17 @@ function drawMe(root){
   var picker=null;
   if(S.panel.lvl&&FN[S.panel.lvl]){var cur=S.levels[S.panel.lvl];
     picker=h("div",{class:"box lvlpick"},h("b",{text:FN[S.panel.lvl].name}),h("p",{class:"sub",text:FN[S.panel.lvl].covers}),
-      h("div",{class:"seg3"},[["good","Up for it"],["curious","Would try"],["no","Rather not"]].map(function(o){
+      h("div",{class:"seg3"},[["good","I like it"],["curious","I might try"],["no","Not for me"]].map(function(o){
         return h("button",{type:"button",class:"sb","data-c":o[0]==="no"?"no":"yes","aria-pressed":String(cur===o[0]),text:o[1],onclick:function(){S.levels[S.panel.lvl]=o[0];S.panel.lvl="";saveDraft();saveResponse();renderProfile();}});})));
   }
   root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"What I like and don't"}),h("p",{class:"sub",text:"Tap any job to change your answer."}),
-    yes.length?h("p",{class:"lab",text:"Up for"}):null,yes.length?jobChips(yes,"good"):null,
-    g.curious.length?h("p",{class:"lab",text:"Would try"}):null,g.curious.length?jobChips(g.curious,"curious"):null,
-    g.no.length?h("p",{class:"lab",text:"Rather not"}):null,g.no.length?jobChips(g.no,"no"):null,picker,
+    yes.length?h("p",{class:"lab",text:"Jobs I like"}):null,yes.length?jobChips(yes,"good"):null,
+    g.curious.length?h("p",{class:"lab",text:"Jobs I might try"}):null,g.curious.length?jobChips(g.curious,"curious"):null,
+    h("p",{class:"lab",text:"Jobs that are not for me"}),g.no.length?jobChips(g.no,"no"):h("p",{class:"sub",text:"None marked yet. If some jobs are not for you, mark them below so we never offer them to you."}),
+    h("details",{class:"more",open:S.panel.avoidOpen?true:null,ontoggle:function(e){S.panel.avoidOpen=e.currentTarget.open;}},h("summary",{text:"Mark a job as not for me"}),
+      AREAS.map(function(A){var js=FNS.filter(function(f){return f.area===A.id&&S.levels[f.id]!=="no";});if(!js.length)return null;
+        return h("div",null,h("p",{class:"lab",text:A.short}),h("div",{class:"chips"},js.map(function(f){return h("button",{type:"button",class:"chip",text:f.name,onclick:function(){S.levels[f.id]="no";saveDraft();saveResponse();renderProfile();}});})));})),
+    picker,
     workStyle(st)?h("p",{class:"sub",text:"Works best: "+workStyle(st)}):null));
   // the GCG trail: everything you've helped make happen
   var byEv={};hist.forEach(function(x){(byEv[x.ev.id]=byEv[x.ev.id]||{ev:x.ev,ts:[]}).ts.push(x.t.title);});
@@ -4321,17 +4339,14 @@ function drawMe(root){
       :h("p",{class:"sub",text:"Everything you finish is recorded here, event by event, so your contribution is seen and remembered."})));
   // about + CV, quieter
   var cv=cvOf(p,prof),cvSt=h("p",{class:"status",role:"status","aria-live":"polite"});
-  root.append(h("details",{class:"more msec",open:S.panel["me-about"]?true:null,ontoggle:function(e){S.panel["me-about"]=e.currentTarget.open;}},h("summary",{text:"About me"}),prof.lines.map(function(l){return h("p",{text:l});}),
-      st.proud?h("p",null,h("b",{text:"Proudest work: "}),st.proud):null,
-      h("div",{class:"stats"},prof.stats.map(function(s){return h("div",{class:"stat"},h("span",{text:s.label}),h("span",{class:"bar light","aria-hidden":"true"},h("i",{style:"width:"+Math.round(s.v*100)+"%"})));}))),
-    h("details",{class:"more msec",open:S.panel["me-cv"]?true:null,ontoggle:function(e){S.panel["me-cv"]=e.currentTarget.open;}},h("summary",{text:"Strengths for my CV"}),
+  root.append(h("details",{class:"more msec",open:S.panel["me-cv"]?true:null,ontoggle:function(e){S.panel["me-cv"]=e.currentTarget.open;}},h("summary",{text:"Strengths for my CV"}),
       cv.map(function(s){return h("div",{class:"cvsec"},h("h4",{text:s[0]}),h("ul",null,s[1].map(function(x){return h("li",{text:x});})));}),
       h("button",{type:"button",class:"btn small",text:"Copy for my CV",onclick:function(){copyText(cvText(cv),cvSt,"Copied. Paste it into your CV or LinkedIn.");}}),cvSt),
     h("div",{class:"row",style:"margin-top:12px"},h("button",{type:"button",class:"btn link",text:"Update my answers",onclick:function(){S.screen="like";showView("flow");}})));
 }
 
 /* ---------- Sharing: everyone's About is visible to the crew; the rest is each person's choice ---------- */
-// Never shareable: jobs you'd rather not do, why you are here, card corrections. Those stay between you and Hinda.
+// Never shareable: jobs that are not for you, why you are here, card corrections. Those stay between you and Hinda.
 var SHARE_OPTS=[["up","","Jobs I'm up for"],["did","","What I've done"],["brings","","What I bring"],["proud","","My proudest work"],["works","","How I work best"],["cv","","My CV or link"]];
 S.share={up:false,did:false,brings:false,proud:false,works:false,cv:false};S.crew={};
 function sanitizeShare(s){var o={};SHARE_OPTS.forEach(function(x){o[x[0]]=!!(s&&s[x[0]]);});return o;}
@@ -4362,7 +4377,7 @@ function shareToggles(onChange){
       h("span",{class:"shr-e","aria-hidden":"true",text:o[1]}),h("span",{class:"shr-t"},h("b",{text:o[2]})),h("span",{class:"pill","data-s":on?"taken":"draft",text:on?"Shared":"Private"}));
     box.append(b);
   });
-  box.append(h("p",{class:"sub",text:"Always private, whatever you choose: jobs you'd rather not do, why you're here, and your card corrections. Only you and Hinda see those."}));
+  box.append(h("p",{class:"sub",text:"Always private, whatever you choose: jobs that are not for you, why you're here, and your card corrections. Only you and Hinda see those."}));
   return box;
 }
 
@@ -4389,6 +4404,7 @@ function drawCrew(root){
         h("span",{class:"sub",text:c.type||""})),
       h("span",{class:"chev","aria-hidden":"true",text:open?"−":"+"}));
     var card=h("section",{class:"card crewcard"},head);
+    if(id===S.uid)card.append(h("p",{class:"sub",text:"This is how the crew sees you. Everything about you is under Me. Change what is shared in Me, Who sees what."}));
     if(open){
       card.append(h("div",{class:"chips"},(c.strengths||[]).map(function(s,i){return h("span",{class:"chip t"+i,text:s});})));
       function sec(label,val){return val&&(!Array.isArray(val)||val.length)?h("div",{class:"crewsec"},h("p",{class:"lab",text:label}),Array.isArray(val)?h("div",{class:"chips"},val.map(function(v){return h("span",{class:"chip",text:v});})):h("p",{text:val})):null;}
