@@ -878,6 +878,32 @@ button.chip.on{outline:2px solid var(--ink)}
 .evgrp .task{margin-top:10px}
 .kindgrp{margin-top:6px}
 .kindhead{margin:12px 0 4px;font:700 12px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kindsec{border:1px solid var(--line);border-radius:14px;background:var(--card);margin-top:10px;overflow:hidden}
+.ks-h{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;list-style:none;min-height:56px}
+.ks-h::-webkit-details-marker{display:none}
+.ks-ico{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--soft);color:var(--ink)}
+.kindsec.k0 .ks-ico{background:var(--red-soft)}.kindsec.k1 .ks-ico{background:var(--gold-soft)}.kindsec.k2 .ks-ico{background:var(--green-soft)}.kindsec.k3 .ks-ico{background:var(--soft)}
+.ks-t{flex:1;font:700 15.5px var(--font-body)}
+.ks-n{min-width:26px;height:26px;border-radius:99px;background:var(--bg-2);font:700 13px var(--font-body);display:grid;place-items:center;padding:0 8px}
+.ks-h>.ico:last-child{color:var(--muted);transition:transform .15s}
+.kindsec[open] .ks-h>.ico:last-child{transform:rotate(180deg)}
+.kindsec[open] .ks-h{border-bottom:1px solid var(--line)}
+.ks-body{padding:4px 12px 12px;display:grid;gap:2px}
+.ks-body .task{margin-top:10px}
+.grow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.grow:last-child{border-bottom:0}
+.gr-t{flex:1;min-width:0;display:grid;gap:1px}
+.gr-t b{font-size:15px;line-height:1.3}
+.gr-t .sub{font-size:13px}
+.grow .take{min-height:36px;padding:6px 16px;flex:none}
+.ks-h{padding:9px 12px;min-height:48px}
+.ks-ico{width:32px;height:32px}
+.ks-t{font-size:15px}
+.ks-body{padding:0 12px 4px;gap:0}
+.evgrp>summary{padding:10px 0;min-height:44px}
+.gr-title{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mustmark{color:var(--red);font-weight:700}
+.grow .take{padding:6px 14px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -1286,6 +1312,10 @@ var ICONS={
  calendar:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M3.5 10h17"/>',
  send:'<path d="M20.5 3.5 10 14"/><path d="M20.5 3.5 14 20.5l-4-6.5-6.5-4z"/>',
  trail:'<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/>',
+ tool:'<path d="M14.5 6a4 4 0 0 0-4.8 5.2L4.5 16.4a1.8 1.8 0 0 0 2.6 2.6l5.2-5.2A4 4 0 0 0 18 9.2l-2.4 2.4-2.2-.6-.6-2.2z"/>',
+ box:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4"/><path d="M12 12v8"/>',
+ coin:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v10"/><path d="M14.6 9.4c-.5-.8-1.4-1.2-2.6-1.2-1.4 0-2.5.7-2.5 1.9 0 2.6 5.2 1.2 5.2 3.8 0 1.2-1.1 2-2.7 2-1.2 0-2.2-.5-2.7-1.4"/>',
+ building:'<path d="M5 20V5l7-2 7 2v15"/><path d="M3.5 20h17"/><path d="M9 9h1"/><path d="M14 9h1"/><path d="M9 13h1"/><path d="M14 13h1"/>',
  star:'<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/>'
 };
 function ico(name,size){
@@ -2074,7 +2104,7 @@ function renderCov(){
       var n=yes.length+may.length;if(only&&n)return null;
       var fits=n?[]:bestFits(f.id,2);
       return h("div",{class:"cov-row"},
-        h("span",{class:"nm"},h("span",{class:"code",text:f.id}),f.name,h("span",{class:"tag",text:f.when}),isCritical(f.id)?h("span",{class:"must",text:"Must fill"}):null),
+        h("span",{class:"nm"},h("span",{class:"code",text:f.id}),f.name,h("span",{class:"tag",text:f.when}),isCritical(f.id)?h("span",{class:"must",text:"Key job"}):null),
         n?h("div",{class:"chips"},yes.map(function(p){return h("span",{class:"chip good",text:""+pname(p)});}),may.map(function(p){return h("span",{class:"chip curious",text:""+pname(p)});})):
           h("span",{class:"none",text:"Nobody picked this."+(fits.length?" Might suit, from their answers: "+fits.map(function(x){return pname(x.p);}).join(", ")+". Ask them.":"")}));
     }).filter(Boolean);
@@ -2145,12 +2175,12 @@ function renderRoles(){
     sel.value=info.outsource[f.id]?"__out":(info.assign[f.id]||"");
     sel.addEventListener("change",function(){S.overrides[f.id]=sel.value;renderRoles();});
     var crit=isCritical(f.id),has=!!info.assign[f.id],b=info.basis[f.id],note="";
-    if(crit&&!has&&!info.outsource[f.id])note="Must fill, and nobody fits yet.";
+    if(crit&&!has&&!info.outsource[f.id])note="Key job, and nobody fits yet.";
     else if(b==="questionnaire")note="Nobody picked this. Suggested from their answers. Ask them first.";
     var cb=h("input",{type:"checkbox",id:"must-"+f.id});cb.checked=crit;
     cb.addEventListener("change",function(){toggleCritical(f.id,cb.checked);});
     root.append(h("div",{class:"rolerow"},h("span",{class:"nm"},h("span",{class:"code",text:f.id}),f.name,h("span",{class:"tag",text:f.when})),sel,
-      h("div",{class:"rolemeta"},h("label",{for:"must-"+f.id},cb," Must fill"),note?h("span",{class:"rolenote",text:note}):null)));
+      h("div",{class:"rolemeta"},h("label",{for:"must-"+f.id},cb," Key job"),note?h("span",{class:"rolenote",text:note}):null)));
   });
 }
 var critTimer=null;
@@ -2185,7 +2215,7 @@ function exportPeople(){
 }
 function exportRoles(){
   var info=finalInfo(),by={};S.people.forEach(function(p){by[p.id]=pname(p);});
-  var rows=[["Code","Job","When","Area","Must fill","Proposed owner","Basis"]];
+  var rows=[["Code","Job","When","Area","Key job","Proposed owner","Basis"]];
   FNS.forEach(function(f){rows.push([f.id,f.name,f.when,AREA[f.area].name,isCritical(f.id)?"Yes":"",info.outsource[f.id]?"Outsource or recruit":(by[info.assign[f.id]]||""),info.outsource[f.id]?"outsource":(info.basis[f.id]||"")]);});
   saveFile("gcg-draft-roles.csv",csv(rows));
 }
@@ -2214,7 +2244,7 @@ function addPasted(){
 }
 
 /* ---------- Events: templates, checkpoints, priorities, a clock, and every step timestamped ---------- */
-var PRI={must:{l:"Must",o:0},should:{l:"Should",o:1},nice:{l:"Nice",o:2}};
+var PRI={must:{l:"Key",o:0},should:{l:"Helpful",o:1},nice:{l:"Bonus",o:2}};
 var SIZE={S:"Small",M:"Medium",L:"Large"};
 var PHASES=[["before","Before"],["during","On the day"],["after","After"]];
 // A template task: title, job, phase, day offset from the event date, minutes from start time (on-the-day tasks only),
@@ -2788,7 +2818,7 @@ function drawEvents(root){
       field("Goal: what we are trying to make happen","text",ev.goal,function(v){ev.goal=v;},"goal"),
       h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time","time",ev.start,function(v){ev.start=v;},"start")),
       h("div",{class:"two-col"},field("Place","text",ev.place,function(v){ev.place=v;},"place"),h("div",{class:"field"},h("label",{text:"Event lead (chases the list)"}),leadSel)),
-      ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:""+ms.must+" of "+ms.all+" tasks are Must. Keep it to about a third."}):null));
+      ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:""+ms.must+" of "+ms.all+" tasks are Key. Keep it to about a third."}):null));
   if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length)root.append(h("div",{style:"margin-top:14px"},msgBox(S.evMsgs.title,S.evMsgs.list)));
   if(S.run&&S.run.eid===ev.id)root.append(h("div",{id:"runBox",class:"card",style:"margin-top:14px"}));
   var cc=crewCredits(ev);if(cc)root.append(cc);
@@ -3573,15 +3603,24 @@ function identityBand(name,bio){
     h("span",{class:"pb-who"},h("span",{class:"pb-name",text:name}),h("span",{class:"pb-bio",text:bio})),ico("chevR",18));
 }
 // Kinds of work, so a long list reads as "organising", "setting up", "editing" and not one pile.
-var KINDS=["Organising and planning","Setting up and on the night","Design, photos and editing","Marketing and messages","Venues, partners and clients","Money and admin","Tech and tools"];
+var KINDS=["Content creation","Marketing and communications","Hosting and on the night","Tech, sound and equipment","Setting up and logistics","Organising and planning","Venues, partners and clients","Money and admin"];
+var KIND_ICON={"Content creation":"camera","Marketing and communications":"message","Hosting and on the night":"gamepad","Tech, sound and equipment":"tool","Setting up and logistics":"box","Organising and planning":"clipboard","Venues, partners and clients":"building","Money and admin":"coin","Other":"list"};
 var KIND_OF={};
 (function(){
-  var m={0:"A1 A2 A5 F1 F4 F5 F6 F7 I1 I2 I3 I4",1:"C1 C2 C3 C4 C5 C6 C7 C9 C10 C11 F2 F3 F9",2:"C8 D2 D3 D4 D5 D7",3:"A4 B1 B2 B3 B4 B5 D1 D6 D8 D9",4:"E1 E2 E3 E4 E5 E6 E7 E8",5:"A3 G1 G2 G3 G4 G5 G6 H1 H2 H3 H4 H5",6:"J1 J2"};
+  var m={0:"C8 D2 D3 D4 D5 D7",1:"A4 B1 B2 B3 B4 B5 D1 D6 D8 D9",2:"C1 C2 C7 C9 C10 C11",3:"C3 C4 F3 J1 J2",4:"C5 C6 F2 F9",5:"A1 A2 A5 F1 F4 F5 F6 F7 I1 I2 I3 I4",6:"E1 E2 E3 E4 E5 E6 E7 E8",7:"A3 G1 G2 G3 G4 G5 G6 H1 H2 H3 H4 H5"};
   Object.keys(m).forEach(function(k){m[k].split(" ").forEach(function(j){KIND_OF[j]=KINDS[k];});});
 })();
 function kindOf(job){return KIND_OF[job]||"Other";}
 // Tasks always belong to one event. Show them event by event so three events never look like one huge list.
 // opts.kinds: inside each event, group by kind of work, best fit for the person first. opts.openFirst: open the first event (default yes).
+// One slim row per task: title, one short detail line, priority tag and a small Take button.
+function grabRow(x){
+  var st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
+  var meta=[d?fmtWhen(d):"",x.places>1?x.places+" places":"",x.fit===-99?"outside your usual":""].filter(Boolean).join(" · ");
+  var must=(x.t.pri||"should")==="must";
+  return h("div",{class:"grow"},h("div",{class:"gr-t"},h("b",{class:"gr-title",text:x.t.title}),(meta||must)?h("span",{class:"sub"},must?h("b",{class:"mustmark",text:"Key"}):null,must&&meta?" · ":"",meta):null,st),
+    h("button",{type:"button",class:"btn small go take",text:"Take",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}));
+}
 function groupByEvent(list,prefix,render,label,opts){
   opts=opts||{};var by={},order=[],seen={};
   // A task that needs several people is one task with several places, not several rows.
@@ -3593,7 +3632,11 @@ function groupByEvent(list,prefix,render,label,opts){
     if(opts.kinds){
       var kinds={},ko=[];items.forEach(function(x){var kk=kindOf(x.t.job);if(!kinds[kk]){kinds[kk]={name:kk,list:[],best:-99};ko.push(kinds[kk]);}kinds[kk].list.push(x);if((x.fit||0)>kinds[kk].best)kinds[kk].best=x.fit||0;});
       ko.sort(function(a,b){return (b.best-a.best)||(KINDS.indexOf(a.name)-KINDS.indexOf(b.name));});
-      body=h("div",{class:"tlist"},ko.map(function(g){return h("div",{class:"kindgrp"},h("p",{class:"kindhead",text:g.name+" · "+g.list.length}),g.list.map(render));}));
+      body=h("div",{class:"tlist"},ko.map(function(g,gi){
+        var kk="kind:"+k+":"+g.name,sec=h("details",{class:"kindsec k"+(KINDS.indexOf(g.name)%4)},
+          h("summary",{class:"ks-h"},h("span",{class:"ks-ico","aria-hidden":"true"},ico(KIND_ICON[g.name]||"list",20)),h("span",{class:"ks-t",text:g.name}),h("span",{class:"ks-n",text:String(g.list.length)}),ico("chevD",16)),
+          h("div",{class:"ks-body"},g.list.map(render)));
+        sec.open=S.panel[kk]!==undefined?!!S.panel[kk]:(i===0&&gi===0);sec.addEventListener("toggle",function(){S.panel[kk]=sec.open;});return sec;}));
     }else body=h("div",{class:"tlist"},items.map(render));
     var d=h("details",{class:"evgrp"},h("summary",{text:(ev.name||"Event")+" · "+items.length+" "+(label||"open")}),body);
     var first=opts.openFirst===false?false:i===0;
@@ -3620,7 +3663,7 @@ function drawHome(root){
       canTick?h("button",{type:"button",class:"tick","aria-label":"Mark "+x.t.title+" done",onclick:function(){quickDone(x.ev,x.t,st);}}):h("span",{class:"tick off","aria-hidden":"true"}),
       h("button",{type:"button",class:"tr-b",onclick:function(){open(x);}},
         h("span",{class:"tr-t"},h("b",{text:x.t.title}),sub?h("span",{class:"sub",text:sub}):null),
-        x.st==="offered"?h("span",{class:"tr-pri new",text:"New"}):pr==="must"?h("span",{class:"tr-pri",text:"Must"}):null,ico("chevR",16)));
+        x.st==="offered"?h("span",{class:"tr-pri new",text:"New"}):pr==="must"?h("span",{class:"tr-pri",text:"Key"}):null,ico("chevR",16)));
   }
   if(items.length){
     var ph=curPhase(top.ev);
@@ -3714,10 +3757,7 @@ function drawMyEvents(root){
   var grabs=upForGrabs();
   if(grabs.length){
     root.append(h("section",{class:"card",id:"grabs",style:"margin-top:14px"},h("h3",{class:"q",text:"Up for grabs"}),h("p",{class:"sub",text:"Nobody has these yet. First come, first served: tap to take one and it is yours."}),
-      groupByEvent(grabs,"grabs:",function(x){var r=myReply(x.ev,x.t),asked=r&&r.answer==="claim",st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
-        return h("div",{class:"task","data-s":"open"},h("div",{class:"task-top"},priBadge(x.t.pri),h("b",{class:"ttl",text:x.t.title})),
-          h("p",{class:"meta",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")+(x.places>1?" · "+x.places+" places":"")+(x.fit===-99?" · Outside what you usually do":"")}),
-          h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));},"open",{kinds:true})));
+      groupByEvent(grabs,"grabs:",grabRow,"open",{kinds:true})));
   }
 }
 function drawMemberEvent(root,ev){
@@ -3822,8 +3862,7 @@ function drawToday(root){
     var gst=h("span",{class:"status"});
     var gd=h("details",{class:"card hsec grabsbox"},h("summary",{class:"fold-h",text:"Up for grabs"}),
       h("p",{class:"sub",text:"Nobody has these yet. You can take one, first come, first served, like anyone else."}),
-      groupByEvent(gr,"agrab:",function(x){var d=taskDue(x.ev,x.t);return h("div",{class:"cvline"},h("span",{class:"cv-t"},h("b",{text:x.t.title}),h("span",{class:"sub",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")+(x.places>1?" · "+x.places+" places":"")})),
-        h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},gst);}}));},"open",{kinds:true}),gst);
+      groupByEvent(gr,"agrab:",grabRow,"open",{kinds:true}),gst);
     gd.open=!!S.panel.adminGrabs;gd.addEventListener("toggle",function(){S.panel.adminGrabs=gd.open;});root.append(gd);
   }
   renderBell();

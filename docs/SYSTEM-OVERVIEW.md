@@ -43,13 +43,13 @@ Team members never see Team, Coverage, Titles or Insights. They see other people
 
 - **Onboarding is creating your profile** (about 10 minutes, stop anytime): warm-up → seven situations (most / least like me) → six job cards → player card → what you have done → what you bring → proudest work and CV (link or pasted text) → photo (optional, shrunk on the phone) → how you work → why you are here → Home. Progress is saved; returning shows "You're 40% through… pick up where you left off".
 - **Only what matters now.** Home counts only the tasks for the current stage of each event (or due within a week): one next move, one "then", and a quiet note that more tasks open later. Event pages show "Your part · now: [stage]" with at most three tasks; later tasks sit folded under "Later in the plan", grouped by stage.
-- **Task cards** read in two seconds: deadline first, task, event, why you, "🔒 Needed for: [checkpoint]" on Must tasks, one big button (Take it / Done), quieter secondary options (Can't do it, Not really me; plan date, calendar, stuck, extra hand and crew chat under More).
+- **Task cards** read in two seconds: deadline first, task, event, why you, "🔒 Needed for: [checkpoint]" on Key tasks, one big button (Take it / Done), quieter secondary options (Can't do it, Not really me; plan date, calendar, stuck, extra hand and crew chat under More).
 - **Declining never hides a task.** "Can't do it" sends it straight back to the pool: it appears in Hinda's Needs you and in Up for grabs. Optional reason: not available / not my thing / need help.
 - **"Not really me"** updates the person's card so fewer tasks like it come their way. The system listens rather than labels people permanently.
 - **All clear**: when nothing needs you, Home says so and shows how the event is going and what you have done for it.
 - **Recognition without ranking**: crew contributions per event and each person's GCG trail list names and work, never leaderboards or points.
 - **Communication stays in WhatsApp**: the event's crew chat link is on the event page and inside tasks. No chat is built in.
-- **Priorities**: 🔴 Must (about a third), 🟡 Should, ⚪ Nice. Colour always comes with text.
+- **Priorities**: Key (about a third), Helpful and Bonus. Colour always comes with text.
 
 **Ideas, leads and feedback.** At the bottom of Home, anyone can send an idea, a lead or something to fix. Hinda reads all of them (Team, Ideas), sees who sent each one, can reply and mark it seen or done. Senders see only their own notes and her replies.
 
