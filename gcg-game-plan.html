@@ -1796,7 +1796,7 @@ var BUILD={
     // The last question. Each job has two labelled buttons: "Open to it" or "Never offer". Leave a job alone for no feeling.
     // Jobs they said yes to are left out. They can still pick any job up themselves from Up for grabs.
     var list=FNS.filter(function(f){return f.when!=="Later"&&S.levels[f.id]!=="good";});
-    var hd=shell(card,"Last question","Other jobs: are you open to them?","These are jobs outside the ones you already said yes to. For each one, are you open to it, or do you never want to be offered it? Tried it or not, your call. Leave a job alone if you have no feeling. Open a wing to start. You can still pick any job up yourself from Up for grabs, and change all of this under Me.");
+    var hd=shell(card,"Last question","These are jobs outside of the ones you already said yes to.","For each one, are you open to it, or do you never want to be offered it?");
     card.append(h("button",{type:"button",class:"btn link",text:"Nothing to add: skip",onclick:next}));
     var cnt=h("p",{class:"sub jhint",role:"status","aria-live":"polite"}),sums={};
     function counts(A){var no=0,op=0;list.filter(function(f){return f.area===A.id;}).forEach(function(f){if(S.levels[f.id]==="no")no++;else if(S.levels[f.id]==="curious")op++;});return {no:no,op:op};}
