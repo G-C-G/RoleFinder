@@ -2583,6 +2583,25 @@ function riskWhy(x){
 }
 
 /* matching */
+// Words in someone's CV or proudest-work answer that point at a job. A hint only: it adds a little to the ranking, never beats a "not for me",
+// and every suggestion says where it came from.
+var CV_KEYS=[[/\b(emcee|m\.?c\.?|presenter|moderator|host(ed|ing)?)\b/i,["C1","C11"]],[/photograph|videograph|filming|cinematograph/i,["C8","D2"]],[/\b(video|photo) edit|premiere|final cut|capcut|editing/i,["D3"]],
+  [/graphic|canva|photoshop|illustrator|\bdesigner\b/i,["D5"]],[/social media|instagram|tiktok|community manager/i,["D1","B5"]],[/copywrit|journalis|content (creat|writ)|blog/i,["B3","D4","D8"]],
+  [/\bbrand(ing)?\b/i,["B4"]],[/marketing/i,["B1","A4"]],[/sponsor/i,["E7"]],[/\bsales\b|business development|account manager|client (manag|relation)/i,["E4","E5","E3"]],
+  [/partnership|outreach/i,["E2","E8"]],[/ticketing|registration|box office/i,["E1"]],[/logistics|event (manag|coordinat|plan)|operations/i,["F2","A2"]],[/project manag/i,["F1"]],
+  [/\bdj\b|sound engineer|audio|live sound/i,["C4"]],[/livestream|live stream|stage (tech|crew)|av tech|production crew/i,["C3"]],[/website|web develop|wordpress|html/i,["J2","J1"]],
+  [/accounting|bookkeep|finance|budget/i,["G1","G2","A3"]],[/\blegal\b|contract|\blaw\b/i,["G5"]],[/\btax\b/i,["G6"]],[/grant|fundrais/i,["H1"]],[/pitch/i,["H2"]],
+  [/impact|monitoring and evaluation|\bm&e\b|market research|survey/i,["H3","H5"]],[/catering|hospitality|restaurant|food (and|&) beverage/i,["C10"]],
+  [/volunteer (coord|manag)|recruit|human resources|\bhr\b|training/i,["I1","I2","I3"]],[/first aid|safety|permit/i,["F9"]],[/usher|reception|front desk|guest relations/i,["C2"]],
+  [/quiz|trivia|game master/i,["C7","F7"]],[/stage manag|floor manag|run of show|timekeep/i,["C9","C6"]],[/venue/i,["E6","C5"]],[/testimonial/i,["D7"]],[/analytics|excel|spreadsheet|data analys/i,["F5"]]];
+function cvWord(text,m){var a=m.index,e=m.index+m[0].length;while(a>0&&/[A-Za-z]/.test(text.charAt(a-1)))a--;while(e<text.length&&/[A-Za-z]/.test(text.charAt(e)))e++;return text.slice(a,e).toLowerCase();}
+function cvHit(p,job){
+  var cv=clean(p&&p.cv),pr=clean(p&&p.story&&p.story.proud);
+  for(var i=0;i<CV_KEYS.length;i++){var k=CV_KEYS[i];if(k[1].indexOf(job)<0)continue;
+    var m=cv.match(k[0]);if(m)return "Because of your CV: it mentions \""+cvWord(cv,m)+"\"";
+    m=pr.match(k[0]);if(m)return "Because of what you wrote about your proudest work: \""+cvWord(pr,m)+"\"";}
+  return "";
+}
 function taskMatch(p,job,skipEid){
   if(!FN[job])return null;
   var s=scoreOf(p,job);if(s<0)return null;
@@ -2594,6 +2613,7 @@ function taskMatch(p,job,skipEid){
   if(done.length){pts+=2;why.push("Has "+lc1(done[0][1]));}
   var br=HIDDEN.filter(function(r){return st.hidden.indexOf(r[0])>-1&&(r[2]||[]).indexOf(job)>-1;});
   if(br.length){pts+=2;why.push("Brings: "+br[0][1]);}
+  var cvw=cvHit(p,job);if(cvw){pts+=1.5;why.push(cvw);}
   var past=p.id?gcgCount(p.id,job,skipEid):0;
   if(past){pts+=1.5;why.push("Did this at "+past+" GCG event"+(past>1?"s":""));}
   var fit=fitFor(p.q,job);
@@ -2668,7 +2688,7 @@ function suggestEvent(ev){
   (ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="open"||t.helper)return;
     var r=rankFor(ev,t,eventLoad(ev,t)).filter(function(x){return !noAutoOn(x.p.id);})[0];
     // Only suggest someone with a real reason (said yes or maybe, title, experience, brings, did it before). A personality guess alone is not enough.
-    if(r&&r.m.why.some(function(w){return !/^Strong in /.test(w);})){t.owner=r.p.id;t.offered=false;n++;}else left++;});
+    if(r&&r.m.why.some(function(w){return !/^(Strong in|Because of )/.test(w);})){t.owner=r.p.id;t.offered=false;n++;}else left++;});
   saveEvent(ev,true);renderEvents();
   say($("evStatus"),(n?"Suggested people for "+n+" task"+(n>1?"s":"")+". Check them, then send the offers.":"Nothing to suggest.")+(left?" "+left+" task"+(left>1?"s":"")+" left open because nobody has said they want it. They go to Up for grabs.":""),n?"ok":"");
 }
@@ -2951,7 +2971,7 @@ function doneForm(ev,t){
 function adminTask(ev,t,cur){
   var st=taskState(ev,t),rank=rankFor(ev,t,eventLoad(ev,t)),owner=t.owner?personById(t.owner):null,due=taskDue(ev,t);
   var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:rank.length?"Choose someone…":"Nobody fits yet"}),
-    rank.map(function(x,i){return h("option",{value:x.p.id,text:(i===0?" ":"")+pname(x.p)+(x.m.why.length?" · "+x.m.why[0].replace(/^\S+ /,""):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"")});}));
+    rank.map(function(x,i){return h("option",{value:x.p.id,text:(i===0?" ":"")+pname(x.p)+(x.m.why.length?" · "+(/^Because of/.test(x.m.why[0])?x.m.why[0].replace(/^Because of (your CV|what you wrote about your proudest work): /,"CV: "):x.m.why[0].replace(/^\S+ /,"")):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"")});}));
   if(owner&&!rank.some(function(x){return x.p.id===owner.id;}))sel.append(h("option",{value:owner.id,text:pname(owner)}));
   sel.value=t.owner||"";
   sel.addEventListener("change",function(){t.owner=sel.value;t.offered=false;t.ots="";t.manual="";saveEvent(ev,true);renderEvents();});
@@ -3628,7 +3648,7 @@ function nextMoveCard(x,st,multi){
   return h("div",{class:"hero-move"},h("p",{class:"k",text:"Suggested first"}),h("h2",{class:"hm-t",text:t.title}),
     h("p",{class:"hm-m"},multi?(ev.name||"")+" · ":"",due?(x.late?["",clockSpan(due)]:[""+fmtWhen(due)+" · ",clockSpan(due)]):"no deadline"),
     (function(){var me=personById(S.uid)||Object.assign(payload(),{id:S.uid}),m=taskMatch(me,t.job,ev.id);if(!m||!m.why.length)return null;
-      return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),lc1(m.why[0].replace(/^\S+\s/,"")));})(),
+      return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),(/^Because of/.test(m.why[0])?m.why[0]:lc1(m.why[0].replace(/^\S+\s/,""))));})(),
     h("div",{class:"row"},btns),st);
 }
 function identityBand(name,bio){
