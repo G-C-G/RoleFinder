@@ -3674,6 +3674,14 @@ function drawToday(root){
     h("div",{class:"tstats"},[[coming,coming===1?"event coming up":"events coming up","events"],[need.length,"need attention","needs"],[waiting,"waiting for an answer","events"],[gaps,"wings with 0–1 people","team"]].map(function(s){
       return h("button",{type:"button",class:"tstat"+(s[2]==="needs"&&s[0]?" bad":""),onclick:function(){if(s[2]==="needs"){var n=$("needsYou");if(n&&n.scrollIntoView)n.scrollIntoView({block:"start"});}else{showView(s[2]);if(s[2]==="team"){S.teamTab="coverage";renderTeam();}}}},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));})));
   if(drafts)root.append(h("p",{class:"sub",style:"margin:8px 2px 0"},drafts+" draft event"+(drafts>1?"s":"")+" not yet shared with the team. ",h("button",{type:"button",class:"btn link",text:"Open Events ›",onclick:function(){showView("events");}})));
+  var hasProfile=!!profileOf(Object.assign(payload(),{id:S.uid}));
+  if(!S.events.length||!hasProfile)root.append(h("section",{class:"card hsec startcard"},h("h3",{class:"q",text:"Start here"}),
+    h("ol",{class:"steps"},
+      h("li",null,h("b",{text:"Make your own profile."}),h("p",{class:"sub",text:"About ten minutes. It also shows you what your team will go through."})),
+      h("li",null,h("b",{text:"Share the page with your team."}),h("p",{class:"sub",text:"Use the Share menu: Editor for co-admins, Contributor for everyone else."})),
+      h("li",null,h("b",{text:"Create the first event as a draft."}),h("p",{class:"sub",text:"Mark what is already covered, then publish when the team is on the call."}))),
+    h("div",{class:"row"},hasProfile?null:h("button",{type:"button",class:"btn go small",text:"Make my profile",onclick:function(){S.screen="intro";showView("flow");}}),
+      h("button",{type:"button",class:"btn small",text:"Create an event",onclick:function(){S.evOpen="";showView("events");}}))));
   root.append(h("section",{class:"card hsec",id:"needsYou"},h("h3",{class:"q",text:"Needs you"}),
     need.length?h("ol",{class:"needs"},need.slice(0,5).map(function(n){
       var act=n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
