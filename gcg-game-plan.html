@@ -3192,6 +3192,14 @@ function myPings(){return (S.pings||[]).filter(function(p){return p.to===S.uid&&
 // Help requests: one small doc per sender, readable by the team, so the person asked sees it in their bell.
 S.help={};
 function helpItems(uid){var d=S.help&&S.help[uid];return d&&Array.isArray(d.items)?d.items:[];}
+// Who to ask: colleagues who shared that they are up for this job first, then everyone else on the crew. Only what people chose to share is used.
+function helpCandidates(t){
+  var jn=FN[t.job]&&FN[t.job].name,up=[],others=[];
+  Object.keys(S.crew||{}).forEach(function(id){if(id===S.uid)return;var c=S.crew[id],u=(c&&c.sections&&c.sections.up)||[];(jn&&u.indexOf(jn)>-1?up:others).push(id);});
+  var by=function(a,b){return nameOf(a).localeCompare(nameOf(b));};
+  return {up:up.sort(by),others:others.sort(by),job:jn||""};
+}
+function askedForHelp(ev,t,r){return !!(r&&r.hand&&r.hand.at)||helpItems(S.uid).some(function(i){return i.eid===ev.id&&i.tid===t.id;});}
 function sendHelp(ev,t,to,note,st){
   if(!S.db||!S.uid||S.canWrite===false){say(st,"Sending needs the live page.","warn");return;}
   var items=helpItems(S.uid).slice();items.push({id:"h"+Date.now().toString(36),to:to,eid:ev.id,tid:t.id,text:clean(note).slice(0,140),at:nowIso()});
@@ -4171,20 +4179,21 @@ function myTaskCard(ev,t,me){
     }else body.push(h("button",{type:"button",class:"btn green big wide",text:"Done",onclick:function(){S.panel[key]="done";renderTasks();}}),
       h("button",{type:"button",class:"btn link helpbtn",text:panel==="hand"?"Cancel help request":"I need help",onclick:function(){S.panel[key]=panel==="hand"?"":"hand";renderTasks();}}));
     if(panel==="hand"){
-      var others=Object.keys(S.crew||{}).filter(function(id){return id!==S.uid;}).sort(function(a,b){return nameOf(a).localeCompare(nameOf(b));});
-      var sel=h("select",{"aria-label":"Who can help","data-k":"helpto-"+key},h("option",{value:"",text:"Anyone (Hinda will find someone)"}),others.map(function(id){return h("option",{value:id,text:nameOf(id)});}));
+      var hc=helpCandidates(t);
+      var sel=h("select",{"aria-label":"Who can help","data-k":"helpto-"+key},h("option",{value:"",text:"Choose a colleague…"}),
+        hc.up.map(function(id){return h("option",{value:id,text:nameOf(id)+" · up for "+lc1(hc.job)});}),hc.others.map(function(id){return h("option",{value:id,text:nameOf(id)});}));
       sel.value=dr.helpTo||"";sel.addEventListener("change",function(){dr.helpTo=sel.value;});
-      body.push(h("div",{class:"box"},h("b",{text:"Who do you need?"}),sel,inp("hand","What do you need help with? (one line)"),
+      body.push(h("div",{class:"box"},h("b",{text:"Who can you ask?"}),
+        h("p",{class:"sub",text:hc.up.length?"People who said they are up for this job are listed first.":"No one has shared that they are up for this job yet. Pick anyone on the crew."}),
+        sel,inp("hand","What do you need help with? (one line)"),
         h("button",{type:"button",class:"btn go wide",text:"Send help request",onclick:function(){
-          S.panel[key]="";
-          if(dr.helpTo)sendHelp(ev,t,dr.helpTo,dr.hand,stat);
-          else writeReply(ev,t,{hand:{at:nowIso(),note:clean(dr.hand)}},stat);}})));
+          if(!dr.helpTo){say(stat,"Choose a colleague to ask first.","warn");return;}
+          S.panel[key]="";sendHelp(ev,t,dr.helpTo,dr.hand,stat);}})));
     }
-    // Hand-back comes after asking for help: try first, then give it back.
-    if(st==="taken"||st==="started"||st==="stuck"){
-      var asked=!!(r&&r.hand&&r.hand.at);
-      body.push(asked?h("button",{type:"button",class:"btn link",text:"Help did not solve it: hand this task back",onclick:function(){writeReply(ev,t,{answer:"pass",reason:"Asked for help first, still could not do it"},stat);}})
-        :h("p",{class:"sub",text:"Can't do this? Tap I need help first. If it still can't be done, you can hand it back here."}));
+    // Nobody could help: only then does it come to Hinda, who decides.
+    if(st==="taken"||st==="started"){
+      body.push(askedForHelp(ev,t,r)?h("button",{type:"button",class:"btn link",text:"No one could help: raise it with Hinda",onclick:function(){writeReply(ev,t,{state:"stuck",stuck:"Asked colleagues for help, no one could"},stat);}})
+        :h("p",{class:"sub",text:"Can't do this? Ask a colleague first (tap I need help). If no one can help, you can raise it with Hinda."}));
     }
     var planIn=h("input",{type:"date","aria-label":"My plan for "+t.title,"data-k":"plan-"+key,value:(r&&r.plan)||""});
     planIn.addEventListener("change",function(){writeReply(ev,t,{plan:planIn.value},stat);});
