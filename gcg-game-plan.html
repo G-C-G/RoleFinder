@@ -4180,6 +4180,12 @@ function myTaskCard(ev,t,me){
           if(dr.helpTo)sendHelp(ev,t,dr.helpTo,dr.hand,stat);
           else writeReply(ev,t,{hand:{at:nowIso(),note:clean(dr.hand)}},stat);}})));
     }
+    // Hand-back comes after asking for help: try first, then give it back.
+    if(st==="taken"||st==="started"||st==="stuck"){
+      var asked=!!(r&&r.hand&&r.hand.at);
+      body.push(asked?h("button",{type:"button",class:"btn link",text:"Help did not solve it: hand this task back",onclick:function(){writeReply(ev,t,{answer:"pass",reason:"Asked for help first, still could not do it"},stat);}})
+        :h("p",{class:"sub",text:"Can't do this? Tap I need help first. If it still can't be done, you can hand it back here."}));
+    }
     var planIn=h("input",{type:"date","aria-label":"My plan for "+t.title,"data-k":"plan-"+key,value:(r&&r.plan)||""});
     planIn.addEventListener("change",function(){writeReply(ev,t,{plan:planIn.value},stat);});
     var planLate=r&&r.plan&&due&&new Date(r.plan+"T10:00:00")>due;
