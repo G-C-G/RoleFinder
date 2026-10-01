@@ -235,6 +235,8 @@ textarea{resize:vertical}
 details>summary{cursor:pointer;font-weight:800;padding:6px 0;min-height:40px}
 
 /* team view */
+#myProgress .tstats{grid-template-columns:repeat(3,1fr);gap:8px}#myProgress .tstat{padding:10px}#myProgress .tstat .v{font-size:1.35rem}#myProgress .tstat .l{font-size:12.5px}
+.prog-list{margin-top:12px;display:grid;gap:10px}.prog-ev{display:grid;gap:4px}.prog-ev b{font-size:15px}
 .tstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .tstat{background:var(--card);border:2.5px solid var(--edge);border-radius:16px;padding:12px 14px;box-shadow:0 4px 0 var(--shadow)}
 .tstat .v{font-family:var(--font-display);font-weight:700;font-size:1.6rem;font-variant-numeric:tabular-nums}
@@ -3667,6 +3669,22 @@ function groupByEvent(list,prefix,render,label,opts){
     var first=opts.openFirst===false?false:i===0;
     d.open=S.panel[k]!==undefined?!!S.panel[k]:first;d.addEventListener("toggle",function(){S.panel[k]=d.open;});return d;});
 }
+// Your own numbers, always on Home: what you have finished, and how far each event you are on has come as a team.
+function myProgressCard(){
+  var mine=myTasks().filter(function(x){return taskState(x.ev,x.t)!=="passed";});if(!mine.length)return null;
+  var done=mine.filter(function(x){return taskState(x.ev,x.t)==="done";}),evs={},late=[];
+  done.forEach(function(x){evs[x.ev.id]=1;var d=daysLate(x.ev,x.t);if(d!=null)late.push(d);});
+  var onTime=late.length?Math.round(late.filter(function(d){return d<=0.5;}).length/late.length*100):null;
+  var tile=function(v,l){return h("div",{class:"tstat"},h("div",{class:"v",text:String(v)}),h("div",{class:"l",text:l}));};
+  var rows=[],seen={};mine.forEach(function(x){if(seen[x.ev.id])return;seen[x.ev.id]=1;
+    var all=mine.filter(function(y){return y.ev===x.ev;}),dn=all.filter(function(y){return taskState(y.ev,y.t)==="done";}).length;
+    if(dn===all.length&&daysTo(x.ev.date)==="")return;
+    rows.push(h("div",{class:"prog-ev"},h("b",{text:x.ev.name||"Event"}),h("span",{class:"sub",text:"You: "+dn+" of "+all.length+" done · Team: "+readyText(x.ev)}),
+      h("div",{class:"pbar","aria-hidden":"true"},h("i",{style:"width:"+eventPct(x.ev)+"%"}))));});
+  return h("section",{class:"card hsec",id:"myProgress"},h("h3",{class:"q",text:"Your progress"}),
+    h("div",{class:"tstats"},tile(done.length,done.length===1?"task done":"tasks done"),tile(Object.keys(evs).length,Object.keys(evs).length===1?"event helped":"events helped"),onTime==null?tile(mine.length-done.length,"still to do"):tile(onTime+"%","on time")),
+    rows.length?h("div",{class:"prog-list"},rows):null);
+}
 function drawHome(root){
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),items=myOpenItems(),st=h("p",{class:"status",role:"status","aria-live":"polite"});
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
@@ -3679,6 +3697,7 @@ function drawHome(root){
   items.forEach(function(x){if(x.ev!==topEv&&otherEvs.indexOf(x.ev)<0)otherEvs.push(x.ev);});
   root.append(h("h1",{class:"h-sum",text:otherEvs.length?"Your tasks, event by event.":items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):firstRun?"Welcome, "+nm+".":"You're good for now."}));
   if(otherEvs.length)root.append(h("p",{class:"sub",style:"margin:-6px 2px 10px",text:"Each task belongs to one event. The tasks below are for "+(topEv.name||"this event")+" only. Your tasks for the other event"+(otherEvs.length>1?"s":"")+" are further down."}));
+  var pc=myProgressCard();if(pc)root.append(pc);
   function open(x){S.evSel=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("mevents");openLinkedTask();}
   var multi=S.events.filter(function(e){return myTasks().some(function(x){return x.ev===e;});}).length>1;
   function line(x,showEv){
