@@ -18,19 +18,8 @@
   --font-body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#14100B; --bg-2:#1E1912; --card:#241E16; --ink:#F6EEDC; --muted:#B8AC96;
-    --edge:#4A3F31; --soft:#3A3127; --shadow:#000000; --line:#372E23; --edge-soft:#4F4335;
-    --red:#F0506A; --on-red:#1B0508; --red-soft:#3D161C;
-    --gold:#FFC83D; --on-gold:#1B1611; --gold-soft:#3B2F0F; --gold-ink:#FFC83D;
-    --green:#34B872; --on-green:#06180D; --green-soft:#12301F;
-    --night:#0B0906; --on-night:#FBF5E6;
-    --warn:#FF8A7F; --ok:#34B872;
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
+/* Light is the default for everyone. Dark applies only when the person chooses it on their profile (or the viewer sets it). */
+:root[data-gcg-theme="dark"],:root[data-theme="dark"]{
   --bg:#14100B; --bg-2:#1E1912; --card:#241E16; --ink:#F6EEDC; --muted:#B8AC96;
   --edge:#4A3F31; --soft:#3A3127; --shadow:#000000; --line:#372E23; --edge-soft:#4F4335;
   --red:#F0506A; --on-red:#1B0508; --red-soft:#3D161C;
@@ -1410,6 +1399,9 @@ var LEVELS=[
 // Progress is saved at every step, so people can stop and come back.
 var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","profile","done","bring","proud","photo","work","why","share"]);
 var DECK_N=6;
+// Light by default. A person can choose dark on their profile; the choice stays on this device.
+function applyTheme(){var v=null;try{v=localStorage.getItem("gcg_theme");}catch(e){}document.documentElement.setAttribute("data-gcg-theme",v==="dark"?"dark":"light");}
+applyTheme();
 var S={name:"",cv:"",extra:"",levels:{},top:[],q:new Array(NQ+2).fill(0),story:newStory(),confirm:"",confirmNote:"",
   screen:"intro",tmp:null,deck:null,deckSig:"",deckAt:0,returnTo:"deck",openArea:"",
   view:"flow",db:null,dl:null,uid:null,isAdmin:false,canWrite:null,people:[],roles:null,overrides:{},hydratedRoles:false,critical:CRITICAL_DEFAULT.slice(),sentAt:null};
@@ -3958,13 +3950,20 @@ function renderProfile(){
   var root=$("profileBody");if(!root)return;var keep=focusKeep(root);clear(root);
   try{drawMe(root);}finally{focusRestore(root,keep);}
 }
+function appearanceBox(){
+  var cur=document.documentElement.getAttribute("data-gcg-theme")==="dark"?"dark":"light";
+  return h("section",{class:"msec"},h("h3",{class:"msec-h",text:"Appearance"}),
+    h("div",{class:"seg3"},[["light","Light"],["dark","Dark"]].map(function(o){
+      return h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(cur===o[0]),text:o[1],onclick:function(){lsSet("gcg_theme",o[0]);applyTheme();renderProfile();}});})),
+    h("p",{class:"sub",text:"Light is the default. Your choice is saved on this phone."}));
+}
 function drawMe(root){
   // Access is granted by the page owner in the Share menu; nobody can claim it from their profile. This line confirms what the page sees.
   root.append(h("p",{class:"sub accessline"},h("b",{text:"Your access: "}),S.realAdmin?"Admin. You can run events, see the team and export records."+(S.asMember?" You are viewing as a team member right now.":""):"Team member. You can see your tasks, the plan and the crew."));
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),g=grouped(S),yes=g.top.concat(g.good),st=sanitizeStory(p.story),ts=titlesOf(S.uid);
   if(!prof){
     root.append(h("div",{class:"card"},h("h2",{class:"q",text:"Make your player card"}),h("p",{class:"sub",text:"About 6 minutes. It is how the page knows which tasks suit you."}),
-      h("button",{type:"button",class:"btn go big",text:"Let's play →",onclick:function(){S.screen="intro";showView("flow");}})));
+      h("button",{type:"button",class:"btn go big",text:"Let's play →",onclick:function(){S.screen="intro";showView("flow");}})),appearanceBox());
     return;
   }
   var hist=historyOf(S.uid),evc={};hist.forEach(function(x){evc[x.ev.id]=1;});
@@ -3977,6 +3976,7 @@ function drawMe(root){
   var miss=EXTRA.filter(extraMissing).length;
   if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
   root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"Who sees what"}),shareToggles(function(){saveResponse();})));
+  root.append(appearanceBox());
   // title
   root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"My title"}),
     ts.length?ts.map(function(x){return h("div",{class:"box"},h("b",{text:x.name}),x.desc?h("p",{text:x.desc}):null,
