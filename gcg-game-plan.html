@@ -3011,7 +3011,7 @@ function progressTimeline(ev,rerender){
   stages.forEach(function(s,k){var p=pos(s.due);if(p==null)return;
     var state=s.cleared?"done":(s.i===cur?"cur":(s.due&&s.due<now?"late":""));
     track.append(h("span",{class:"tl-dot","data-s":state,style:"left:"+p+"%",text:String(k+1)}));});
-  var feed=[];ts.forEach(function(t){if(taskState(ev,t)==="done"&&t.owner){var d=doneAt(ev,t);if(d)feed.push({t:t,d:d});}});
+  var feed=[];ts.forEach(function(t){if(taskState(ev,t)==="done"&&t.owner&&seeDone(t)){var d=doneAt(ev,t);if(d)feed.push({t:t,d:d});}});
   feed.sort(function(a,b){return b.d-a.d;});
   var box=h("div",{class:"tl"},
     h("div",{class:"tl-head"},h("b",{text:"Progress"}),h("span",{class:"tl-pct",text:pctDone+"% done"}),h("span",{class:"sub",text:gdone+" of "+gk.length+" tasks"})),
@@ -3025,7 +3025,7 @@ function progressTimeline(ev,rerender){
         h("span",{class:"tl-meta",text:(s.cleared?"cleared":(s.due?fmtWhen(s.due):""))+" · "+dn.length+"/"+s.tasks.length}));
       var li=h("li",null,btn);
       if(open)li.append(h("ul",{class:"tl-who"},s.tasks.map(function(t){var st=taskState(ev,t),d=st==="done"?doneAt(ev,t):null;
-        return h("li",{"data-s":st},h("i",{class:"mk","data-s":st==="done"?"done":""}),h("b",{text:t.title}),st==="done"?" — "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):(t.owner||t.helper?" — "+(t.owner?nameOf(t.owner):t.helper)+" ("+STATE_LABEL[st].replace(/^\S+ /,"").toLowerCase()+")":" — up for grabs"));})));
+        return h("li",{"data-s":st},h("i",{class:"mk","data-s":st==="done"?"done":""}),h("b",{text:t.title}),st==="done"?(seeDone(t)?" — "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):" — done"):(t.owner||t.helper?" — "+(t.owner?nameOf(t.owner):t.helper)+" ("+STATE_LABEL[st].replace(/^\S+ /,"").toLowerCase()+")":" — up for grabs"));})));
       return li;
     })),
     feed.length?h("div",{class:"tl-feed"},h("span",{class:"lab",text:"Latest"}),feed.slice(0,4).map(function(x){return h("p",null,h("b",{text:nameOf(x.t.owner)}),", "+x.t.title+" · "+timeAgo(x.d));})):null);
@@ -3070,7 +3070,7 @@ function crewBlocks(ev){
     B.push({t:"h",text:ph[1]});
     list.forEach(function(t){
       var st=taskState(ev,t),d=taskDue(ev,t),nm=t.owner?nameOf(t.owner):t.helper,line;
-      if(ACTIVE[st]){line=nm+(st==="done"?" (done)":"");if(t.owner)(who[t.owner]=who[t.owner]||[]).push(t.title);}
+      if(ACTIVE[st]){line=nm+(st==="done"&&seeDone(t)?" (done)":"");if(t.owner)(who[t.owner]=who[t.owner]||[]).push(t.title);}
       else if(st==="offered")line=nm+" (not confirmed yet)";else if(st==="draft")line=nm+" (not asked yet)";else line="NOT COVERED YET";
       B.push({t:"li",text:(d?(ph[0]==="during"?fmtClock(d):fmtWhen(d))+" - ":"")+t.title+": "+line});
     });
@@ -3561,7 +3561,7 @@ function journey(ev,opts){
     st.forEach(function(s){
       if(!S.tlOpen[ev.id+":"+s.key])return;
       box.append(h("div",{class:"jdetail"},h("b",{text:s.emo+" "+s.name}),h("ul",{class:"tl-who"},s.tasks.map(function(t){var ts=taskState(ev,t),d=ts==="done"?doneAt(ev,t):null;
-        return h("li",{"data-s":ts},h("i",{class:"mk","data-s":ts==="done"?"done":""}),h("b",{text:t.title}),ts==="done"?" · "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):(t.owner||t.helper?" · "+(t.owner?nameOf(t.owner):t.helper):" · up for grabs"));}))));
+        return h("li",{"data-s":ts},h("i",{class:"mk","data-s":ts==="done"?"done":""}),h("b",{text:t.title}),ts==="done"?(seeDone(t)?" · "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):" · done"):(t.owner||t.helper?" · "+(t.owner?nameOf(t.owner):t.helper):" · up for grabs"));}))));
     });
     var feed=[];(ev.tasks||[]).forEach(function(t){if(taskState(ev,t)==="done"&&t.owner){var d=doneAt(ev,t);if(d)feed.push({t:t,d:d});}});
     feed.sort(function(a,b){return b.d-a.d;});
@@ -4176,10 +4176,12 @@ function crewOnDay(ev,admin){
       h("p",{class:"sub",text:"The list above fills in itself from the tasks people take. Reopen the event to refresh the count."})));
   }
   return card;}
+// Who finished what, and when, is private: admins and the person themselves see it; everyone else just sees Done.
+function seeDone(t){return !!S.isAdmin&&!S.asMember||t.owner===S.uid;}
 function crewCredits(ev){
-  var by={};(ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="done")return;var who=t.owner?nameOf(t.owner):t.helper;if(!who)return;(by[who]=by[who]||[]).push(t.title);});
+  var by={};(ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="done"||!seeDone(t))return;var who=t.owner?nameOf(t.owner):t.helper;if(!who)return;(by[who]=by[who]||[]).push(t.title);});
   var names=Object.keys(by).sort();if(!names.length)return null;
-  return h("section",{class:"card hsec"},h("h3",{class:"q",text:"Crew contributions"}),
+  return h("section",{class:"card hsec"},h("h3",{class:"q",text:S.isAdmin&&!S.asMember?"Crew contributions":"Your contributions"}),
     h("ul",{class:"credits"},names.map(function(n){return h("li",null,h("b",{text:n}),": "+by[n].slice(0,4).join(", ")+(by[n].length>4?" and "+(by[n].length-4)+" more":""));})));
 }
 // "Not really me": the person tells the page to stop sending this kind of task, and their card updates.
