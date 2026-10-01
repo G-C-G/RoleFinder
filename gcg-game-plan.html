@@ -864,6 +864,14 @@ button.chip.on{outline:2px solid var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
+.guide{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.guide li{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start}
+.guide .gk{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 14px var(--font-body);border:2px solid var(--line);color:var(--muted);background:var(--card)}
+.guide li[data-s="now"] .gk{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
+.guide li[data-s="done"] .gk{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.guide li[data-s="done"] .gt b{color:var(--muted);font-weight:600}
+.guide li[data-s="later"] .gt b{color:var(--muted);font-weight:600}
+.guide .gt p{margin:2px 0 8px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -2377,7 +2385,7 @@ TEMPLATES.flagship.name="Flagship night";
 // What the event picker shows: [group, [[key, label, can be corporate or public]...]]
 var PRODUCTS=[["WELCOME",[["welcome","Welcome Game (up to 100 guests)",true],["bigroom","Big Room Welcome (100+ guests)",true]]],
   ["GCG",[["gcg","GCG Game",true],["exp","GCG Experience (Welcome Game + GCG Game)",true]]],
-  ["CUSTOM",[["custom_event","Custom Event",false],["custom_corporate","Custom Corporate",false],["custom_team","Custom Team Building",false],["custom_conference","Custom Conference",false]]],
+  ["CUSTOM",[["custom_event","Event",false],["custom_corporate","Corporate",false],["custom_team","Team Building",false],["custom_conference","Conference",false]]],
   ["OTHER",[["flagship","Flagship night",false],["outdoor","Two-day outdoor event",false]]]];
 var TEMPLATE_ORDER=Object.keys(TEMPLATES);
 // One line on what each kind of event is for, so anyone joining halfway knows the mission. Editable per event.
@@ -2823,10 +2831,13 @@ function drawEventList(root){
   var tSel=h("select",{"aria-label":"Template"},PRODUCTS.map(function(g){return h("optgroup",{label:g[0]},g[1].map(function(o){return h("option",{value:o[0],text:o[1]});}));}),h("option",{value:"",text:"Blank event"}));
   var forSel=h("select",{"aria-label":"Who is it for"},h("option",{value:"c",text:"For a corporate client"}),h("option",{value:"p",text:"For a public event"}));
   function needsFor(k){var f=false;PRODUCTS.forEach(function(g){g[1].forEach(function(o){if(o[0]===k&&o[2])f=true;});});return f;}
-  function syncFor(){forSel.hidden=!needsFor(tSel.value);}tSel.addEventListener("change",syncFor);syncFor();
+  var kindCap=h("p",{class:"sub kindcap"});
+  function keyNow(){return tSel.value&&needsFor(tSel.value)?tSel.value+"_"+forSel.value:tSel.value;}
+  function syncFor(){forSel.hidden=!needsFor(tSel.value);var k=keyNow();kindCap.textContent=k&&TEMPLATES[k]?"Selected: "+TEMPLATES[k].name:"Selected: Blank event";}
+  tSel.addEventListener("change",syncFor);forSel.addEventListener("change",syncFor);syncFor();
   root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Events"}),h("h2",{class:"q",text:"Plan an event"}),
     h("p",{class:"sub",text:"Pick a template and a date. Every task, checkpoint and deadline fills in. Then suggest people and send the offers."}),
-    nameIn,h("div",{class:"two-col"},tSel,dateIn),forSel,
+    nameIn,h("div",{class:"two-col"},tSel,dateIn),forSel,kindCap,
     h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Create event",onclick:function(){
       if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
       var tkey=tSel.value&&needsFor(tSel.value)?tSel.value+"_"+forSel.value:tSel.value;
@@ -3575,6 +3586,14 @@ function drawHome(root){
       ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+(eventPct(ev0)===0?" has not started yet.":" is "+eventPct(ev0)+"% ready.")+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
   }
   // Coming up: later phases stay folded, one tap to look
+  if(!S.isAdmin&&!items.length&&!myTasks().length&&prof){
+    root.append(h("section",{class:"card hsec startcard"},h("h3",{class:"q",text:"You are set up"}),
+      h("ol",{class:"guide"},
+        h("li",{"data-s":"done"},h("span",{class:"gk","aria-hidden":"true"},ico("check",16)),h("div",{class:"gt"},h("b",{text:"Your profile is saved"}))),
+        h("li",{"data-s":"now"},h("span",{class:"gk","aria-hidden":"true"},"2"),h("div",{class:"gt"},h("b",{text:"Look at the plan"}),h("p",{class:"sub",text:"See which events are coming and what is still open."}),
+          h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Open Plan",onclick:function(){showView("plan");}})))),
+        h("li",{"data-s":"later"},h("span",{class:"gk","aria-hidden":"true"},"3"),h("div",{class:"gt"},h("b",{text:"Your tasks appear here"}))))));
+  }
   var later=laterItems();
   if(later.length){
     var groups={};later.forEach(function(x){var ph=taskPhase(x.ev,x.t);(groups[ph]=groups[ph]||[]).push(x);});
@@ -3699,13 +3718,25 @@ function drawToday(root){
       return h("button",{type:"button",class:"tstat"+(s[2]==="needs"&&s[0]?" bad":""),onclick:function(){if(s[2]==="needs"){var n=$("needsYou");if(n&&n.scrollIntoView)n.scrollIntoView({block:"start"});}else{showView(s[2]);if(s[2]==="team"){S.teamTab="coverage";renderTeam();}}}},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));})));
   if(drafts)root.append(h("p",{class:"sub",style:"margin:8px 2px 0"},drafts+" draft event"+(drafts>1?"s":"")+" not yet shared with the team. ",h("button",{type:"button",class:"btn link",text:"Open Events ›",onclick:function(){showView("events");}})));
   var hasProfile=!!profileOf(Object.assign(payload(),{id:S.uid}));
-  if(!S.events.length||!hasProfile)root.append(h("section",{class:"card hsec startcard"},h("h3",{class:"q",text:"Start here"}),
-    h("ol",{class:"steps"},
-      h("li",null,h("b",{text:"Make your own profile."}),h("p",{class:"sub",text:"About ten minutes. It also shows you what your team will go through."})),
-      h("li",null,h("b",{text:"Share the page with your team."}),h("p",{class:"sub",text:"Use the Share menu: Editor for co-admins, Contributor for everyone else."})),
-      h("li",null,h("b",{text:"Create the first event as a draft."}),h("p",{class:"sub",text:"Mark what is already covered, then publish when the team is on the call."}))),
-    h("div",{class:"row"},hasProfile?null:h("button",{type:"button",class:"btn go small",text:"Make my profile",onclick:function(){S.screen="intro";showView("flow");}}),
-      h("button",{type:"button",class:"btn small",text:"Create an event",onclick:function(){S.evOpen="";showView("events");}}))));
+  var teamJoined=Object.keys(S.crew||{}).some(function(id){return id!==S.uid;});
+  var anyEvent=S.events.length>0,anyPublished=S.events.some(function(e){return e.published!==false;});
+  var gst2=h("span",{class:"status",role:"status","aria-live":"polite"});
+  var steps=[
+    {done:hasProfile,t:"Make your own profile",d:"About ten minutes. It also shows you what your team will go through.",
+      act:{l:"Make my profile",fn:function(){S.screen="intro";showView("flow");}}},
+    {done:teamJoined,t:"Bring your team in",d:"Share the page from its Share menu (Editor for co-admins, Contributor for everyone else), then send them this note.",
+      act:{l:"Copy the note for WhatsApp",fn:function(){copyText("Hi! Please open our GCG Game Plan"+(S.appUrl?": "+S.appUrl:" (link below)")+". Sign in, then build your profile. It takes about 10 minutes and you can stop and carry on later.",gst2,"Copied. Paste it into your team chat.");}}},
+    {done:anyEvent,t:"Create your first event as a draft",d:"Pick the kind of event and the date. Nobody on the team sees it yet.",
+      act:{l:"Create an event",fn:function(){S.evOpen="";showView("events");}}},
+    {done:anyPublished,t:"Mark what is covered, then publish",d:"Take off what is already sorted, assign people on your kickoff call, and publish when you are ready.",
+      act:{l:"Open my event",fn:function(){var e=S.events[0];if(e)S.evOpen=e.id;showView("events");}}}
+  ];
+  var cur=steps.findIndex(function(x){return !x.done;});
+  if(cur>-1)root.append(h("section",{class:"card hsec startcard"},h("h3",{class:"q",text:"Your next steps"}),
+    h("ol",{class:"guide"},steps.map(function(x,i){var st=x.done?"done":i===cur?"now":"later";
+      return h("li",{"data-s":st},h("span",{class:"gk","aria-hidden":"true"},x.done?ico("check",16):String(i+1)),
+        h("div",{class:"gt"},h("b",{text:x.t}),i===cur?h("p",{class:"sub",text:x.d}):null,
+          i===cur?h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:x.act.l,onclick:x.act.fn}),gst2):null));}))));
   root.append(h("section",{class:"card hsec",id:"needsYou"},h("h3",{class:"q",text:"Needs you"}),
     need.length?h("ol",{class:"needs"},need.slice(0,5).map(function(n){
       var act=n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
