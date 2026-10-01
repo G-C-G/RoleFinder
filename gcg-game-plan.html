@@ -863,7 +863,7 @@ button.chip.on{outline:2px solid var(--ink)}
 .steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;padding:2px 0}.cvline .cv-t{flex:1 1 100%}.cvline .cvbtns{flex:0 0 auto}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
-.covered-line{margin:4px 0}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
+.covered-line{margin:4px 0}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
@@ -3260,6 +3260,11 @@ function adminNotes(){
     var id="help:"+i.id,ev=evById(i.eid),tk=ev?(ev.tasks||[]).filter(function(x){return x.id===i.tid;})[0]:null;
     if(i.to!==S.uid||(S.acks&&S.acks[id])||!tk)return;
     out.push({id:id,kind:"Help request",title:nameOf(uid)+" asked for your help with "+tk.title,sub:(i.text?i.text+" · ":"")+(ev.name||"")});});});
+  // Someone who said they are not coming (including changing their mind later). It clears when they say yes again, or when you dismiss it.
+  S.replies.forEach(function(r){if(r.tid!=="attend"||r.attend!=="no")return;var ev=evById(r.eid),id="att:"+r.eid+":"+r.pid+":"+r.at;
+    if(!ev||(S.acks&&S.acks[id])||new Date((ev.date||"")+"T23:59:59")<new Date())return;
+    out.push({id:id,kind:"Not coming",title:nameOf(r.pid)+" can't make it to "+(ev.name||"the event"),sub:fmtDate(ev.date)+(crewList(ev).indexOf(r.pid)>-1?" · has a task on it, check it is covered":""),
+      act:{label:"Open event",fn:function(){S.evOpen=ev.id;S.panel.alltasks=true;showView("events");}}});});
   return out;
 }
 function myNotes(){
@@ -3774,6 +3779,7 @@ function drawHome(root){
   root.append(h("h1",{class:"h-sum",text:otherEvs.length?"Your tasks, event by event.":items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):firstRun?"Welcome, "+nm+".":"You're good for now."}));
   if(otherEvs.length)root.append(h("p",{class:"sub",style:"margin:-6px 2px 10px",text:"Each task belongs to one event. The tasks below are for "+(topEv.name||"this event")+" only. Your tasks for the other event"+(otherEvs.length>1?"s":"")+" are further down."}));
   var pc=myProgressCard();if(pc)root.append(pc);
+  (function(){var e0=myEvents()[0];if(e0&&daysTo(e0.date)!==""&&!attendOf(e0)[S.uid]&&new Date(e0.date+"T23:59:59")>=new Date())root.append(attendCard(e0,true));})();
   function open(x){S.evSel=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("mevents");openLinkedTask();}
   var multi=S.events.filter(function(e){return myTasks().some(function(x){return x.ev===e;});}).length>1;
   function line(x,showEv){
@@ -3891,6 +3897,7 @@ function drawMemberEvent(root,ev){
     h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
     crewDates(ev)||h("span"),
     yourPart(ev,mine,me),
+    attendCard(ev,false),
     (ev.tasks||[]).some(function(t){return t.owner===S.uid&&(t.offered||t.manual);})?crewOnDay(ev,false):null,
     crewCredits(ev),
     h("div",{class:"row",style:"margin-top:12px"},
@@ -4098,6 +4105,7 @@ function drawPlan(root){
     var left=h("p",{class:"plan-left"},h("b",{text:(tk.length-nDone)+" tasks left"}),nDone?" · "+nDone+" done":"",nOpen?" · ":"",nOpen?h("span",{class:"plan-open",text:nOpen+" still need someone"}):null);
     var key="plan:"+ev.id,open=idx===0?S.panel[key]!==false:!!S.panel[key];
     var card=h("section",{class:"card hsec plan-card"},head,left,
+      new Date((ev.date||"")+"T23:59:59")>=new Date()&&ev.published!==false?attendCard(ev,"row"):null,
       open?[journey(ev,{vertical:true,rerender:renderPlan}),
         line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
         next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null]:null,
@@ -4257,26 +4265,61 @@ function myTaskCard(ev,t,me){
 }
 
 /* ---------- Crew credits: who made this event happen (names, not rankings) ---------- */
-function crewList(ev){var seen={},ids=[];(ev.tasks||[]).forEach(function(t){if(t.owner&&!seen[t.owner]&&(t.offered||t.manual)&&taskState(ev,t)!=="passed"){seen[t.owner]=1;ids.push(t.owner);}});
-  var names=ids.map(nameOf).sort();return names;}
+// Attendance: each person says whether they will be at the event. Stored as a reply with the task id "attend", so it follows the same access rules.
+function attendOf(ev){var m={};S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid==="attend"&&r.pid&&r.attend)m[r.pid]=r.attend;});return m;}
+function setAttend(ev,v,st){
+  if(!S.db||!S.uid){say(st,"This needs the live page.","warn");return;}
+  var r={eid:ev.id,tid:"attend",pid:S.uid,attend:v,at:nowIso()};
+  S.db.doc("replies/"+ev.id+"__attend__"+S.uid).set(r).then(function(){
+    S.replies=S.replies.filter(function(x){return !(x.eid===r.eid&&x.tid==="attend"&&x.pid===r.pid);}).concat([r]);
+    renderTasks();renderEvents();renderHome();toast(v==="yes"?"Got it, you are coming.":v==="no"?"Got it, you are not coming.":"Got it, not sure yet.");
+  },function(){say(st,"Could not save. Tell Hinda directly.","warn");});
+}
+function attendCard(ev,compact){
+  var cur=attendOf(ev)[S.uid]||"",st=h("p",{class:"status",role:"status","aria-live":"polite"});
+  var btn=function(v,label){return h("button",{type:"button",class:"sb","data-c":v==="no"?"no":"yes","aria-pressed":String(cur===v),text:label,onclick:function(){setAttend(ev,v,st);}});};
+  if(compact==="row")return h("div",{class:"attendrow"},h("p",{class:"lab",text:"Will you be there?"}),h("div",{class:"seg3"},btn("yes","Yes, I'm coming"),btn("maybe","Not sure yet"),btn("no","Can't make it")),st);
+  return h("section",{class:"card hsec attend"},h("h3",{class:"q",text:compact?"Are you coming to "+(ev.name||"this event")+"?":"Will you be there?"}),
+    compact?null:h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+". We order crew food from this, so please answer early."}),
+    h("div",{class:"seg3"},btn("yes","Yes, I'm coming"),btn("maybe","Not sure yet"),btn("no","Can't make it")),st);
+}
+function crewList(ev){var seen={},ids=[];(ev.tasks||[]).forEach(function(t){if(t.owner&&!seen[t.owner]&&(t.offered||t.manual)&&taskState(ev,t)!=="passed"){seen[t.owner]=1;ids.push(t.owner);}});return ids;}
 function crewOnDay(ev,admin){
-  var cr=ev.crew||(ev.crew={}),names=crewList(ev),extraN=Number(cr.extraN)||0,total=names.length+extraN;
-  var tot=h("b",{text:total+" to feed"});
+  var cr=ev.crew||(ev.crew={}),at=attendOf(ev),extraN=Number(cr.extraN)||0;
+  var ids=crewList(ev);Object.keys(at).forEach(function(id){if(ids.indexOf(id)<0)ids.push(id);});
+  var by=function(a,b){return nameOf(a).localeCompare(nameOf(b));};ids.sort(by);
+  var yes=ids.filter(function(i){return at[i]==="yes";}),maybe=ids.filter(function(i){return at[i]==="maybe";}),no=ids.filter(function(i){return at[i]==="no";}),wait=ids.filter(function(i){return !at[i];});
+  var total=yes.length+extraN;
   var card=h("section",{class:"card hsec",id:"crewDay"},h("h3",{class:"q",text:"Crew on the day"}),
     h("p",{class:"sub",text:"Staff and organisers only, not guests. Food is sorted days ahead."}),
-    names.length?h("ul",{class:"credits"},names.map(function(n){return h("li",{text:n});})):h("p",{class:"sub",text:"No one has taken a task yet."}),
-    h("p",{class:"sub"},tot,extraN?" ("+names.length+" on tasks, "+extraN+" extra)":""),
-    cr.extra?h("p",{class:"sub"},h("b",{text:"Also there: "}),cr.extra):null,
-    cr.food?h("p",{class:"sub"},h("b",{text:"Food notes: "}),cr.food):null);
+    h("p",{class:"sub"},h("b",{text:total+" to feed"}),extraN?" ("+yes.length+" confirmed, "+extraN+" extra)":" confirmed",maybe.length?" · "+maybe.length+" not sure":"",wait.length?" · "+wait.length+" not answered":""));
+  function group(label,list,cls){return list.length?h("div",null,h("p",{class:"lab",text:label+" ("+list.length+")"}),h("div",{class:"chips"},list.map(function(i){return h("span",{class:"chip "+cls,text:nameOf(i)});}))):null;}
+  if(admin){
+    card.append(group("Coming",yes,"good"),group("Not sure",maybe,"curious"),group("Not coming",no,"no"),group("Has a task, not answered",wait,""));
+    if(!ids.length)card.append(h("p",{class:"sub",text:"No one has answered or taken a task yet."}));
+  }else{
+    card.append(yes.length?h("p",{class:"sub",text:yes.length+" confirmed so far."}):null,h("p",{class:"sub",text:"On the crew: "+(crewList(ev).map(nameOf).sort().join(", ")||"no one yet")}));
+  }
+  if(cr.extra)card.append(h("p",{class:"sub"},h("b",{text:"Also there: "}),cr.extra));
+  if(cr.food)card.append(h("p",{class:"sub"},h("b",{text:"Food notes: "}),cr.food));
   if(admin){
     var mk=function(label,type,val,set){var i=h("input",{type:type,"aria-label":label,placeholder:label});i.value=val||"";i.addEventListener("input",function(){set(i.value);saveEvent(ev);});return h("div",{class:"field"},h("label",{text:label}),i);};
-    card.append(h("details",{class:"more"},h("summary",{text:"Add people not on a task, and food notes"}),
+    var hasFood=(ev.tasks||[]).some(function(t){return t.title===CREW_FOOD[1];});
+    card.append(h("details",{class:"more"},h("summary",{text:"Add people not on the app, extras, food notes"}),
       mk("Others who will be there (names)","text",cr.extra,function(v){cr.extra=v;}),
       mk("How many extra to feed","number",cr.extraN,function(v){cr.extraN=v;}),
       mk("Food notes (allergies, halal, vegetarian)","text",cr.food,function(v){cr.food=v;}),
-      h("p",{class:"sub",text:"The list above fills in itself from the tasks people take. Reopen the event to refresh the count."})));
+      hasFood?null:h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Add the crew-meal tasks to this event",onclick:function(){addCrewFoodTasks(ev);}}))));
   }
   return card;}
+// Existing events were made before crew meals existed. This adds the same three tasks the templates now carry.
+function addCrewFoodTasks(ev){
+  var cp=0;(ev.cps||[]).forEach(function(c,i){if(/^Crew/.test(c.name))cp=i;});
+  [T(CREW_FOOD[0],"I1","before",-5,null,"must",1,"S",cp,"",false),T(CREW_FOOD[1],"C10","before",-3,null,"must",1,"M",cp,"",false),T(CREW_FOOD[2],"C10","during",0,-60,"should",1,"S",cp,"",false)].forEach(function(x){
+    if((ev.tasks||[]).some(function(t){return t.title===x.title;}))return;
+    ev.tasks.push({id:newId("t"),title:x.title,job:x.job,phase:x.phase,d:x.d,m:x.m,pri:x.pri,size:x.size,cp:x.cp,msg:"",all:false,group:newId("g"),owner:"",offered:false,manual:"",passed:[]});});
+  squeezeDates(ev);saveEvent(ev,true);renderEvents();toast("Added the crew-meal tasks.");
+}
 // Who finished what, and when, is private: admins and the person themselves see it; everyone else just sees Done.
 function seeDone(t){return !!S.isAdmin&&!S.asMember||t.owner===S.uid;}
 function crewCredits(ev){
