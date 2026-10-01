@@ -904,6 +904,19 @@ button.chip.on{outline:2px solid var(--ink)}
 .gr-title{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .mustmark{color:var(--red);font-weight:700}
 .grow .take{padding:6px 14px}
+.band{border:1px solid var(--line);border-radius:14px;margin-top:10px;overflow:hidden;background:var(--card)}
+.band-h{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font:700 12px var(--font-body);letter-spacing:.08em;text-transform:uppercase}
+.band-n{min-width:24px;height:22px;border-radius:99px;display:grid;place-items:center;padding:0 7px;background:rgba(255,255,255,.55);color:inherit}
+.b-red{border-color:color-mix(in srgb,var(--red) 45%,var(--line))}.b-red .band-h{background:var(--red-soft);color:var(--red)}
+.b-gold{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}.b-gold .band-h{background:var(--gold-soft);color:var(--gold-ink)}
+.b-soft .band-h{background:var(--bg-2);color:var(--muted)}
+.nrow{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line)}
+.nrow .ks-ico{width:34px;height:34px}
+.nr-t{flex:1;min-width:0;display:grid;gap:1px}
+.nr-t b{font-size:15px;line-height:1.3}.nr-t .sub{font-size:13px}
+.nrow .btn{flex:none;min-height:36px;padding:6px 14px}
+.band-more{appearance:none;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:11px;font:600 14px var(--font-body);color:var(--muted);cursor:pointer;min-height:44px}
+.ks-ico.k0{background:var(--red-soft)}.ks-ico.k1{background:var(--gold-soft)}.ks-ico.k2{background:var(--green-soft)}.ks-ico.k3{background:var(--soft)}
 </style>
 
 <div class="wrap" id="wrap">
@@ -3848,14 +3861,28 @@ function drawToday(root){
       return h("li",{"data-s":st},h("span",{class:"gk","aria-hidden":"true"},x.done?ico("check",16):String(i+1)),
         h("div",{class:"gt"},h("b",{text:x.t}),i===cur?h("p",{class:"sub",text:x.d}):null,
           i===cur?h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:x.act.l,onclick:x.act.fn}),gst2):null));}))));
-  root.append(h("section",{class:"card hsec",id:"needsYou"},h("h3",{class:"q",text:"Needs you"}),
-    need.length?h("ol",{class:"needs"},need.slice(0,5).map(function(n){
-      var act=n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
-        :h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.evOpen=n.ev.id;S.goTask={eid:n.ev.id,tid:n.t.id};showView("events");openLinkedTask();}});
-      return h("li",{"data-sev":n.sev},h("span",{class:"sev",text:n.sev==="now"?"Now":"Soon"}),
-        h("div",null,h("b",{text:n.t.title}),h("p",{class:"sub",text:[(n.ev.name||""),(n.t.owner?nameOf(n.t.owner):"no one"),n.why==="overdue"?"":n.why].filter(Boolean).join(" · ")}),n.due?clockSpan(n.due):null),act);
-    })):h("p",{class:"sub",text:"Nothing needs you right now. "}),
-    need.length>5?h("p",{class:"sub",text:"+"+(need.length-5)+" more inside the events."}):null));
+  // Colour blocks: behind or stuck (red), due this week (gold), coming up (neutral). Kind of work shows as an icon.
+  var evIds={};need.forEach(function(n){evIds[n.ev.id]=1;});var multiNeed=Object.keys(evIds).length>1;
+  var bandDefs=[{k:"red",t:"Behind or stuck",f:function(n){return n.sev==="now";}},
+    {k:"gold",t:"Due this week",f:function(n){return n.sev!=="now"&&n.due&&n.due-Date.now()<7*864e5;}},
+    {k:"soft",t:"Coming up",f:function(n){return n.sev!=="now"&&!(n.due&&n.due-Date.now()<7*864e5);}}];
+  function needRow(n){
+    var ki=Math.max(0,KINDS.indexOf(kindOf(n.t.job)))%4;
+    var who=n.t.owner?"With "+nameOf(n.t.owner):"No one yet";
+    var sub=[multiNeed?(n.ev.name||""):"",who,n.why&&!/^(overdue|not taken|no one yet)$/.test(n.why)?n.why:""].filter(Boolean).join(" · ");
+    var act=n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
+      :h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.evOpen=n.ev.id;S.goTask={eid:n.ev.id,tid:n.t.id};showView("events");openLinkedTask();}});
+    return h("div",{class:"nrow"},h("span",{class:"ks-ico k"+ki,"aria-hidden":"true"},ico(KIND_ICON[kindOf(n.t.job)]||"list",18)),
+      h("div",{class:"nr-t"},h("b",{class:"gr-title",text:n.t.title}),h("span",{class:"sub",text:sub}),n.due?clockSpan(n.due):null),act);
+  }
+  var needBody=need.length?bandDefs.map(function(bd){
+    var list=need.filter(bd.f);if(!list.length)return null;
+    var key="needmore:"+bd.k,all=!!S.panel[key],shown=all?list:list.slice(0,4);
+    return h("div",{class:"band b-"+bd.k},h("div",{class:"band-h"},h("span",{text:bd.t}),h("span",{class:"band-n",text:String(list.length)})),
+      shown.map(needRow),
+      list.length>4?h("button",{type:"button",class:"band-more",text:all?"Show fewer":"Show "+(list.length-4)+" more",onclick:function(){S.panel[key]=!all;renderToday();}}):null);
+  }):h("p",{class:"sub",text:"Nothing needs you right now. "});
+  root.append(h("section",{class:"card hsec",id:"needsYou"},h("h3",{class:"q",text:need.length?"Needs you · "+need.length:"Needs you"}),needBody));
   if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st,true);nm.style.marginTop="14px";root.append(nm);}
   var gr=upForGrabs();
   if(gr.length){
