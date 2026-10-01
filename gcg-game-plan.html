@@ -2808,6 +2808,7 @@ function drawEvents(root){
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     ev.squeezed?h("p",{class:"sub"},"This event is closer than the template assumes, so the timeline was tightened to fit."):null,
     h("p",{class:"sub"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Edit event: name, date, time, place",onclick:function(){S.panel.evdetails=true;renderEvents();var d=$("evDetails");if(d&&d.scrollIntoView)d.scrollIntoView({block:"start"});}})),
     ev.published===false?setupCard(ev):null,
     ev.published===false?null:h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
       risk.length?h("ol",{class:"needs"},risk.map(function(x){var now=x.late||x.st==="stuck"||x.st==="passed";
@@ -2826,12 +2827,16 @@ function drawEvents(root){
         h("button",{type:"button",class:"btn small",text:"Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
         h("button",{type:"button",class:"btn small",text:"Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}}),
         ev.published===false?null:h("button",{type:"button",class:"btn small",text:"Hide from the team (back to draft)",onclick:function(){ev.published=false;S.panel["cover:"+ev.id]=true;saveEvent(ev,true);renderEvents();}}))),
-    h("details",{class:"more",open:S.panel.evdetails?true:null,ontoggle:function(e){S.panel.evdetails=e.currentTarget.open;}},h("summary",{text:"Event details: name, date, place, lead"}),
+    h("details",{class:"more",id:"evDetails",open:S.panel.evdetails?true:null,ontoggle:function(e){S.panel.evdetails=e.currentTarget.open;}},h("summary",{text:"Edit event: name, date, time, place, lead"}),
+      h("p",{class:"sub",text:"Change the date or the start time and every task deadline moves with it."}),
       field("Event name","text",ev.name,function(v){ev.name=v;},"name"),
       field("Goal: what we are trying to make happen","text",ev.goal,function(v){ev.goal=v;},"goal"),
-      h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time","time",ev.start,function(v){ev.start=v;},"start")),
+      h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time (24-hour, 18:00 is 6 pm)","time",ev.start,function(v){ev.start=v;},"start")),
       h("div",{class:"two-col"},field("Place","text",ev.place,function(v){ev.place=v;},"place"),h("div",{class:"field"},h("label",{text:"Event lead (chases the list)"}),leadSel)),
-      ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:""+ms.must+" of "+ms.all+" tasks are Essential. Keep it to about a third."}):null));
+      ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:""+ms.must+" of "+ms.all+" tasks are Essential. Keep it to about a third."}):null,
+      (function(){var cst=h("span",{class:"status"});
+        return h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Done",onclick:function(){S.panel.evdetails=false;saveEvent(ev,true);renderEvents();toast("Saved. Deadlines moved with the event.");}}),
+          h("button",{type:"button",class:"btn small",text:"Copy an update for the team",onclick:function(){copyText("Update: "+(ev.name||"the event")+" is now on "+fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+". Your deadlines in Game Plan have moved with it, so please check your tasks.",cst,"Copied. Paste it into your team chat.");}}),cst);})()));
   if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length)root.append(h("div",{style:"margin-top:14px"},msgBox(S.evMsgs.title,S.evMsgs.list)));
   if(S.run&&S.run.eid===ev.id)root.append(h("div",{id:"runBox",class:"card",style:"margin-top:14px"}));
   var cc=crewCredits(ev);if(cc)root.append(cc);
