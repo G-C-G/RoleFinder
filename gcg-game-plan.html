@@ -2461,6 +2461,11 @@ var MUST_KEEP=["Host the welcome game (big room)","Confirm extra crew for a big 
   "Lock the dates and the site","Apply for permits","First aid, safety and weather plan","Create the Luma event pages",
   "Day 1: floor manager","Day 1: host the games","Day 1: first aid on site","Day 2: host the games"];
 TEMPLATE_ORDER.forEach(function(k){TEMPLATES[k].tasks.forEach(function(x){if(x.pri==="must"&&MUST_KEEP.indexOf(x.title)<0)x.pri="should";});});
+// Every event feeds its own crew: count them, order the food days ahead, hand it out on the day.
+var CREW_FOOD=["Confirm the crew list and dietary needs","Order food and drinks for the crew","Hand out crew meals and water"];
+MUST_KEEP.push(CREW_FOOD[0],CREW_FOOD[1]);
+TEMPLATE_ORDER.forEach(function(k){var tp=TEMPLATES[k],cp=0;tp.cps.forEach(function(c,i){if(/^Crew/.test(c[0]))cp=i;});
+  addT(tp,[T(CREW_FOOD[0],"I1","before",-5,null,"must",1,"S",cp,"",false),T(CREW_FOOD[1],"C10","before",-3,null,"must",1,"M",cp,"",false),T(CREW_FOOD[2],"C10","during",0,-60,"should",1,"S",cp,"",false)]);});
 function mustShare(ev){var g={},m={};(ev.tasks||[]).forEach(function(t){var k=t.group||t.id;g[k]=1;if(t.pri==="must")m[k]=1;});var n=Object.keys(g).length;return {must:Object.keys(m).length,all:n};}
 var STATE_LABEL={open:"No one yet",draft:"Not sent",offered:"Waiting",taken:"Taken",started:"In progress",stuck:"Stuck",done:"Done",passed:"Can't do it"};
 var ACTIVE={taken:1,started:1,stuck:1,done:1};
@@ -2613,6 +2618,7 @@ function saveEvent(ev,now){
     ev=evById(ev.id)||ev;
     if(!S.db){evDirty[ev.id]=0;return;}
     var doc={name:clean(ev.name).slice(0,80),goal:clean(ev.goal).slice(0,200),type:ev.type||"",date:ev.date||"",start:ev.start||"18:30",place:clean(ev.place).slice(0,120),lead:ev.lead||"",
+      crew:{extra:clean(ev.crew&&ev.crew.extra).slice(0,300),extraN:Math.max(0,Math.min(200,Number(ev.crew&&ev.crew.extraN)||0)),food:clean(ev.crew&&ev.crew.food).slice(0,300)},
       links:{luma:clean(ev.links&&ev.links.luma).slice(0,300),form:clean(ev.links&&ev.links.form).slice(0,300),group:clean(ev.links&&ev.links.group).slice(0,300)},
       guests:{registered:ev.guests&&ev.guests.registered||"",attended:ev.guests&&ev.guests.attended||"",feedback:ev.guests&&ev.guests.feedback||""},
       debrief:{worked:clean(ev.debrief&&ev.debrief.worked).slice(0,800),didnt:clean(ev.debrief&&ev.debrief.didnt).slice(0,800),change:clean(ev.debrief&&ev.debrief.change).slice(0,800)},
@@ -2839,6 +2845,7 @@ function drawEvents(root){
           h("button",{type:"button",class:"btn small",text:"Copy an update for the team",onclick:function(){copyText("Update: "+(ev.name||"the event")+" is now on "+fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+". Your deadlines in Game Plan have moved with it, so please check your tasks.",cst,"Copied. Paste it into your team chat.");}}),cst);})()));
   if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length)root.append(h("div",{style:"margin-top:14px"},msgBox(S.evMsgs.title,S.evMsgs.list)));
   if(S.run&&S.run.eid===ev.id)root.append(h("div",{id:"runBox",class:"card",style:"margin-top:14px"}));
+  root.append(crewOnDay(ev,true));
   var cc=crewCredits(ev);if(cc)root.append(cc);
   // tasks by phase and checkpoint
   var tl=h("details",{class:"card fold",style:"margin-top:14px",open:S.panel.alltasks?true:null,ontoggle:function(e){S.panel.alltasks=e.currentTarget.open;}},h("summary",{class:"fold-h",text:"All tasks ("+ts.length+")"}));
@@ -3790,6 +3797,7 @@ function drawMemberEvent(root,ev){
     h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
     crewDates(ev)||h("span"),
     yourPart(ev,mine,me),
+    crewOnDay(ev,false),
     crewCredits(ev),
     h("div",{class:"row",style:"margin-top:12px"},
       (safeUrl(links.luma)?h("a",{class:"btn small",href:safeUrl(links.luma),target:"_blank",rel:"noopener",text:"Luma page"}):null),
@@ -4148,6 +4156,26 @@ function myTaskCard(ev,t,me){
 }
 
 /* ---------- Crew credits: who made this event happen (names, not rankings) ---------- */
+function crewList(ev){var seen={},ids=[];(ev.tasks||[]).forEach(function(t){if(t.owner&&!seen[t.owner]&&(t.offered||t.manual)&&taskState(ev,t)!=="passed"){seen[t.owner]=1;ids.push(t.owner);}});
+  var names=ids.map(nameOf).sort();return names;}
+function crewOnDay(ev,admin){
+  var cr=ev.crew||(ev.crew={}),names=crewList(ev),extraN=Number(cr.extraN)||0,total=names.length+extraN;
+  var tot=h("b",{text:total+" to feed"});
+  var card=h("section",{class:"card hsec",id:"crewDay"},h("h3",{class:"q",text:"Crew on the day"}),
+    h("p",{class:"sub",text:"Staff and organisers only, not guests. Food is sorted days ahead."}),
+    names.length?h("ul",{class:"credits"},names.map(function(n){return h("li",{text:n});})):h("p",{class:"sub",text:"No one has taken a task yet."}),
+    h("p",{class:"sub"},tot,extraN?" ("+names.length+" on tasks, "+extraN+" extra)":""),
+    cr.extra?h("p",{class:"sub"},h("b",{text:"Also there: "}),cr.extra):null,
+    cr.food?h("p",{class:"sub"},h("b",{text:"Food notes: "}),cr.food):null);
+  if(admin){
+    var mk=function(label,type,val,set){var i=h("input",{type:type,"aria-label":label,placeholder:label});i.value=val||"";i.addEventListener("input",function(){set(i.value);saveEvent(ev);});return h("div",{class:"field"},h("label",{text:label}),i);};
+    card.append(h("details",{class:"more"},h("summary",{text:"Add people not on a task, and food notes"}),
+      mk("Others who will be there (names)","text",cr.extra,function(v){cr.extra=v;}),
+      mk("How many extra to feed","number",cr.extraN,function(v){cr.extraN=v;}),
+      mk("Food notes (allergies, halal, vegetarian)","text",cr.food,function(v){cr.food=v;}),
+      h("p",{class:"sub",text:"The list above fills in itself from the tasks people take. Reopen the event to refresh the count."})));
+  }
+  return card;}
 function crewCredits(ev){
   var by={};(ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="done")return;var who=t.owner?nameOf(t.owner):t.helper;if(!who)return;(by[who]=by[who]||[]).push(t.title);});
   var names=Object.keys(by).sort();if(!names.length)return null;
