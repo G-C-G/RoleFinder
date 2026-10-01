@@ -149,7 +149,7 @@ textarea{resize:vertical}
 .jfit{font-size:15px;color:var(--muted)}
 .jfit b{color:var(--ink)}
 .choices{display:grid;gap:10px}
-.jsecond{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}.jsecond .choice{min-height:40px;padding:0 12px;font-size:15px;font-weight:600;box-shadow:none;border-color:transparent;background:transparent;color:var(--muted)}.jsecond .choice[aria-pressed="true"]{color:var(--on-red)}.jhint{margin:10px 4px 0}.jsecond .btn,.jsecond .choice{white-space:nowrap;min-height:40px}.jsecond .choice{gap:0}.jsecond .choice::before{display:none}.jsecond .choice[aria-pressed="true"]{padding:0 14px}
+.jsecond{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}.jsecond .choice{min-height:40px;padding:0 12px;font-size:15px;font-weight:600;box-shadow:none;border-color:transparent;background:transparent;color:var(--muted)}.jsecond .choice[aria-pressed="true"]{color:var(--on-red)}.jhint{margin:10px 4px 0}#flow .chips.avoidchips{display:flex;flex-wrap:wrap;flex-direction:row;gap:8px}#flow .chips.avoidchips .chip{width:auto;flex:0 0 auto;min-height:40px;font-size:15px}.jsecond .btn,.jsecond .choice{white-space:nowrap;min-height:40px}.jsecond .choice{gap:0}.jsecond .choice::before{display:none}.jsecond .choice[aria-pressed="true"]{padding:0 14px}
 .choice{appearance:none;display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;border-radius:16px;border:2.5px solid var(--edge);background:var(--card);cursor:pointer;font-weight:800;font-size:17px;box-shadow:0 4px 0 var(--shadow);transition:transform .08s,box-shadow .08s}
 .choice:active{transform:translateY(3px);box-shadow:0 1px 0 var(--shadow)}
 .choice .emo{font-size:22px}
@@ -1452,12 +1452,12 @@ function cvText(sections){return sections.map(function(s){return s[0]+"\n"+s[1].
 var LEVELS=[
  {name:"You",screens:["like"]},
  {name:"Situations",screens:ASK.map(function(_,i){return "s"+i;})},
- {name:"Jobs",screens:["deck","all","profile"]},
+ {name:"Jobs",screens:["deck","all","avoid","profile"]},
  {name:"Your profile",screens:["done","bring","proud","photo","work","why","share"]}
 ];
 // Onboarding is creating your profile: the card game (about 6 minutes), then your profile (about 4 minutes).
 // Progress is saved at every step, so people can stop and come back.
-var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","profile","done","bring","proud","photo","work","why","share"]);
+var PATH=["intro","like"].concat(ASK.map(function(_,i){return "s"+i;})).concat(["deck","avoid","profile","done","bring","proud","photo","work","why","share"]);
 var DECK_N=6;
 // Light by default. A person can choose dark on their profile; the choice stays on this device.
 function applyTheme(){var v=null;try{v=localStorage.getItem("gcg_theme");}catch(e){}document.documentElement.setAttribute("data-gcg-theme",v==="dark"?"dark":"light");}
@@ -1763,9 +1763,9 @@ var BUILD={
       var g=grouped(S),yes=g.top.concat(g.good);
       var hd=shell(card,"Jobs","Nice picks.",yes.length||g.curious.length?"Here is what you said yes and maybe to. Want to look at more?":"Nothing caught your eye yet. That is fine. Have a look at the full list, or carry on.");
       if(yes.length||g.curious.length)card.append(h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:""+FN[i].name});}),g.curious.map(function(i){return h("span",{class:"chip curious",text:""+FN[i].name});})));
-      card.append(g.no.length?h("div",null,h("p",{class:"lab",text:"Not for me"}),h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:""+FN[i].name});}))):h("p",{class:"sub",text:"No jobs that are not for you? That is fine. You can mark some any time under Me, and Hinda will see them on your profile."}));
+      card.append(g.no.length?h("div",null,h("p",{class:"lab",text:"Not for me"}),h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:""+FN[i].name});}))):h("p",{class:"sub",text:"Next you can mark anything that is not for you. It is optional."}));
       card.append(h("button",{type:"button",class:"btn",text:"See all "+FNS.filter(function(f){return f.when!=="Later";}).length+" jobs (optional)",onclick:function(){S.returnTo="deck";go("all");}}));
-      navRow(card,"Reveal my card ",function(){
+      navRow(card,"Next →",function(){
         if(answeredAsk(S.q)<ASK.length){var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});go("s"+k);setTimeout(function(){warn("One situation still needs an answer.");},50);return;}
         next();},{big:true});
       return hd;
@@ -1791,6 +1791,23 @@ var BUILD={
         h("div",{class:"jsecond"},h("button",{type:"button",class:"btn link",text:"Skip for now",onclick:skip}),ch("no","","Not for me")))));
     card.append(h("p",{class:"sub jhint",text:n===0?"Say yes to what appeals. Skip anything you are unsure about. You never have to say no. 'Not for me' just stops us suggesting that job.":"Skip tells us nothing. 'Not for me' stops us suggesting it."}));
     return hd2;
+  },
+  avoid:function(card){
+    var hd=shell(card,"Jobs","Anything you would rather not do?","Tap any job that is not for you. We will never offer it to you. If nothing comes to mind, skip. You can change this any time under Me.");
+    card.append(h("button",{type:"button",class:"btn link",text:"Nothing to add: reveal my card",onclick:next}));
+    var cnt=h("p",{class:"sub jhint",role:"status","aria-live":"polite"});
+    function paintCount(){var n=Object.keys(S.levels).filter(function(k){return S.levels[k]==="no";}).length;cnt.textContent=n?n+" marked as not for you":"Nothing marked yet. That is fine.";}
+    AREAS.forEach(function(A){
+      var js=FNS.filter(function(f){return f.area===A.id&&f.when!=="Later"&&S.levels[f.id]!=="good"&&S.levels[f.id]!=="curious";});if(!js.length)return;
+      card.append(h("p",{class:"lab",text:A.short}),h("div",{class:"chips avoidchips"},js.map(function(f){
+        var b=h("button",{type:"button",class:"chip"+(S.levels[f.id]==="no"?" no on":""),"aria-pressed":String(S.levels[f.id]==="no"),text:f.name,onclick:function(){
+          if(S.levels[f.id]==="no")delete S.levels[f.id];else S.levels[f.id]="no";
+          saveDraft();b.className="chip"+(S.levels[f.id]==="no"?" no on":"");b.setAttribute("aria-pressed",String(S.levels[f.id]==="no"));paintCount();}});
+        return b;})));
+    });
+    card.append(cnt);paintCount();
+    navRow(card,"Reveal my card ",next,{big:true});
+    return hd;
   },
   all:function(card){
     var hd=shell(card,"All jobs","Every job at GCG","Tap a wing to open it. Say yes or maybe to what appeals. Leave the rest alone, you never have to say no.");
