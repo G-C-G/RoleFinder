@@ -863,7 +863,7 @@ button.chip.on{outline:2px solid var(--ink)}
 .steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;padding:2px 0}.cvline .cv-t{flex:1 1 100%}.cvline .cvbtns{flex:0 0 auto}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
-.covered-line{margin:4px 0}.cvbtns{display:flex;gap:6px;flex-shrink:0}
+.covered-line{margin:4px 0}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
@@ -1793,23 +1793,30 @@ var BUILD={
     return hd2;
   },
   avoid:function(card){
-    // The last question. Each job has three states, cycled by tapping: nothing, open to it, never offer. Jobs they said yes to are left out.
-    // They can still pick any job up themselves from Up for grabs.
+    // The last question. Each job has two labelled buttons: "Open to it" or "Never offer". Leave a job alone for no feeling.
+    // Jobs they said yes to are left out. They can still pick any job up themselves from Up for grabs.
     var list=FNS.filter(function(f){return f.when!=="Later"&&S.levels[f.id]!=="good";});
-    var hd=shell(card,"Last question","Anything you want to settle for good?","Tap a job once if you are open to it, twice if you never want to be offered it, a third time to clear it. Whatever the reason, tried or not. Skip anything you have no feeling about. You can still pick any job up yourself from Up for grabs, and change all of this under Me.");
+    var hd=shell(card,"Last question","Anything you want to settle for good?","Open a wing. For any job, tap Open to it, or Never offer if you never want to be offered it. Tried it or not, your call. Leave a job alone if you have no feeling. You can still pick any job up yourself from Up for grabs, and change all of this under Me.");
     card.append(h("button",{type:"button",class:"btn link",text:"Nothing to add: skip",onclick:next}));
-    var cnt=h("p",{class:"sub jhint",role:"status","aria-live":"polite"});
+    var cnt=h("p",{class:"sub jhint",role:"status","aria-live":"polite"}),sums={};
+    function counts(A){var no=0,op=0;list.filter(function(f){return f.area===A.id;}).forEach(function(f){if(S.levels[f.id]==="no")no++;else if(S.levels[f.id]==="curious")op++;});return {no:no,op:op};}
+    function sumText(A){var c=counts(A),t=[];if(c.op)t.push(c.op+" open");if(c.no)t.push(c.no+" never");return A.short+(t.length?" · "+t.join(", "):"");}
     function paintCount(){var no=0,op=0;Object.keys(S.levels).forEach(function(k){if(S.levels[k]==="no")no++;else if(S.levels[k]==="curious")op++;});
-      cnt.textContent=(no||op)?(op?op+" open to it":"")+(no&&op?" · ":"")+(no?no+" never offer":""):"Nothing marked yet. That is fine.";}
-    function paintChip(b,f){var v=S.levels[f.id];b.className="chip"+(v==="no"?" no on":v==="curious"?" curious on":"");
-      b.setAttribute("aria-label",f.name+": "+(v==="no"?"never offer":v==="curious"?"open to it":"no feeling"));b.setAttribute("aria-pressed",String(!!v));}
+      cnt.textContent=(no||op)?(op?op+" open to it":"")+(no&&op?" · ":"")+(no?no+" never offer":""):"Nothing marked yet. That is fine.";
+      AREAS.forEach(function(A){if(sums[A.id])sums[A.id].textContent=sumText(A);});}
     AREAS.forEach(function(A){
       var js=list.filter(function(f){return f.area===A.id;});if(!js.length)return;
-      card.append(h("p",{class:"lab",text:A.short}),h("div",{class:"chips avoidchips"},js.map(function(f){
-        var b=h("button",{type:"button",class:"chip",text:f.name,onclick:function(){
-          var v=S.levels[f.id];if(!v)S.levels[f.id]="curious";else if(v==="curious")S.levels[f.id]="no";else delete S.levels[f.id];
-          saveDraft();paintChip(b,f);paintCount();}});
-        paintChip(b,f);return b;})));
+      var sm=h("summary",{text:sumText(A)});sums[A.id]=sm;
+      var d=h("details",{class:"more avoidwing",open:S.panel["avoid:"+A.id]?true:null,ontoggle:function(e){S.panel["avoid:"+A.id]=e.currentTarget.open;}},sm);
+      js.forEach(function(f){
+        var bo=h("button",{type:"button",class:"btn small avopen",text:"Open to it"}),bn=h("button",{type:"button",class:"btn small avno",text:"Never offer"});
+        function paint(){var v=S.levels[f.id];bo.setAttribute("aria-pressed",String(v==="curious"));bn.setAttribute("aria-pressed",String(v==="no"));}
+        bo.addEventListener("click",function(){if(S.levels[f.id]==="curious")delete S.levels[f.id];else S.levels[f.id]="curious";saveDraft();paint();paintCount();});
+        bn.addEventListener("click",function(){if(S.levels[f.id]==="no")delete S.levels[f.id];else S.levels[f.id]="no";saveDraft();paint();paintCount();});
+        paint();
+        d.append(h("div",{class:"cvrow"},h("div",{class:"cvline"},h("span",{class:"cv-t"},h("b",{text:f.name})),h("span",{class:"cvbtns"},bo,bn))));
+      });
+      card.append(d);
     });
     card.append(cnt);paintCount();
     var ta=h("textarea",{id:"avoidnote",rows:"2",maxlength:"250",placeholder:"Anything else you would rather avoid? Type it in your own words (optional)"});
