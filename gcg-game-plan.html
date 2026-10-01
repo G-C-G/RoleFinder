@@ -3008,7 +3008,7 @@ function progressTimeline(ev,rerender){
   var start=dates.length?Math.min.apply(null,dates.map(Number))-3*864e5:null,end=dates.length?Math.max.apply(null,dates.map(Number)):null;
   function pos(d){if(!start||!d||end===start)return null;return Math.max(0,Math.min(100,(d-start)/(end-start)*100));}
   var cur=currentCp(ev),now=Date.now(),nowPos=pos(now);
-  var track=h("div",{class:"tl-track","aria-hidden":"true"},h("div",{class:"tl-fill",style:"width:"+pctDone+"%"}));
+  var track=h("div",{class:"tl-track","aria-hidden":"true"},h("div",{class:"tl-fill",style:"width:"+(adminView()?pctDone:0)+"%"}));
   if(nowPos!=null&&now<=end+864e5)track.append(h("div",{class:"tl-now",style:"left:"+nowPos+"%"},h("span",{text:"Today"})));
   stages.forEach(function(s,k){var p=pos(s.due);if(p==null)return;
     var state=s.cleared?"done":(s.i===cur?"cur":(s.due&&s.due<now?"late":""));
@@ -3016,7 +3016,7 @@ function progressTimeline(ev,rerender){
   var feed=[];ts.forEach(function(t){if(taskState(ev,t)==="done"&&t.owner&&seeDone(t)){var d=doneAt(ev,t);if(d)feed.push({t:t,d:d});}});
   feed.sort(function(a,b){return b.d-a.d;});
   var box=h("div",{class:"tl"},
-    h("div",{class:"tl-head"},h("b",{text:"Progress"}),h("span",{class:"tl-pct",text:pctDone+"% done"}),h("span",{class:"sub",text:gdone+" of "+gk.length+" tasks"})),
+    h("div",{class:"tl-head"},h("b",{text:"Progress"}),h("span",{class:"tl-pct",text:adminView()?pctDone+"% done":eventPace(ev)}),adminView()?h("span",{class:"sub",text:gdone+" of "+gk.length+" tasks"}):null),
     track,
     h("ol",{class:"tl-stages"},stages.map(function(s,k){
       var dn=s.tasks.filter(function(t){return taskState(ev,t)==="done";});
@@ -3534,7 +3534,10 @@ function stageData(ev){
     return {key:s[0],emo:s[1],name:s[2],idx:idx,tasks:tasks,done:!!done,cur:isCur,late:!done&&due&&due<now,due:due};
   }).filter(function(s){return s.idx.length||s.tasks.length;});
 }
-function readyText(ev){var p=eventPct(ev);return p===0?"Not started":p+"% ready";}
+// Admins see the percentage and the pace. Team members only see the pace, so a low number never reads as pressure.
+function adminView(){return !!S.isAdmin&&!S.asMember;}
+function eventPace(ev){if(eventPct(ev)>=100)return "Complete";return stageData(ev).some(function(x){return x.late;})||priorityList(ev).some(function(x){return x.late;})?"Behind":"On track";}
+function readyText(ev){var p=eventPct(ev),pace=eventPace(ev);if(!adminView())return pace;return (p===0?"Not started":p+"% ready")+" · "+pace;}
 function eventPct(ev){
   var g={};(ev.tasks||[]).forEach(function(t){var k=t.group||t.id;(g[k]=g[k]||[]).push(t);});
   var ks=Object.keys(g);if(!ks.length)return 0;
@@ -3556,9 +3559,9 @@ function journey(ev,opts){
       s.cur?h("span",{class:"jpnow",text:"NOW"}):null,you?h("span",{class:"jpyou",text:"YOU"}):null);
     row.append(h("li",null,b));
   });
-  var bar=h("div",{class:"jbar","aria-label":pct+"% ready"},h("i",{style:"width:"+pct+"%"}));
+  var bar=adminView()?h("div",{class:"jbar","aria-label":pct+"% ready"},h("i",{style:"width:"+pct+"%"})):null;
   var box=h("div",{class:"journey"},opts.vertical?bar:null,row,opts.vertical?null:bar,
-    h("p",{class:"jpct"},h("b",{text:pct===0?"Not started":pct+"% ready"}),(function(){var c=st.filter(function(s){return s.cur;})[0];return c&&c.due&&!opts.compact?[" · "+c.name+" ",clockSpan(c.due)]:"";})()));
+    h("p",{class:"jpct"},h("b",{text:readyText(ev)}),(function(){var c=st.filter(function(s){return s.cur;})[0];return c&&c.due&&!opts.compact?[" · "+c.name+" ",clockSpan(c.due)]:"";})()));
   if(!opts.compact){
     st.forEach(function(s){
       if(!S.tlOpen[ev.id+":"+s.key])return;
@@ -3680,7 +3683,7 @@ function myProgressCard(){
     var all=mine.filter(function(y){return y.ev===x.ev;}),dn=all.filter(function(y){return taskState(y.ev,y.t)==="done";}).length;
     if(dn===all.length&&daysTo(x.ev.date)==="")return;
     rows.push(h("div",{class:"prog-ev"},h("b",{text:x.ev.name||"Event"}),h("span",{class:"sub",text:"You: "+dn+" of "+all.length+" done · Team: "+readyText(x.ev)}),
-      h("div",{class:"pbar","aria-hidden":"true"},h("i",{style:"width:"+eventPct(x.ev)+"%"}))));});
+      h("div",{class:"pbar","aria-hidden":"true"},h("i",{style:"width:"+Math.round(dn/all.length*100)+"%"}))));});
   return h("section",{class:"card hsec",id:"myProgress"},h("h3",{class:"q",text:"Your progress"}),
     h("div",{class:"tstats"},tile(done.length,done.length===1?"task done":"tasks done"),tile(Object.keys(evs).length,Object.keys(evs).length===1?"event helped":"events helped"),onTime==null?tile(mine.length-done.length,"still to do"):tile(onTime+"%","on time")),
     rows.length?h("div",{class:"prog-list"},rows):null);
@@ -3731,7 +3734,7 @@ function drawHome(root){
   }else if(!firstRun){
     var ev0=myEvents()[0],doneHere=ev0?(ev0.tasks||[]).filter(function(t){return t.owner===S.uid&&taskState(ev0,t)==="done";}).length:0;
     root.append(h("div",{class:"hero-move clear"},h("p",{class:"k",text:"You're good"}),h("h2",{class:"hm-t",text:"Nothing needs you right now."}),
-      ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+(eventPct(ev0)===0?" has not started yet.":" is "+eventPct(ev0)+"% ready.")+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
+      ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+(adminView()?(eventPct(ev0)===0?" has not started yet.":" is "+eventPct(ev0)+"% ready."):" is "+eventPace(ev0).toLowerCase()+".")+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
   }
   // Coming up: later phases stay folded, one tap to look
   if(!S.isAdmin&&!items.length&&!myTasks().length&&prof){
@@ -3816,7 +3819,7 @@ function drawMemberEvent(root,ev){
     h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
     crewDates(ev)||h("span"),
     yourPart(ev,mine,me),
-    crewOnDay(ev,false),
+    (ev.tasks||[]).some(function(t){return t.owner===S.uid&&(t.offered||t.manual);})?crewOnDay(ev,false):null,
     crewCredits(ev),
     h("div",{class:"row",style:"margin-top:12px"},
       (safeUrl(links.luma)?h("a",{class:"btn small",href:safeUrl(links.luma),target:"_blank",rel:"noopener",text:"Luma page"}):null),
