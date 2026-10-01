@@ -2321,56 +2321,84 @@ var TEMPLATES={
     T("Debrief: what worked, what to change","A2","after",10,null,"must",1,"S",7,"",false)
   ]}
 };
-/* Game kinds x who it is for. Welcome and standard games already exist.
-   A custom or team-building game has to be briefed, made and signed off first, so those events start earlier. */
+/* The catalogue. WELCOME: Welcome Game (up to 100 guests), Big Room Welcome (100+ guests).
+   GCG: GCG Game, GCG Experience (Welcome Game + GCG Game). CUSTOM: Custom Event, Custom Corporate,
+   Custom Team Building, Custom Conference. The four standard games can be for a corporate client or a public event.
+   A custom game has to be briefed, made and signed off first, so those events start earlier. */
 function cloneTpl(src,name,start){return {name:name,start:start||src.start,cps:src.cps.map(function(c){return [c[0],c[1]];}),tasks:src.tasks.map(function(x){return Object.assign({},x);})};}
 function insertCp(tpl,at,name,d){tpl.cps.splice(at,0,[name,d]);tpl.tasks.forEach(function(x){if(x.cp!=null&&x.cp>=at)x.cp++;});}
 function renameTask(tpl,from,to,d){tpl.tasks.forEach(function(x){if(x.title===from){x.title=to;if(d!=null)x.d=d;}});}
 function dropTasks(tpl,titles){tpl.tasks=tpl.tasks.filter(function(x){return titles.indexOf(x.title)<0;});}
-function customGame(base,key,name,label,price){
-  var tp=cloneTpl(TEMPLATES[base],name);var corp=(base==="standard");
+function addT(tp,list){list.forEach(function(x){tp.tasks.push(x);});}
+var BASE_CORP=cloneTpl(TEMPLATES.standard,"corp"),BASE_PUB=cloneTpl(TEMPLATES.flagship,"pub");
+var HOST_TITLES=["Host the game","Keep score and check answers","Welcome game","Host the three rounds"];
+function frameOf(setting){var b=setting==="c"?BASE_CORP:BASE_PUB,tp=cloneTpl(b,b.name);dropTasks(tp,HOST_TITLES);return tp;}
+var HOSTS={
+  welcome:function(tp){addT(tp,[T("Host the welcome game","C1","during",0,0,"must",1,"M",4,"",false)]);},
+  bigroom:function(tp){addT(tp,[T("Plan the room layout for 100+ guests","C5","before",-6,null,"should",1,"S",3,"",false),
+    T("Confirm extra crew for a big room","I1","before",-5,null,"must",1,"S",3,"",false),
+    T("Host the welcome game (big room)","C1","during",0,0,"must",2,"L",4,"",false),
+    T("Run the big screen and microphones","C3","during",0,-30,"must",1,"M",4,"",false),
+    T("Crowd flow and floor team","C9","during",0,-60,"must",2,"M",4,"",false)]);},
+  gcg:function(tp){addT(tp,[T("Host the three rounds","C1","during",0,15,"must",1,"L",4,"",false),T("Keep score and check answers","C7","during",0,15,"must",1,"M",4,"",false)]);},
+  exp:function(tp){addT(tp,[T("Host the welcome game","C1","during",0,0,"must",1,"M",4,"",false),T("Host the three rounds","C1","during",0,45,"must",1,"L",4,"",false),T("Keep score and check answers","C7","during",0,45,"must",1,"M",4,"",false)]);}
+};
+["c","p"].forEach(function(s){
+  [["welcome","Welcome Game"],["bigroom","Big Room Welcome"],["gcg","GCG Game"],["exp","GCG Experience"]].forEach(function(g){
+    var tp=frameOf(s);HOSTS[g[0]](tp);tp.name=g[1]+(s==="c"?" (corporate)":" (public)");TEMPLATES[g[0]+"_"+s]=tp;});
+});
+function customKind(setting,key,name,label,opts){
+  opts=opts||{};var tp=frameOf(setting),corp=setting==="c";
   if(corp){
-    insertCp(tp,2,"Game delivered and signed off",-18);
-    tp.cps[0][1]=-30;tp.cps[1][1]=-26;
+    insertCp(tp,2,"Game delivered and signed off",-18);tp.cps[0][1]=-30;tp.cps[1][1]=-26;
     renameTask(tp,"Take the client brief","Take the client brief and the game brief",-34);
-    renameTask(tp,"Send the quote and proposal",price?"Send the quote (team-building price list)":"Send the quote and proposal",-32);
+    renameTask(tp,"Send the quote and proposal",opts.price?"Send the quote (team-building price list)":"Send the quote and proposal",-32);
     renameTask(tp,"Agreement signed","Agreement signed",-28);renameTask(tp,"Deposit received","Deposit received",-28);
-    renameTask(tp,"Host the game","Host the "+label);
-    tp.tasks.push(T("Hand over the game brief","A2","before",-30,null,"must",1,"S",0,"",false),
-      T("Game ready and delivered","A2","before",-21,null,"must",1,"S",2,"",false),
-      T("Client signs off the game","E5","before",-18,null,"must",1,"S",2,"",false));
+    addT(tp,[T("Hand over the game brief","A2","before",-30,null,"must",1,"S",0,"",false),T("Game ready and delivered","A2","before",-21,null,"must",1,"S",2,"",false),T("Client signs off the game","E5","before",-18,null,"must",1,"S",2,"",false)]);
   }else{
     insertCp(tp,1,"Game delivered and signed off",-17);
     tp.tasks.forEach(function(x){if(x.cp===0&&x.d!=null)x.d-=7;});tp.cps[0][1]=-28;
-    renameTask(tp,"Host the three rounds","Host the "+label);
-    dropTasks(tp,["Welcome game"]);
-    tp.tasks.push(T("Take the game brief from the organiser or partner","E8","before",-34,null,"must",1,"S",0,"",false),
-      T("Hand over the game brief","A2","before",-30,null,"must",1,"S",0,"",false),
-      T("Game ready and delivered","A2","before",-21,null,"must",1,"S",1,"",false),
-      T("Organiser or partner signs off the game","E8","before",-18,null,"must",1,"S",1,"",false));
+    addT(tp,[T("Take the game brief from the organiser or partner","E8","before",-34,null,"must",1,"S",0,"",false),T("Hand over the game brief","A2","before",-30,null,"must",1,"S",0,"",false),
+      T("Game ready and delivered","A2","before",-21,null,"must",1,"S",1,"",false),T("Organiser or partner signs off the game","E8","before",-18,null,"must",1,"S",1,"",false)]);
   }
-  TEMPLATES[key]=tp;
+  addT(tp,[T("Host the "+label,"C1","during",0,15,"must",1,"L",5,"",false),T("Keep score and check answers","C7","during",0,15,"must",1,"M",5,"",false)]);
+  if(opts.conference)addT(tp,[T("Agree the run of show with the conference team","E5","before",-14,null,"must",1,"S",3,"",false),
+    T("Walk the stage, screens and sound with the venue","F3","before",-3,null,"must",1,"S",4,"",false),
+    T("Brief the conference host and speakers","C11","before",-2,null,"must",1,"S",4,"",false),
+    T("Stage manager and timekeeping","C9","during",0,-60,"must",1,"M",5,"",false)]);
+  tp.name=name;TEMPLATES[key]=tp;
 }
-customGame("standard","c_custom","Corporate: custom game","custom game",false);
-customGame("standard","c_team","Corporate: team-building game (custom, own price)","team-building game",true);
-customGame("flagship","p_custom","Public event: custom game","custom game",false);
-customGame("flagship","p_team","Public event: team-building game (custom, own price)","team-building game",true);
-(function(){var tp=cloneTpl(TEMPLATES.flagship,"Public event: welcome game");dropTasks(tp,["Host the three rounds","Keep score and check answers"]);
-  renameTask(tp,"Welcome game","Host the welcome game");tp.tasks.forEach(function(x){if(x.title==="Host the welcome game"){x.pri="must";x.size="M";}});TEMPLATES.p_welcome=tp;})();
-TEMPLATES.welcome.name="Corporate: welcome game";TEMPLATES.standard.name="Corporate: standard GCG game (3 rounds)";TEMPLATES.flagship.name="Public event: flagship night (standard game)";
-var TEMPLATE_ORDER=["welcome","standard","c_custom","c_team","flagship","p_welcome","p_custom","p_team","outdoor"];
+customKind("p","custom_event","Custom Event","custom game");
+customKind("c","custom_corporate","Custom Corporate","custom game");
+customKind("c","custom_team","Custom Team Building","team-building game",{price:true});
+customKind("c","custom_conference","Custom Conference","custom game",{conference:true});
+["welcome","standard","c_custom","c_team","p_welcome","p_custom","p_team"].forEach(function(k){delete TEMPLATES[k];});
+TEMPLATES.flagship.name="Flagship night";
+// What the event picker shows: [group, [[key, label, can be corporate or public]...]]
+var PRODUCTS=[["WELCOME",[["welcome","Welcome Game (up to 100 guests)",true],["bigroom","Big Room Welcome (100+ guests)",true]]],
+  ["GCG",[["gcg","GCG Game",true],["exp","GCG Experience (Welcome Game + GCG Game)",true]]],
+  ["CUSTOM",[["custom_event","Custom Event",false],["custom_corporate","Custom Corporate",false],["custom_team","Custom Team Building",false],["custom_conference","Custom Conference",false]]],
+  ["OTHER",[["flagship","Flagship night",false],["outdoor","Two-day outdoor event",false]]]];
+var TEMPLATE_ORDER=Object.keys(TEMPLATES);
 // One line on what each kind of event is for, so anyone joining halfway knows the mission. Editable per event.
 var GOALS={flagship:"Bring a community together for a relaxed night of games, food and new connections.",
   welcome:"Break the ice at the client's event so guests arrive, connect and warm up fast.",
   standard:"Give the client's guests a memorable three-round game they talk about afterwards.",
   outdoor:"Two days outdoors that bring many communities together.",
-  c_custom:"Give the client a game made for them that fits their people and their goal.",
+  c_custom:"",
   c_team:"Bring the client's team closer with a team-building game made for them, priced on our team-building list.",
   p_welcome:"Break the ice at a public event so guests arrive, connect and warm up fast.",
   p_custom:"Run a game made for this event that fits the partner and the crowd.",
   p_team:"Run a team-building game made for this group, priced on our team-building list."};
 // Keep Must for what makes or breaks the event (about a third); everything else starts as Should.
-var MUST_KEEP=["Hand over the game brief","Game ready and delivered","Take the client brief and the game brief","Take the game brief from the organiser or partner","Organiser or partner signs off the game","Host the custom game","Host the team-building game","Send the quote (team-building price list)","Quality check the game: fits the audience and the room, every answer verified","Game check day: run the full game with the whole crew","Review the game and verify every answer","Review the game and verify answers","Lock the venue and terms","Create the Luma event page","Announce on socials and WhatsApp",
+Object.assign(GOALS,{
+  welcome_c:"Break the ice at the client's event so guests arrive, connect and warm up fast.",welcome_p:"Break the ice at a public event so guests arrive, connect and warm up fast.",
+  bigroom_c:"Warm up a big room of 100 or more guests so everyone joins in from the first minute.",bigroom_p:"Warm up a big public room of 100 or more guests so everyone joins in from the first minute.",
+  gcg_c:"Give the client's guests a memorable three-round game they talk about afterwards.",gcg_p:"Give the crowd a memorable three-round game they talk about afterwards.",
+  exp_c:"The full GCG Experience for the client: a welcome game, then the three-round GCG game.",exp_p:"The full GCG Experience for the crowd: a welcome game, then the three-round GCG game.",
+  custom_event:"Run a game made for this event that fits the organiser and the crowd.",custom_corporate:"Give the client a game made for them that fits their people and their goal.",
+  custom_team:"Bring the client's team closer with a team-building game made for them, priced on our team-building list.",custom_conference:"Run a game made for this conference that fits the programme, the stage and the audience."});
+var MUST_KEEP=["Host the welcome game (big room)","Confirm extra crew for a big room","Run the big screen and microphones","Crowd flow and floor team","Agree the run of show with the conference team","Walk the stage, screens and sound with the venue","Stage manager and timekeeping","Hand over the game brief","Game ready and delivered","Host the custom game","Host the team-building game","Hand over the game brief","Game ready and delivered","Take the client brief and the game brief","Take the game brief from the organiser or partner","Organiser or partner signs off the game","Host the custom game","Host the team-building game","Send the quote (team-building price list)","Quality check the game: fits the audience and the room, every answer verified","Game check day: run the full game with the whole crew","Review the game and verify every answer","Review the game and verify answers","Lock the venue and terms","Create the Luma event page","Announce on socials and WhatsApp",
   "Offer tasks and confirm the crew","Floor manager","Doors open: welcome and registration","Host the three rounds","Keep score and check answers","Count money and record costs",
   "Send the quote and proposal","Deposit received","Client signs off the game","Host the welcome game","Host the game","Invoice and follow up payment",
   "Lock the dates and the site","Apply for permits","First aid, safety and weather plan","Create the Luma event pages",
@@ -2792,13 +2820,17 @@ function drawEvents(root){
 function drawEventList(root){
   var nameIn=h("input",{type:"text","aria-label":"New event name",placeholder:"Event name","data-k":"new-name"});
   var dateIn=h("input",{type:"date","aria-label":"New event date","data-k":"new-date"});
-  var tSel=h("select",{"aria-label":"Template"},TEMPLATE_ORDER.map(function(k){return h("option",{value:k,text:TEMPLATES[k].name});}),h("option",{value:"",text:"Blank event"}));
+  var tSel=h("select",{"aria-label":"Template"},PRODUCTS.map(function(g){return h("optgroup",{label:g[0]},g[1].map(function(o){return h("option",{value:o[0],text:o[1]});}));}),h("option",{value:"",text:"Blank event"}));
+  var forSel=h("select",{"aria-label":"Who is it for"},h("option",{value:"c",text:"For a corporate client"}),h("option",{value:"p",text:"For a public event"}));
+  function needsFor(k){var f=false;PRODUCTS.forEach(function(g){g[1].forEach(function(o){if(o[0]===k&&o[2])f=true;});});return f;}
+  function syncFor(){forSel.hidden=!needsFor(tSel.value);}tSel.addEventListener("change",syncFor);syncFor();
   root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Events"}),h("h2",{class:"q",text:"Plan an event"}),
     h("p",{class:"sub",text:"Pick a template and a date. Every task, checkpoint and deadline fills in. Then suggest people and send the offers."}),
-    nameIn,h("div",{class:"two-col"},tSel,dateIn),
+    nameIn,h("div",{class:"two-col"},tSel,dateIn),forSel,
     h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Create event",onclick:function(){
       if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
-      var e=tSel.value?fromTemplate(tSel.value,clean(nameIn.value),dateIn.value):{id:newId("e"),name:clean(nameIn.value)||"New event",type:"",date:dateIn.value,start:"18:30",place:"",lead:"",links:{},guests:{},debrief:{},cps:[],tasks:[],created:nowIso()};
+      var tkey=tSel.value&&needsFor(tSel.value)?tSel.value+"_"+forSel.value:tSel.value;
+      var e=tkey?fromTemplate(tkey,clean(nameIn.value),dateIn.value):{id:newId("e"),name:clean(nameIn.value)||"New event",type:"",date:dateIn.value,start:"18:30",place:"",lead:"",links:{},guests:{},debrief:{},cps:[],tasks:[],created:nowIso()};
       e.published=false;S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
   var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
