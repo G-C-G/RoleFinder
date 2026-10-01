@@ -2619,6 +2619,18 @@ function nextBest(ev,t){
   saveEvent(ev,true);renderEvents();
 }
 function giveTo(ev,t,pid){t.owner=pid;t.offered=true;t.ots=nowIso();t.manual="";saveEvent(ev,true);renderEvents();}
+// How many people a task needs is Hinda's call, per task: each person is one slot in the task's group.
+function slotsOf(ev,t){return t.group?(ev.tasks||[]).filter(function(x){return x.group===t.group;}):[t];}
+function newSlot(ev,t){var g=t.group||(t.group=newId("g"));var c=cleanTask(t);c.id=newId("t");c.group=g;c.owner="";c.offered=false;c.ots="";c.manual="";c.mts={};c.passed=[];c.handDone={};c.helper="";return c;}
+function setSlots(ev,t,n){
+  n=Math.max(1,Math.min(30,Math.round(Number(n)||1)));var all=slotsOf(ev,t),cur=all.length;
+  if(n===cur)return {ok:true,n:cur};
+  if(n>cur){var at=ev.tasks.indexOf(all[all.length-1]);for(var i=0;i<n-cur;i++){ev.tasks.splice(at+1+i,0,newSlot(ev,t));}saveEvent(ev,true);renderEvents();return {ok:true,n:n};}
+  var removable=all.filter(function(x){return !x.owner&&!x.helper&&taskState(ev,x)==="open";});
+  var drop=cur-n;if(removable.length<drop){return {ok:false,n:cur,min:cur-removable.length};}
+  removable.slice(removable.length-drop).forEach(function(x){ev.tasks.splice(ev.tasks.indexOf(x),1);});
+  saveEvent(ev,true);renderEvents();return {ok:true,n:n};
+}
 function addSlot(ev,t,reqKey){
   var g=t.group||(t.group=newId("g"));
   var c=cleanTask(t);c.id=newId("t");c.group=g;c.owner="";c.offered=false;c.ots="";c.manual="";c.mts={};c.passed=[];c.handDone={};c.helper="";
@@ -2800,14 +2812,19 @@ function drawEvents(root){
   var pSel=h("select",{"aria-label":"Priority"},Object.keys(PRI).map(function(k){return h("option",{value:k,text:PRI[k].l});}));pSel.value=dr.pri;pSel.addEventListener("change",function(){dr.pri=pSel.value;});
   root.append(h("details",{class:"card fold",id:"addTaskBox",style:"margin-top:14px",open:S.panel.addtask?true:null,ontoggle:function(e){S.panel.addtask=e.currentTarget.open;}},h("summary",{class:"fold-h",text:"Add a task"}),custom,
     h("div",{class:"two-col"},jobSelect(dr.job,function(v){dr.job=v;},"Closest job for the new task"),phSel),h("div",{class:"two-col"},dIn,pSel),
+    (function(){var n=h("input",{type:"number",min:"1",max:"30","aria-label":"How many people for the new task","data-k":"new-slots",value:String(dr.n||1)});n.addEventListener("input",function(){dr.n=n.value;});
+      return h("div",{class:"field"},h("label",{text:"How many people does it need?"}),n);})(),
     (function(){var w=h("select",{"aria-label":"Who is it for"},h("option",{value:"",text:"Up for grabs (anyone can take it)"}),S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));}).map(function(p){return h("option",{value:p.id,text:"Ask "+pname(p)});}));w.value=dr.who||"";w.addEventListener("change",function(){dr.who=w.value;});return w;})(),
     h("button",{type:"button",class:"btn small",text:"Add this task",onclick:function(){
       if(!clean(custom.value)){custom.focus();return;}
       var d=dr.d===""?null:Number(dr.d);
       var nt={id:newId("t"),title:clean(custom.value),job:dr.job||"",phase:dr.phase,d:d,m:null,pri:dr.pri,size:"M",cp:null,msg:"",group:"",owner:"",offered:false,manual:"",passed:[]};
       if(dr.who){nt.owner=dr.who;nt.offered=true;nt.ots=nowIso();}
+      var count=Math.max(1,Math.min(30,Math.round(Number(dr.n)||1)));
+      if(count>1)nt.group=newId("g");
       ts.push(nt);
-      var msg=dr.who?"Added, and offered to "+nameOf(dr.who)+".":(ev.published===false?"Added.":"Added. It shows under Up for grabs until someone takes it.");
+      for(var si=1;si<count;si++){var cp2=cleanTask(nt);cp2.id=newId("t");cp2.group=nt.group;cp2.owner="";cp2.offered=false;cp2.ots="";cp2.manual="";cp2.mts={};cp2.passed=[];cp2.helper="";ts.push(cp2);}
+      var msg=(count>1?"Added for "+count+" people. ":"")+(dr.who?"The first slot is offered to "+nameOf(dr.who)+".":(ev.published===false?"Added.":"It shows under Up for grabs until someone takes it."));
       S.evDraft=null;S.panel.alltasks=true;saveEvent(ev,true);renderEvents();toast(msg);}}),
     h("p",{class:"sub",text:"The closest job is optional. It tells the page who fits. Leave \"who\" as up for grabs and anyone can take it, first come, first served."})));
   // guests, links, debrief
@@ -2882,6 +2899,9 @@ function adminTask(ev,t,cur){
     h("div",{class:"two-col"},
       (function(){var s=h("select",{"aria-label":"Size for "+t.title},Object.keys(SIZE).map(function(k){return h("option",{value:k,text:"Size: "+SIZE[k]});}));s.value=t.size||"M";s.addEventListener("change",function(){t.size=s.value;saveEvent(ev,true);});return s;})(),
       (function(){var i=h("input",{type:"text","aria-label":"Outside helper","data-k":"helper-"+t.id,placeholder:"Outside helper's name (not on the page)",value:t.helper||""});i.addEventListener("input",function(){t.helper=i.value;saveEvent(ev);});return i;})()),
+    (function(){var n=slotsOf(ev,t).length,inp=h("input",{type:"number",min:"1",max:"30","aria-label":"How many people for "+t.title,"data-k":"slots-"+t.id,value:String(n)}),msg=h("span",{class:"sub"});
+      inp.addEventListener("change",function(){var r=setSlots(ev,t,inp.value);if(!r.ok){inp.value=String(r.n);say(msg,"Can't go below "+r.min+". Take people off slots first.","warn");}});
+      return h("div",{class:"field"},h("label",{text:"How many people does this task need?"}),inp,msg);})(),
     h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Add a slot (extra hand)",onclick:function(){addSlot(ev,t);}}),
       h("button",{type:"button",class:"btn link",text:"Remove task",onclick:function(){ev.tasks=ev.tasks.filter(function(x){return x!==t;});saveEvent(ev,true);renderEvents();}})));
   var pk="ping"+t.id,lk=h("span",{class:"status"});
@@ -4255,7 +4275,7 @@ function boot(){
   readHash();
   render();
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
-    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,setAsMember:setAsMember,noAutoOn:noAutoOn,toggleNoAuto:toggleNoAuto,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
+    suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,setSlots:setSlots,slotsOf:slotsOf,setAsMember:setAsMember,noAutoOn:noAutoOn,toggleNoAuto:toggleNoAuto,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
 }
 boot();

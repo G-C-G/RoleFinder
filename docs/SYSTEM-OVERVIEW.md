@@ -65,6 +65,8 @@ Team members never see Team, Coverage, Titles or Insights. They see other people
 
 **Kinds of event.** When Hinda creates an event she picks from the catalogue. WELCOME: Welcome Game (up to 100 guests), Big Room Welcome (100+ guests). GCG: GCG Game, GCG Experience (Welcome Game + GCG Game). For these four she also says whether it is for a corporate client or a public event. CUSTOM: Custom Event, Custom Corporate, Custom Team Building, Custom Conference. A custom game has to be briefed, handed over, delivered and signed off first, so those events start about five weeks out instead of three. Custom Team Building uses its own price list in the quote task. There is also the flagship night, a two-day outdoor event and a blank event.
 
+**How many people a task needs.** Templates suggest a number, but Hinda sets it per task, per event: when adding a task (how many people) and on any task card (More, how many people does this task need). Each person is one slot. She can raise it at any time, and lower it down to the number of slots already taken.
+
 ## 6. Privacy
 
 **Sharing is each person's choice.** Every person's **About** (name, photo, type, strengths, title) is always visible to the crew, so newcomers can see who does what. Everything else is opt-in and off by default: jobs I'm up for, what I've done, what I bring, my proudest work, how I work best, my CV or link. People set this at the end of onboarding and can change it any time under Me, Who sees what. **Never shared, whatever the person chooses:** jobs they would rather not do, why they are here, and their card corrections. The crew sees a separate public card, so switching something off removes it from view.
