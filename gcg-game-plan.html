@@ -3415,7 +3415,7 @@ function renderInsights(){
 }
 
 /* ---------- Game Plan navigation: Home · Events · Me for the team; Today · Events · Team · Insights · Me for Hinda ---------- */
-var NAV_MEMBER=[["home","home","Home"],["plan","compass","Plan"],["mevents","flag","Tasks"],["crew","users","Crew"],["me","user","Me"]];
+var NAV_MEMBER=[["home","home","Home"],["plan","calendar","Events"],["mevents","flag","Tasks"],["crew","users","Crew"],["me","user","Me"]];
 var NAV_ADMIN=[["today","target","Today"],["plan","compass","Plan"],["events","flag","Events"],["team","users","Team"],["insights","chart","Insights"],["me","user","Me"]];
 S.evSel="";S.teamTab="people";
 function onboarded(){return !!S.sentAt;}
@@ -3612,7 +3612,7 @@ function drawHome(root){
     var msteps=[
       {done:true,t:"Your profile is saved"},
       {done:mpn===0,t:"Finish your profile",d:"A few quick questions: your photo, what you have done, how you work best and what you share. Each one takes seconds.",act:{l:"Continue ("+mpn+" left)",fn:function(){startExtra();}}},
-      {done:seenPlan,t:"Look at the plan",d:"See which events are coming and what is still open.",act:{l:"Open Plan",fn:function(){showView("plan");}}},
+      {done:seenPlan,t:"Look at the events",d:"See which events are coming and what is still open.",act:{l:"Open Events",fn:function(){showView("plan");}}},
       {done:false,t:"Take your first task",d:grabsN?grabsN+" task"+(grabsN>1?"s are":" is")+" up for grabs. Take one that suits you, or wait for Hinda to offer you one.":"Tasks offered to you will appear here. Hinda offers them after the kickoff call.",
         act:grabsN?{l:"See what is up for grabs",fn:function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}}:null}
     ];
@@ -3643,7 +3643,7 @@ function drawHome(root){
   crew.forEach(function(c){var ci=calItem(c.ev,c.t,true);if(ci)upcoming.push(ci);});
   var grabs=upForGrabs(),rows=[];
   function row(icon,text,sub,fn){return h("button",{type:"button",class:"hrow",onclick:fn},ico(icon,20),h("span",{class:"hr-t"},text,sub?h("span",{class:"hr-s",text:sub}):null),ico("chevR",18));}
-  if(crew.length)rows.push(row("users",crew[0].t.title,fmtWhen(crew[0].d),function(){showView("plan");}));
+  if(crew.length&&!items.some(function(it){return it.t.title===crew[0].t.title;}))rows.push(row("users",crew[0].t.title,fmtWhen(crew[0].d),function(){showView("plan");}));
   if(grabs.length)rows.push(row("hand",grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs","",function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}));
   var mp2=prof?missingProfile():0;
   if(mp2)rows.push(row("user","Finish your profile",mp2+" quick question"+(mp2>1?"s":"")+" left",function(){startExtra();}));
@@ -3857,25 +3857,39 @@ function renderPlan(){
   try{drawPlan(root);}finally{focusRestore(root,keep);}
 }
 function drawPlan(root){
-  root.append(h("h1",{class:"h-sum",text:"The plan"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Where each event is, how ready it is, and where it is heading."}));
-  // Everyone sees every active event, so the whole team can see what is going on and what is left. Your own events come first.
+  var mem=!S.isAdmin;
+  root.append(h("h1",{class:"h-sum",text:mem?"Events":"The plan"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:mem?"What we are planning, nearest first.":"Where each event is, how ready it is, and where it is heading."}));
+  // Everyone sees every event that is on, so the whole team knows what is coming and what is left.
   var mineIds={};myEvents().forEach(function(e){mineIds[e.id]=1;});
-  var evs=activeEvents().slice().sort(function(a,b){return (mineIds[b.id]?1:0)-(mineIds[a.id]?1:0);});
-  if(!evs.length){root.append(h("p",{class:"sub",text:"No events yet. When one is planned, its timeline shows here."}));return;}
-  evs.forEach(function(ev){
+  var today=new Date();today.setHours(0,0,0,0);
+  function dd(ev){var d=ev.date?new Date(ev.date+"T00:00:00"):null;return d&&!isNaN(d)?Math.round((d-today)/864e5):9999;}
+  function grp(ev){var d=dd(ev);return d===0?0:d>0?1:2;}
+  var evs=activeEvents().slice().sort(function(a,b){return (grp(a)-grp(b))||(grp(a)===2?dd(b)-dd(a):dd(a)-dd(b));});
+  if(!evs.length){root.append(h("p",{class:"sub",text:"No events yet. When one is planned, it shows here."}));return;}
+  var lastGrp=-1;
+  evs.forEach(function(ev,idx){
+    var g=grp(ev);
+    if(g!==lastGrp){lastGrp=g;
+      var lab=g===0?"Happening today":idx===0?"Next up":g===1?"Coming up":"Just finished";
+      root.append(h("p",{class:"hgroup",text:lab}));}
     var st=stageData(ev),pct=eventPct(ev),cur=st.filter(function(s){return s.cur;})[0],late=st.filter(function(s){return s.late;})[0];
     var next=cur?st[st.indexOf(cur)+1]:null;
     var line=late?late.name+" is behind: was due "+fmtWhen(late.due):pct>=100?"All stages complete":"";
     var head=h("div",{class:"plan-head"},h("b",{class:"plan-name",text:ev.name||"Event"}),
       h("span",{class:"plan-when",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")}),
-      h("span",{class:"plan-days",text:daysTo(ev.date)}),ev.published===false?h("span",{class:"phasepill",style:"justify-self:start",text:"Draft, hidden from the team"}):null);
+      h("span",{class:"plan-days",text:daysTo(ev.date)}),
+      mineIds[ev.id]&&mem?h("span",{class:"chip good",style:"justify-self:start",text:"You are helping with this one"}):null,
+      ev.published===false?h("span",{class:"phasepill",style:"justify-self:start",text:"Draft, hidden from the team"}):null);
     var tk=ev.tasks||[],nDone=tk.filter(function(x){return taskState(ev,x)==="done";}).length,nOpen=tk.filter(function(x){return taskState(ev,x)==="open";}).length;
-    var sorted=coveredLine(ev);
     var left=h("p",{class:"plan-left"},h("b",{text:(tk.length-nDone)+" tasks left"}),nDone?" · "+nDone+" done":"",nOpen?" · ":"",nOpen?h("span",{class:"plan-open",text:nOpen+" still need someone"}):null);
-    var card=h("section",{class:"card hsec plan-card"},head,left,sorted,journey(ev,{vertical:true,rerender:renderPlan}),
-      line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
-      next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
-      S.isAdmin||mineIds[ev.id]?h("button",{type:"button",class:"btn small",text:S.isAdmin?"Open event":"Open my tasks",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}):null);
+    var key="plan:"+ev.id,open=idx===0?S.panel[key]!==false:!!S.panel[key];
+    var card=h("section",{class:"card hsec plan-card"},head,left,coveredLine(ev),
+      open?[journey(ev,{vertical:true,rerender:renderPlan}),
+        line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
+        next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null]:null,
+      h("div",{class:"row"},
+        h("button",{type:"button",class:"btn small",text:open?"Hide timeline":"Show timeline",onclick:function(){S.panel[key]=!open;renderPlan();}}),
+        S.isAdmin||mineIds[ev.id]?h("button",{type:"button",class:"btn small go",text:S.isAdmin?"Open event":"Open my tasks",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}):null));
     root.append(card);
   });
 }
