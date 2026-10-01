@@ -3553,7 +3553,8 @@ function drawHome(root){
   var nm=clean(S.name)||"there";
   // Identity band: photo, name, one-line bio. Everything below it is the work.
   root.append(identityBand(nm,prof?prof.title:"Finish your profile to see your card"));
-  root.append(h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):"You're good for now."}));
+  var firstRun=!S.isAdmin&&!items.length&&!myTasks().length&&!!prof;
+  root.append(h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):firstRun?"Welcome, "+nm+".":"You're good for now."}));
   var top=items[0];
   function open(x){S.evSel=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("mevents");openLinkedTask();}
   var multi=S.events.filter(function(e){return myTasks().some(function(x){return x.ev===e;});}).length>1;
@@ -3580,19 +3581,27 @@ function drawHome(root){
           replyOf(x.ev,x.t)&&replyOf(x.ev,x.t).state==="done"?h("button",{type:"button",class:"btn link",text:"Undo",onclick:function(){quickUndo(x.ev,x.t,st);}}):null);}));
       dd.open=!!S.panel.homeDone;dd.addEventListener("toggle",function(){S.panel.homeDone=dd.open;});root.append(dd);
     }
-  }else{
+  }else if(!firstRun){
     var ev0=myEvents()[0],doneHere=ev0?(ev0.tasks||[]).filter(function(t){return t.owner===S.uid&&taskState(ev0,t)==="done";}).length:0;
     root.append(h("div",{class:"hero-move clear"},h("p",{class:"k",text:"You're good"}),h("h2",{class:"hm-t",text:"Nothing needs you right now."}),
       ev0?h("p",{class:"hm-m",text:(ev0.name||"The event")+(eventPct(ev0)===0?" has not started yet.":" is "+eventPct(ev0)+"% ready.")+(doneHere?" You've done "+doneHere+" task"+(doneHere>1?"s":"")+" for it.":"")}):h("p",{text:"When something comes up that suits you, it lands here."})));
   }
   // Coming up: later phases stay folded, one tap to look
   if(!S.isAdmin&&!items.length&&!myTasks().length&&prof){
-    root.append(h("section",{class:"card hsec startcard"},h("h3",{class:"q",text:"You are set up"}),
-      h("ol",{class:"guide"},
-        h("li",{"data-s":"done"},h("span",{class:"gk","aria-hidden":"true"},ico("check",16)),h("div",{class:"gt"},h("b",{text:"Your profile is saved"}))),
-        h("li",{"data-s":"now"},h("span",{class:"gk","aria-hidden":"true"},"2"),h("div",{class:"gt"},h("b",{text:"Look at the plan"}),h("p",{class:"sub",text:"See which events are coming and what is still open."}),
-          h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Open Plan",onclick:function(){showView("plan");}})))),
-        h("li",{"data-s":"later"},h("span",{class:"gk","aria-hidden":"true"},"3"),h("div",{class:"gt"},h("b",{text:"Your tasks appear here"}))))));
+    var mpn=missingProfile(),seenPlan=lsGet("gcg_seen_plan")==="1",grabsN=upForGrabs().length;
+    var msteps=[
+      {done:true,t:"Your profile is saved"},
+      {done:mpn===0,t:"Finish your profile",d:"A few quick questions: your photo, what you have done, how you work best and what you share. Each one takes seconds.",act:{l:"Continue ("+mpn+" left)",fn:function(){startExtra();}}},
+      {done:seenPlan,t:"Look at the plan",d:"See which events are coming and what is still open.",act:{l:"Open Plan",fn:function(){showView("plan");}}},
+      {done:false,t:"Take your first task",d:grabsN?grabsN+" task"+(grabsN>1?"s are":" is")+" up for grabs. Take one that suits you, or wait for Hinda to offer you one.":"Tasks offered to you will appear here. Hinda offers them after the kickoff call.",
+        act:grabsN?{l:"See what is up for grabs",fn:function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}}:null}
+    ];
+    var mcur=msteps.findIndex(function(x){return !x.done;});
+    root.append(h("section",{class:"card hsec startcard"},h("h3",{class:"q",text:"Your next steps"}),
+      h("ol",{class:"guide"},msteps.map(function(x,i){var st=x.done?"done":i===mcur?"now":"later";
+        return h("li",{"data-s":st},h("span",{class:"gk","aria-hidden":"true"},x.done?ico("check",16):String(i+1)),
+          h("div",{class:"gt"},h("b",{text:x.t}),i===mcur&&x.d?h("p",{class:"sub",text:x.d}):null,
+            i===mcur&&x.act?h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:x.act.l,onclick:x.act.fn})):null));}))));
   }
   var later=laterItems();
   if(later.length){
@@ -3731,6 +3740,7 @@ function drawToday(root){
     {done:anyPublished,t:"Mark what is covered, then publish",d:"Take off what is already sorted, assign people on your kickoff call, and publish when you are ready.",
       act:{l:"Open my event",fn:function(){var e=S.events[0];if(e)S.evOpen=e.id;showView("events");}}}
   ];
+  if(!S.isOwner)steps.splice(1,1);
   var cur=steps.findIndex(function(x){return !x.done;});
   if(cur>-1)root.append(h("section",{class:"card hsec startcard"},h("h3",{class:"q",text:"Your next steps"}),
     h("ol",{class:"guide"},steps.map(function(x,i){var st=x.done?"done":i===cur?"now":"later";
@@ -3854,6 +3864,7 @@ function drawPlan(root){
 var VIEWS=["home","plan","mevents","crew","me","flow","today","events","team","insights","tasks","mine"];
 function showView(v){
   S.view=v;
+  if(v==="plan")lsSet("gcg_seen_plan","1");
   document.body.classList.toggle("home-band",(v==="home"&&!S.isAdmin)||(v==="today"&&S.isAdmin));
   VIEWS.forEach(function(k){var el=$("view-"+k);if(el)el.hidden=(k!==v);});
   $("wrap").classList.toggle("wide",v==="team"||v==="events"||v==="insights"||v==="today");
@@ -4155,7 +4166,7 @@ function initCaps(){
     S.db=r[0];var user=r[1];S.dl=r[2];
     if(!user||!S.db){if(S.screen==="profile")render();return;}
     return Promise.all([user.id(),user.canEdit(),user.isOwner(),user.can("data.write")]).then(function(v){
-      S.uid=v[0];S.isAdmin=!!(v[1]||v[2]);S.realAdmin=S.isAdmin;S.canWrite=v[3];
+      S.uid=v[0];S.isAdmin=!!(v[1]||v[2]);S.isOwner=!!v[2];S.realAdmin=S.isAdmin;S.canWrite=v[3];
       if(S.realAdmin&&lsGet("gcg_asmember")==="1"){S.asMember=true;S.isAdmin=false;}
       updateTabs();
       if(S.uid&&S.canWrite!==false){
