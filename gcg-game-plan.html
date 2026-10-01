@@ -1125,7 +1125,6 @@ var SCORE={top:5,good:3,curious:1};
 var ITEMS=[["A new project is about to start. What do you do first?", [["Meet everyone involved and make sure they feel included", "welcome"], ["Set up the tools and check that everything works", "fix"], ["Write down who does what and by when", "organise"], ["Get people excited about it", "host"]]], ["Someone outside the team could help us a lot. What is your move?", [["Write a clear message explaining what we do", "write"], ["Call them and make the case yourself", "sell"], ["Find out what matters to them first", "research"], ["Ask around for someone who can introduce us", "connect"]]], ["The team is split on a decision. What do you do?", [["Weigh it up and make the call", "lead"], ["Dig for what worked for others in the same situation", "research"], ["Work out what each option costs", "numbers"], ["Sketch each option so people can see it", "visual"]]], ["A new person joins the team today. What do you do?", [["Walk them through it step by step", "teach"], ["Make sure they feel at home straight away", "welcome"], ["Give them a clear list of what to do and when", "organise"], ["Pair them with the right person on the team", "connect"]]], ["The project is over. Which follow-up job do you take?", [["Write the summary and the thank-you messages", "write"], ["Edit the photos and video", "visual"], ["Count what came in and what went out", "numbers"], ["Talk to people and collect what they thought", "connect"]]], ["Something breaks at the worst moment. What do you do?", [["Keep everyone calm and the mood up", "host"], ["Work out what is wrong and fix it", "fix"], ["Decide the plan and tell people who does what", "lead"], ["Switch to the backup plan you prepared", "organise"]]], ["You are planning next month. Which part do you want?", [["Negotiate the price and terms", "sell"], ["Build the timeline and checklist", "organise"], ["Design the flyer and the pages", "visual"], ["Study what others do well", "research"]]], ["Someone is upset about something. What do you do?", [["Listen and calm them down", "welcome"], ["Write back clearly about what we will do", "write"], ["Show the team how to handle this next time", "teach"], ["Check the records and put it right", "numbers"]]], ["You have a free Saturday for GCG. How do you use it?", [["Learn a new tool so the team is faster", "fix"], ["Message ten people in my network about GCG", "connect"], ["Write guides and templates others can use", "write"], ["Clean up the budget sheet", "numbers"]]], ["Which moment would you most like to own?", [["Being up front and leading the moment", "host"], ["Welcoming people as they arrive", "welcome"], ["Deciding what happens when plans change", "lead"], ["Explaining how things work so everyone understands", "teach"]]], ["A partner asks for a plan by Friday. You:", [["Pull the numbers together", "numbers"], ["Present it and win them over", "sell"], ["Lay out the plan so it looks sharp", "visual"], ["Check the facts and sources", "research"]]], ["Which sounds like your best contribution to a team?", [["Setting direction and getting people moving", "lead"], ["Keeping everything on track", "organise"], ["Helping others get better", "teach"], ["Making things run without a hitch", "fix"]]]];
 var ASK=[1,5,3,2,8,9,10];
 var NQ=ITEMS.length;
-var MIN_ASK=4;
 // [id, label, traits, emoji]
 var LIKE=[
  ["talk","Talking and working with people",["welcome","host","connect"],""],
@@ -1709,9 +1708,7 @@ var BUILD={
     });
     card.append(hint,box);
     paint();
-    if(i===0)card.append(h("p",{class:"sub jhint",text:"Nothing fits? Tap 'None of these feel like me'. You only need four of the seven for your card."}));
-    navRow(card,"Next →",function(){if(!decodeA(S.q[n])){warn("Pick one most like you and one least like you, or skip this one.");return;}next();},
-      {left:h("button",{type:"button",class:"btn link",text:"None of these feel like me",onclick:function(){clearTimeout(advTimer);S.tmp=null;S.q[n]=0;saveDraft();next();}})});
+    navRow(card,"Next →",function(){if(!decodeA(S.q[n])){warn("Pick one most like you and one least like you.");return;}next();});
     return hd;
   },
   done:function(card){
@@ -1768,7 +1765,7 @@ var BUILD={
       if(yes.length||g.curious.length)card.append(h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:""+FN[i].name});}),g.curious.map(function(i){return h("span",{class:"chip curious",text:""+FN[i].name});})));
       card.append(h("button",{type:"button",class:"btn",text:"See all "+FNS.filter(function(f){return f.when!=="Later";}).length+" jobs (optional)",onclick:function(){S.returnTo="deck";go("all");}}));
       navRow(card,"Reveal my card ",function(){
-        if(answeredAsk(S.q)<MIN_ASK){var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});go("s"+k);setTimeout(function(){warn("Answer at least "+MIN_ASK+" situations for your card. "+answeredAsk(S.q)+" so far.");},50);return;}
+        if(answeredAsk(S.q)<ASK.length){var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});go("s"+k);setTimeout(function(){warn("One situation still needs an answer.");},50);return;}
         next();},{big:true});
       return hd;
     }
