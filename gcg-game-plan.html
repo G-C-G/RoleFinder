@@ -2093,7 +2093,7 @@ function renderPeople(){
       p.cv?h("p",null,h("b",{text:"CV or LinkedIn: "}),p.cv):null,
       h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy notes",onclick:function(){copyText(personNotes(p),$("t-exportStatus"),"Copied notes for "+pname(p)+".");}}),
         h("button",{type:"button",class:"btn small",text:"Export their records (CSV)",onclick:function(){exportPerson(p.id,$("t-exportStatus"));}}),
-        h("button",{type:"button",class:"btn small","aria-pressed":String(noAutoOn(p.id)),text:noAutoOn(p.id)?"Kept off auto-assign (tap to allow)":"Keep off auto-assign",onclick:function(){toggleNoAuto(p.id);}}),del)));
+        (p.id===S.ownerId?h("span",{class:"sub",text:"Owner: never auto-assigned. Can take anything up for grabs."}):h("button",{type:"button",class:"btn small","aria-pressed":String(noAutoOn(p.id)),text:noAutoOn(p.id)?"Kept off auto-assign (tap to allow)":"Keep off auto-assign",onclick:function(){toggleNoAuto(p.id);}})),del)));
   });
 }
 function personNotes(p){
@@ -2151,7 +2151,7 @@ function scoreOf(p,id){
 }
 function isCritical(id){return S.critical.indexOf(id)>-1;}
 function eligible(people,f,allowQ){
-  return people.map(function(p){
+  return people.filter(function(p){return !noAutoOn(p.id);}).map(function(p){
     var s=scoreOf(p,f.id),fit=fitFor(p.q,f.id);
     if(s<0)return null;if(s===0&&!(allowQ&&fit!=null))return null;
     return {p:p,s:s,cs:s+(fit==null?0:2*fit)};
@@ -2681,7 +2681,8 @@ function fromTemplate(key,name,date,start){
 }
 // People kept out of automatic suggestions. They can still take tasks from Up for grabs, and Hinda can still assign them by hand.
 S.noAuto={};
-function noAutoOn(id){return !!(S.noAuto&&S.noAuto[id]);}
+// The owner runs the games and the plan. She is never suggested or offered a task; she picks up what is left in Up for grabs herself.
+function noAutoOn(id){return !!(id&&id===S.ownerId)||!!(S.noAuto&&S.noAuto[id]);}
 function toggleNoAuto(id){S.noAuto=Object.assign({},S.noAuto);if(S.noAuto[id])delete S.noAuto[id];else S.noAuto[id]=true;if(S.db)S.db.doc("settings/noauto").set({ids:S.noAuto}).catch(function(){});renderTeam();}
 function suggestEvent(ev){
   var n=0;
@@ -4444,6 +4445,9 @@ function initCaps(){
       if(S.isAdmin)S.db.collection("ideas").onSnapshot(function(snap){S.ideas={};snap.docs.forEach(function(d){S.ideas[d.id]=thaw(d.data());});if(S.view==="team"&&S.teamTab==="ideas")renderInbox();if(S.view==="today")renderToday();if(S.view==="home")renderHome();},function(){});
       S.db.collection("help").onSnapshot(function(snap){S.help={};snap.docs.forEach(function(d){S.help[d.id]=thaw(d.data());});renderBell();refresh();},function(){});
       S.db.doc("settings/noauto").onSnapshot(function(snap){S.noAuto=snap.exists?thaw(snap.data().ids||{}):{};if(S.view==="team")renderTeam();},function(){});
+      S.db.doc("settings/owner").onSnapshot(function(snap){S.ownerId=snap.exists?clean(snap.data().id):"";
+        if(S.isOwner&&S.uid&&!S.asMember&&S.ownerId!==S.uid)S.db.doc("settings/owner").set({id:S.uid}).catch(function(){});
+        if(S.view==="team")renderTeam();},function(){});
       S.db.doc("settings/app").onSnapshot(function(snap){if(snap.exists&&snap.data().url)S.appUrl=clean(snap.data().url);},function(){});
       S.db.collection("pings").onSnapshot(function(snap){
         S.pings=snap.docs.map(function(d){var o=thaw(d.data());o.id=d.id;return o;});
