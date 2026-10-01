@@ -2104,7 +2104,7 @@ function renderCov(){
       var n=yes.length+may.length;if(only&&n)return null;
       var fits=n?[]:bestFits(f.id,2);
       return h("div",{class:"cov-row"},
-        h("span",{class:"nm"},h("span",{class:"code",text:f.id}),f.name,h("span",{class:"tag",text:f.when}),isCritical(f.id)?h("span",{class:"must",text:"Key job"}):null),
+        h("span",{class:"nm"},h("span",{class:"code",text:f.id}),f.name,h("span",{class:"tag",text:f.when}),isCritical(f.id)?h("span",{class:"must",text:"Essential job"}):null),
         n?h("div",{class:"chips"},yes.map(function(p){return h("span",{class:"chip good",text:""+pname(p)});}),may.map(function(p){return h("span",{class:"chip curious",text:""+pname(p)});})):
           h("span",{class:"none",text:"Nobody picked this."+(fits.length?" Might suit, from their answers: "+fits.map(function(x){return pname(x.p);}).join(", ")+". Ask them.":"")}));
     }).filter(Boolean);
@@ -2175,12 +2175,12 @@ function renderRoles(){
     sel.value=info.outsource[f.id]?"__out":(info.assign[f.id]||"");
     sel.addEventListener("change",function(){S.overrides[f.id]=sel.value;renderRoles();});
     var crit=isCritical(f.id),has=!!info.assign[f.id],b=info.basis[f.id],note="";
-    if(crit&&!has&&!info.outsource[f.id])note="Key job, and nobody fits yet.";
+    if(crit&&!has&&!info.outsource[f.id])note="Essential job, and nobody fits yet.";
     else if(b==="questionnaire")note="Nobody picked this. Suggested from their answers. Ask them first.";
     var cb=h("input",{type:"checkbox",id:"must-"+f.id});cb.checked=crit;
     cb.addEventListener("change",function(){toggleCritical(f.id,cb.checked);});
     root.append(h("div",{class:"rolerow"},h("span",{class:"nm"},h("span",{class:"code",text:f.id}),f.name,h("span",{class:"tag",text:f.when})),sel,
-      h("div",{class:"rolemeta"},h("label",{for:"must-"+f.id},cb," Key job"),note?h("span",{class:"rolenote",text:note}):null)));
+      h("div",{class:"rolemeta"},h("label",{for:"must-"+f.id},cb," Essential job"),note?h("span",{class:"rolenote",text:note}):null)));
   });
 }
 var critTimer=null;
@@ -2215,7 +2215,7 @@ function exportPeople(){
 }
 function exportRoles(){
   var info=finalInfo(),by={};S.people.forEach(function(p){by[p.id]=pname(p);});
-  var rows=[["Code","Job","When","Area","Key job","Proposed owner","Basis"]];
+  var rows=[["Code","Job","When","Area","Essential job","Proposed owner","Basis"]];
   FNS.forEach(function(f){rows.push([f.id,f.name,f.when,AREA[f.area].name,isCritical(f.id)?"Yes":"",info.outsource[f.id]?"Outsource or recruit":(by[info.assign[f.id]]||""),info.outsource[f.id]?"outsource":(info.basis[f.id]||"")]);});
   saveFile("gcg-draft-roles.csv",csv(rows));
 }
@@ -2244,7 +2244,7 @@ function addPasted(){
 }
 
 /* ---------- Events: templates, checkpoints, priorities, a clock, and every step timestamped ---------- */
-var PRI={must:{l:"Key",o:0},should:{l:"Helpful",o:1},nice:{l:"Bonus",o:2}};
+var PRI={must:{l:"Essential",o:0},should:{l:"Helpful",o:1},nice:{l:"Bonus",o:2}};
 var SIZE={S:"Small",M:"Medium",L:"Large"};
 var PHASES=[["before","Before"],["during","On the day"],["after","After"]];
 // A template task: title, job, phase, day offset from the event date, minutes from start time (on-the-day tasks only),
@@ -2818,7 +2818,7 @@ function drawEvents(root){
       field("Goal: what we are trying to make happen","text",ev.goal,function(v){ev.goal=v;},"goal"),
       h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time","time",ev.start,function(v){ev.start=v;},"start")),
       h("div",{class:"two-col"},field("Place","text",ev.place,function(v){ev.place=v;},"place"),h("div",{class:"field"},h("label",{text:"Event lead (chases the list)"}),leadSel)),
-      ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:""+ms.must+" of "+ms.all+" tasks are Key. Keep it to about a third."}):null));
+      ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:""+ms.must+" of "+ms.all+" tasks are Essential. Keep it to about a third."}):null));
   if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length)root.append(h("div",{style:"margin-top:14px"},msgBox(S.evMsgs.title,S.evMsgs.list)));
   if(S.run&&S.run.eid===ev.id)root.append(h("div",{id:"runBox",class:"card",style:"margin-top:14px"}));
   var cc=crewCredits(ev);if(cc)root.append(cc);
@@ -3618,7 +3618,7 @@ function grabRow(x){
   var st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
   var meta=[d?fmtWhen(d):"",x.places>1?x.places+" places":"",x.fit===-99?"outside your usual":""].filter(Boolean).join(" · ");
   var must=(x.t.pri||"should")==="must";
-  return h("div",{class:"grow"},h("div",{class:"gr-t"},h("b",{class:"gr-title",text:x.t.title}),(meta||must)?h("span",{class:"sub"},must?h("b",{class:"mustmark",text:"Key"}):null,must&&meta?" · ":"",meta):null,st),
+  return h("div",{class:"grow"},h("div",{class:"gr-t"},h("b",{class:"gr-title",text:x.t.title}),(meta||must)?h("span",{class:"sub"},must?h("b",{class:"mustmark",text:"Essential"}):null,must&&meta?" · ":"",meta):null,st),
     h("button",{type:"button",class:"btn small go take",text:"Take",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}));
 }
 function groupByEvent(list,prefix,render,label,opts){
@@ -3663,7 +3663,7 @@ function drawHome(root){
       canTick?h("button",{type:"button",class:"tick","aria-label":"Mark "+x.t.title+" done",onclick:function(){quickDone(x.ev,x.t,st);}}):h("span",{class:"tick off","aria-hidden":"true"}),
       h("button",{type:"button",class:"tr-b",onclick:function(){open(x);}},
         h("span",{class:"tr-t"},h("b",{text:x.t.title}),sub?h("span",{class:"sub",text:sub}):null),
-        x.st==="offered"?h("span",{class:"tr-pri new",text:"New"}):pr==="must"?h("span",{class:"tr-pri",text:"Key"}):null,ico("chevR",16)));
+        x.st==="offered"?h("span",{class:"tr-pri new",text:"New"}):pr==="must"?h("span",{class:"tr-pri",text:"Essential"}):null,ico("chevR",16)));
   }
   if(items.length){
     var ph=curPhase(top.ev);
