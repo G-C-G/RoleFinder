@@ -872,6 +872,12 @@ button.chip.on{outline:2px solid var(--ink)}
 .guide li[data-s="done"] .gt b{color:var(--muted);font-weight:600}
 .guide li[data-s="later"] .gt b{color:var(--muted);font-weight:600}
 .guide .gt p{margin:2px 0 8px}
+.evgrp{border-top:1px solid var(--line);padding:2px 0}
+.evgrp:first-child{border-top:0}
+.evgrp>summary{padding:13px 0;font-weight:700;cursor:pointer;min-height:48px;display:flex;align-items:center}
+.evgrp .task{margin-top:10px}
+.kindgrp{margin-top:6px}
+.kindhead{margin:12px 0 4px;font:700 12px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 </style>
 
 <div class="wrap" id="wrap">
@@ -3566,6 +3572,33 @@ function identityBand(name,bio){
   return h("button",{type:"button",class:"pband","aria-label":"Your profile",onclick:function(){showView("me");}},
     h("span",{class:"pb-who"},h("span",{class:"pb-name",text:name}),h("span",{class:"pb-bio",text:bio})),ico("chevR",18));
 }
+// Kinds of work, so a long list reads as "organising", "setting up", "editing" and not one pile.
+var KINDS=["Organising and planning","Setting up and on the night","Design, photos and editing","Marketing and messages","Venues, partners and clients","Money and admin","Tech and tools"];
+var KIND_OF={};
+(function(){
+  var m={0:"A1 A2 A5 F1 F4 F5 F6 F7 I1 I2 I3 I4",1:"C1 C2 C3 C4 C5 C6 C7 C9 C10 C11 F2 F3 F9",2:"C8 D2 D3 D4 D5 D7",3:"A4 B1 B2 B3 B4 B5 D1 D6 D8 D9",4:"E1 E2 E3 E4 E5 E6 E7 E8",5:"A3 G1 G2 G3 G4 G5 G6 H1 H2 H3 H4 H5",6:"J1 J2"};
+  Object.keys(m).forEach(function(k){m[k].split(" ").forEach(function(j){KIND_OF[j]=KINDS[k];});});
+})();
+function kindOf(job){return KIND_OF[job]||"Other";}
+// Tasks always belong to one event. Show them event by event so three events never look like one huge list.
+// opts.kinds: inside each event, group by kind of work, best fit for the person first. opts.openFirst: open the first event (default yes).
+function groupByEvent(list,prefix,render,label,opts){
+  opts=opts||{};var by={},order=[],seen={};
+  // A task that needs several people is one task with several places, not several rows.
+  list.forEach(function(x){var id=x.ev.id;if(!by[id]){by[id]=[];order.push(x.ev);}
+    var key=opts.merge===false?null:id+"|"+(x.t.group||"");
+    if(key&&x.t.group&&seen[key]){seen[key].places++;return;}
+    x.places=1;if(key&&x.t.group)seen[key]=x;by[id].push(x);});
+  return order.map(function(ev,i){var k=prefix+ev.id,items=by[ev.id],body;
+    if(opts.kinds){
+      var kinds={},ko=[];items.forEach(function(x){var kk=kindOf(x.t.job);if(!kinds[kk]){kinds[kk]={name:kk,list:[],best:-99};ko.push(kinds[kk]);}kinds[kk].list.push(x);if((x.fit||0)>kinds[kk].best)kinds[kk].best=x.fit||0;});
+      ko.sort(function(a,b){return (b.best-a.best)||(KINDS.indexOf(a.name)-KINDS.indexOf(b.name));});
+      body=h("div",{class:"tlist"},ko.map(function(g){return h("div",{class:"kindgrp"},h("p",{class:"kindhead",text:g.name+" · "+g.list.length}),g.list.map(render));}));
+    }else body=h("div",{class:"tlist"},items.map(render));
+    var d=h("details",{class:"evgrp"},h("summary",{text:(ev.name||"Event")+" · "+items.length+" "+(label||"open")}),body);
+    var first=opts.openFirst===false?false:i===0;
+    d.open=S.panel[k]!==undefined?!!S.panel[k]:first;d.addEventListener("toggle",function(){S.panel[k]=d.open;});return d;});
+}
 function drawHome(root){
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),items=myOpenItems(),st=h("p",{class:"status",role:"status","aria-live":"polite"});
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
@@ -3574,13 +3607,15 @@ function drawHome(root){
   // Identity band: photo, name, one-line bio. Everything below it is the work.
   root.append(identityBand(nm,prof?prof.title:"Finish your profile to see your card"));
   var firstRun=!S.isAdmin&&!items.length&&!myTasks().length&&!!prof;
-  root.append(h("h1",{class:"h-sum",text:items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):firstRun?"Welcome, "+nm+".":"You're good for now."}));
-  var top=items[0];
+  var top=items[0],topEv=top?top.ev:null,itemsTop=items.filter(function(x){return x.ev===topEv;}),otherEvs=[];
+  items.forEach(function(x){if(x.ev!==topEv&&otherEvs.indexOf(x.ev)<0)otherEvs.push(x.ev);});
+  root.append(h("h1",{class:"h-sum",text:otherEvs.length?"Your tasks, event by event.":items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):firstRun?"Welcome, "+nm+".":"You're good for now."}));
+  if(otherEvs.length)root.append(h("p",{class:"sub",style:"margin:-6px 2px 10px",text:"Each task belongs to one event. The tasks below are for "+(topEv.name||"this event")+" only. Your tasks for the other event"+(otherEvs.length>1?"s":"")+" are further down."}));
   function open(x){S.evSel=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("mevents");openLinkedTask();}
   var multi=S.events.filter(function(e){return myTasks().some(function(x){return x.ev===e;});}).length>1;
-  function line(x){
+  function line(x,showEv){
     var due=x.due,pr=x.t.pri||"should",canTick=x.st!=="offered";
-    var sub=(multi?(x.ev.name||"")+(due?" · ":""):"")+(due?(x.late?"overdue, was ":"")+fmtWhen(due):"");
+    var sub=(showEv?(x.ev.name||"")+(due?" · ":""):"")+(due?(x.late?"overdue, was ":"")+fmtWhen(due):"");
     return h("div",{class:"trow"+(x.late?" late":"")},
       canTick?h("button",{type:"button",class:"tick","aria-label":"Mark "+x.t.title+" done",onclick:function(){quickDone(x.ev,x.t,st);}}):h("span",{class:"tick off","aria-hidden":"true"}),
       h("button",{type:"button",class:"tr-b",onclick:function(){open(x);}},
@@ -3589,17 +3624,22 @@ function drawHome(root){
   }
   if(items.length){
     var ph=curPhase(top.ev);
-    var doneNow=myTasks().filter(function(x){return taskState(x.ev,x.t)==="done"&&taskPhase(x.ev,x.t)===ph;}),total=doneNow.length+items.length;
-    root.append(h("div",{class:"phasehead"},h("span",{class:"phasepill",text:PHASE_NAME[ph]}),h("span",{class:"sub",text:[multi?"":(top.ev.name||""),multi?"":daysTo(top.ev.date),doneNow.length+" of "+total+" done"].filter(Boolean).join(" · ")})));
+    var doneNow=myTasks().filter(function(x){return x.ev===topEv&&taskState(x.ev,x.t)==="done"&&taskPhase(x.ev,x.t)===ph;}),total=doneNow.length+itemsTop.length;
+    root.append(h("div",{class:"phasehead"},h("span",{class:"phasepill",text:PHASE_NAME[ph]}),h("span",{class:"sub",text:[topEv.name||"",daysTo(topEv.date),doneNow.length+" of "+total+" done"].filter(Boolean).join(" · ")})));
     root.append(h("div",{class:"pbar","aria-hidden":"true"},h("i",{style:"width:"+Math.round(doneNow.length/total*100)+"%"})));
-    root.append(nextMoveCard(top,st,multi));
-    var rest=items.slice(1);
-    if(rest.length)root.append(h("p",{class:"hgroup",text:"Or start with any of these · "+rest.length}),h("section",{class:"card hlist"},rest.map(function(x){return line(x);})));
+    root.append(nextMoveCard(top,st,false));
+    var rest=itemsTop.slice(1);
+    if(rest.length)root.append(h("p",{class:"hgroup",text:"Or start with any of these · "+rest.length}),h("section",{class:"card hlist"},rest.map(function(x){return line(x,false);})));
     if(doneNow.length){
       var dd=h("details",{class:"card donebox"},h("summary",{text:"Done · "+doneNow.length}),
         doneNow.map(function(x){return h("div",{class:"trow isdone"},h("span",{class:"tick on","aria-hidden":"true"},ico("check",16)),h("span",{class:"tr-t"},h("b",{text:x.t.title}),h("span",{class:"sub",text:"Done "+fmtWhen(doneAt(x.ev,x.t))})),
           replyOf(x.ev,x.t)&&replyOf(x.ev,x.t).state==="done"?h("button",{type:"button",class:"btn link",text:"Undo",onclick:function(){quickUndo(x.ev,x.t,st);}}):null);}));
       dd.open=!!S.panel.homeDone;dd.addEventListener("toggle",function(){S.panel.homeDone=dd.open;});root.append(dd);
+    }
+    if(otherEvs.length){
+      var rowsOther=items.filter(function(x){return x.ev!==topEv;});
+      root.append(h("p",{class:"hgroup",text:"Your tasks for other events"}),h("section",{class:"card hsec"},
+        groupByEvent(rowsOther,"homeev:",function(x){return line(x,false);},"for you",{openFirst:false})));
     }
   }else if(!firstRun){
     var ev0=myEvents()[0],doneHere=ev0?(ev0.tasks||[]).filter(function(t){return t.owner===S.uid&&taskState(ev0,t)==="done";}).length:0;
@@ -3631,7 +3671,7 @@ function drawHome(root){
       [0,1,2].filter(function(k){return groups[k];}).map(function(k){
         var g=groups[k].sort(byTime),key="home:ph"+k;
         var d=h("details",{class:"hrow-d locked"},h("summary",{text:(k===cp?"Later before the event":PHASE_NAME[k])+" · "+g.length+" task"+(g.length>1?"s":"")}),
-          h("div",{class:"tlist"},g.map(function(x){return line(x,true);})));
+          h("div",{class:"tlist"},g.map(function(x){return line(x,multi);})));
         d.open=!!S.panel[key];d.addEventListener("toggle",function(){S.panel[key]=d.open;});return d;})));
   }
   // More: quiet shortcuts in one list (the event itself lives in Plan and Events)
@@ -3644,7 +3684,8 @@ function drawHome(root){
   var grabs=upForGrabs(),rows=[];
   function row(icon,text,sub,fn){return h("button",{type:"button",class:"hrow",onclick:fn},ico(icon,20),h("span",{class:"hr-t"},text,sub?h("span",{class:"hr-s",text:sub}):null),ico("chevR",18));}
   if(crew.length&&!items.some(function(it){return it.t.title===crew[0].t.title;}))rows.push(row("users",crew[0].t.title,fmtWhen(crew[0].d),function(){showView("plan");}));
-  if(grabs.length)rows.push(row("hand",grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs","",function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}));
+  var grabEvs=[];grabs.forEach(function(x){if(grabEvs.indexOf(x.ev.id)<0)grabEvs.push(x.ev.id);});
+  if(grabs.length)rows.push(row("hand",grabEvs.length>1?"Up for grabs in "+grabEvs.length+" events":grabs.length+" task"+(grabs.length>1?"s":"")+" up for grabs for "+(grabs[0].ev.name||"this event"),"",function(){S.evSel="";showView("mevents");setTimeout(function(){var g=$("grabs");if(g&&g.scrollIntoView)g.scrollIntoView({block:"start"});},60);}));
   var mp2=prof?missingProfile():0;
   if(mp2)rows.push(row("user","Finish your profile",mp2+" quick question"+(mp2>1?"s":"")+" left",function(){startExtra();}));
   if(S.uid&&!S.isAdmin)rows.push(ideaBox(true));
@@ -3673,10 +3714,10 @@ function drawMyEvents(root){
   var grabs=upForGrabs();
   if(grabs.length){
     root.append(h("section",{class:"card",id:"grabs",style:"margin-top:14px"},h("h3",{class:"q",text:"Up for grabs"}),h("p",{class:"sub",text:"Nobody has these yet. First come, first served: tap to take one and it is yours."}),
-      grabs.map(function(x){var r=myReply(x.ev,x.t),asked=r&&r.answer==="claim",st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
+      groupByEvent(grabs,"grabs:",function(x){var r=myReply(x.ev,x.t),asked=r&&r.answer==="claim",st=h("span",{class:"status"}),d=taskDue(x.ev,x.t);
         return h("div",{class:"task","data-s":"open"},h("div",{class:"task-top"},priBadge(x.t.pri),h("b",{class:"ttl",text:x.t.title})),
-          h("p",{class:"meta",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")+(x.fit===-99?" · Outside what you usually do":"")}),
-          h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));})));
+          h("p",{class:"meta",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")+(x.places>1?" · "+x.places+" places":"")+(x.fit===-99?" · Outside what you usually do":"")}),
+          h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},st);}}),st));},"open",{kinds:true})));
   }
 }
 function drawMemberEvent(root,ev){
@@ -3779,10 +3820,10 @@ function drawToday(root){
   var gr=upForGrabs();
   if(gr.length){
     var gst=h("span",{class:"status"});
-    var gd=h("details",{class:"card hsec grabsbox"},h("summary",{class:"fold-h",text:"Up for grabs · "+gr.length}),
+    var gd=h("details",{class:"card hsec grabsbox"},h("summary",{class:"fold-h",text:"Up for grabs"}),
       h("p",{class:"sub",text:"Nobody has these yet. You can take one, first come, first served, like anyone else."}),
-      gr.slice(0,12).map(function(x){var d=taskDue(x.ev,x.t);return h("div",{class:"cvline"},h("span",{class:"cv-t"},h("b",{text:x.t.title}),h("span",{class:"sub",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")})),
-        h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},gst);}}));}),gst);
+      groupByEvent(gr,"agrab:",function(x){var d=taskDue(x.ev,x.t);return h("div",{class:"cvline"},h("span",{class:"cv-t"},h("b",{text:x.t.title}),h("span",{class:"sub",text:(x.ev.name||"")+(d?" · "+fmtWhen(d):"")+(x.places>1?" · "+x.places+" places":"")})),
+        h("button",{type:"button",class:"btn small go",text:"Take it",onclick:function(){writeReply(x.ev,x.t,{answer:"claim"},gst);}}));},"open",{kinds:true}),gst);
     gd.open=!!S.panel.adminGrabs;gd.addEventListener("toggle",function(){S.panel.adminGrabs=gd.open;});root.append(gd);
   }
   renderBell();
