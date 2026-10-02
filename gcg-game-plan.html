@@ -861,7 +861,7 @@ button.chip.on{outline:2px solid var(--ink)}
 .steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;padding:2px 0}.cvline .cv-t{flex:1 1 100%}.cvline .cvbtns{flex:0 0 auto}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
-.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.pc2-photo{width:104px;height:104px;border-radius:24px;object-fit:cover;border:2px solid #F6B80F;background:#2A2218}.pc2-photo.empty{display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:34px;color:#FFE08A}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
+.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.pc2-photo{width:104px;height:104px;border-radius:24px;object-fit:cover;border:2px solid #F6B80F;background:#2A2218}.pc2-photo.empty{display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:34px;color:#FFE08A}.pc2-about{margin:6px 0 0;font-size:15px;line-height:1.5;max-width:34ch;opacity:.92;font-weight:400}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
@@ -4320,6 +4320,7 @@ function playerCard(p,prof,opts){
       prof?h("p",{class:"pc2-type"},h("span",{text:"The "+prof.chips[0]}),h("br"),h("span",{class:"plus",text:"+ "+prof.chips[1]})):h("p",{class:"pc2-type",text:"Card coming soon"}),
       ts.length?h("div",{class:"chips center"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
       prof?h("ul",{class:"pc2-str"},prof.top.map(function(t){return h("li",{text:TRAIT_LABEL[t]});})):null,
+      opts.statement?h("p",{class:"pc2-about",text:opts.statement}):null,
       opts.counts?h("p",{class:"pc2-n",text:opts.counts}):null));
 }
 
@@ -4514,19 +4515,12 @@ function drawMe(root){
   var evN=Object.keys(evc).length,counts=hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+evN+" event"+(evN===1?"":"s"):"New to the crew";
   var role=ts.length?ts.map(function(x){return x.name;}).join(" · "):"The "+prof.chips[0]+" + "+prof.chips[1];
   var ph=cleanPhoto(S.photo),pst=h("p",{class:"status",role:"status","aria-live":"polite"});
-  // The profile: a light crew card. The photo leads, then name, role, strengths and a line about you.
-  root.append(h("section",{class:"mehero"},
-    h("div",{class:"me-top"},
-      ph?h("img",{class:"me-photo",src:ph,alt:"Your photo"}):h("div",{class:"me-photo empty","aria-hidden":"true",text:initials(S.name)||"You"}),
-      h("div",{class:"me-id"},h("p",{class:"me-kick"},"GCG crew"),
-        h("h1",{class:"me-name",text:S.name||"You"}),h("p",{class:"me-role",text:role}))),
-    h("div",{class:"chips"},prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
-    prof.lines[0]?h("p",{class:"me-statement",text:prof.lines[0]}):null,
-    h("p",{class:"me-count",text:counts}),
-    h("div",{class:"row"},
-      h("button",{type:"button",class:"btn small go",text:"Share my card",onclick:function(){downloadPdf(true,pst);}}),
-      h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false,pst);}}),
-      h("button",{type:"button",class:"btn small",text:S.photo?"Change photo":"Add a photo",onclick:function(){startExtra("photo");}})),pst));
+  // The profile header is the dark crew card: photo, name, role, strengths and a line about you, once. Everything else sits below it on light.
+  root.append(playerCard(p,prof,{counts:counts,statement:prof.lines[0]}));
+  root.append(h("div",{class:"row center",style:"margin-top:12px"},
+    h("button",{type:"button",class:"btn small go",text:"Share my card",onclick:function(){downloadPdf(true,pst);}}),
+    h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false,pst);}}),
+    h("button",{type:"button",class:"btn small",text:S.photo?"Change photo":"Add a photo",onclick:function(){startExtra("photo");}})),pst);
   var miss=EXTRA.filter(extraMissing).length;
   if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
   // Jobs: I like, I'm open to, Never offer. Tap any job to change your answer.
