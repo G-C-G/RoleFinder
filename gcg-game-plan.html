@@ -3543,12 +3543,10 @@ function drawProject(root){
   var sd=h("input",{type:"date","aria-label":"Start date","data-k":"pn-start",value:pr.start||""});sd.addEventListener("change",function(){pr.start=sd.value;save(true);rerenderProj();});
   var td=h("input",{type:"date","aria-label":"Done by","data-k":"pn-target",value:pr.target||""});td.addEventListener("change",function(){pr.target=td.value;save(true);rerenderProj();});
   var frameDays=(tg&&pDay(pr.start))?(pr.noWeekends?pWorkDays(pDay(pr.start),tg):Math.round((tg-pDay(pr.start))/864e5)):null;
-  root.append(h("section",{class:"card hsec frame"},h("h3",{class:"q",text:"Time frame"}),
+  var frameBox=h("div",{class:"frame"},
     h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Starts"}),sd),h("div",{class:"field"},h("label",{text:"Must be done by"}),td)),
     frameDays!=null?h("p",{style:"margin:0"},h("b",{text:frameDays+(pr.noWeekends?" working days":" days")+" in the frame"}),h("span",{class:"sub",text:" · "+daysTo(pr.target)})):h("p",{class:"sub",style:"margin:0",text:"Give it a start and a done-by date. The steps and suggestions work inside that frame."}),
     h("label",{class:"pcheck"},(function(){var cb=h("input",{type:"checkbox","aria-label":"Keep weekends free"});cb.checked=!!pr.noWeekends;cb.addEventListener("change",function(){pr.noWeekends=cb.checked;save(true);rerenderProj();});return cb;})()," Keep weekends free (no work planned on Saturday or Sunday)"),
-    h("div",{class:"jbar","aria-label":st.pct+"% done"},h("i",{style:"width:"+st.pct+"%"})),
-    h("p",{style:"margin:0"},h("b",{text:st.pct+"% done · "+st.pace}),h("span",{class:"sub",text:st.steps?" · "+st.left+" of "+st.steps+" steps left":""})),
     h("p",{class:"sub",style:"margin:0",text:fitText}),
     (function(){var hrs=pr.steps.reduce(function(t,x){return t+(x.hours||0);},0);return hrs>0?h("p",{class:"sub",style:"margin:0",text:"Estimated effort: "+Math.round(hrs)+" hours across "+pr.steps.length+" tasks."}):null;})(),
     sg?h("details",{class:"more",open:S.panel["pr-sug"]?true:null,ontoggle:function(e){S.panel["pr-sug"]=e.currentTarget.open;}},h("summary",{text:"Suggest timings to fit the frame"}),
@@ -3557,7 +3555,7 @@ function drawProject(root){
       h("ul",{class:"ovlist"},sg.rows.map(function(x){return h("li",null,h("p",{class:"ovwho"},h("b",{text:x.s.title||"Step"}),h("span",{class:"sub",text:" · you said "+(x.est?x.est+" day"+(x.est>1?"s":""):"no estimate")+" · suggest "+x.sug+" · done by "+pShort(x.end)})));})),
       h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Set these as deadlines",onclick:function(){sg.rows.forEach(function(x){x.s.due=pIso(x.end);});save(true);rerenderProj();toast("Deadlines set. You can change any step.");}}),
         sg.over>0?h("button",{type:"button",class:"btn small",text:"Also shorten my estimates to fit",onclick:function(){sg.rows.forEach(function(x){x.s.days=x.sug;x.s.due=pIso(x.end);});save(true);rerenderProj();}}):null,
-        h("button",{type:"button",class:"btn link",text:"Clear all deadlines",onclick:function(){pr.steps.forEach(function(x){x.due="";});save(true);rerenderProj();}}))):null));
+        h("button",{type:"button",class:"btn link",text:"Clear all deadlines",onclick:function(){pr.steps.forEach(function(x){x.due="";});save(true);rerenderProj();}}))):null);
   root.append(pr.about?h("section",{class:"card hsec"},h("p",{class:"about",style:"margin:0",text:pr.about})):h("p",{class:"sub",text:"Say what this project is about, under Edit project."}));
   // timeline (shown after the milestones and steps)
   var tlCard=null;
@@ -3662,8 +3660,8 @@ function drawProject(root){
   pcIn.addEventListener("change",function(){var f=pcIn.files&&pcIn.files[0];if(!f)return;say(pcSt,"Preparing the picture…");
     shrinkImg(f,640,95000,function(big){if(!big){say(pcSt,"That image could not be used or is too large. Try another.","warn");return;}
       shrinkImg(f,320,40000,function(sm){pr.flyer=big;pr.thumb=sm||"";save(true);renderEvents();toast("Picture added.");});});});
-  root.append(h("details",{class:"more",open:S.panel["pr-edit"]?true:null,ontoggle:function(e){S.panel["pr-edit"]=e.currentTarget.open;}},h("summary",{text:"Edit project: name, about and picture"}),
-    h("div",{class:"field"},h("label",{text:"Project name"}),nm),h("div",{class:"field"},h("label",{text:"What it is about"}),ab),
+  root.append(h("details",{class:"more",open:S.panel["pr-edit"]?true:null,ontoggle:function(e){S.panel["pr-edit"]=e.currentTarget.open;}},h("summary",{text:"Edit project: dates, name, about and picture"}),
+    frameBox,h("div",{class:"field"},h("label",{text:"Project name"}),nm),h("div",{class:"field"},h("label",{text:"What it is about"}),ab),
     h("div",{class:"field"},h("label",{text:"Picture"}),cleanFlyer(pr.flyer)?h("img",{class:"pjpic",src:cleanThumb(pr.thumb)||cleanFlyer(pr.flyer),alt:"Current picture"}):null,pcIn,
       h("div",{class:"row"},h("label",{for:"prPicIn",class:"btn small go"},cleanFlyer(pr.flyer)?"Change picture":"Choose a picture"),cleanFlyer(pr.flyer)?h("button",{type:"button",class:"btn small",text:"Remove picture",onclick:function(){pr.flyer="";pr.thumb="";save(true);renderEvents();}}):null),pcSt),
     h("button",{type:"button",class:"btn link",text:"Delete this project",onclick:function(e){var b=e.currentTarget;if(b.getAttribute("data-armed")!=="1"){b.setAttribute("data-armed","1");b.textContent="Tap again to delete the project and its files";return;}
