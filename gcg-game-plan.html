@@ -3263,7 +3263,7 @@ function drawEventList(root){
     h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Create project",onclick:function(){
       if(!S.db){say($("evStatus"),"Projects need the live page.","warn");return;}
       var nmv=clean(pName.value);if(!nmv){pName.focus();return;}
-      var pr={id:newId("pr"),name:nmv,about:clean(pAbout.value),start:pStart.value||pIso(pToday()),target:pTarget.value||"",steps:[],files:[],created:nowIso()};
+      var pr={id:newId("pr"),name:nmv,about:clean(pAbout.value),start:pStart.value||pIso(pToday()),target:pTarget.value||"",noWeekends:true,steps:[],files:[],created:nowIso()};
       S.projects.push(pr);S.projOpen=pr.id;saveProject(pr,true);renderEvents();window.scrollTo(0,0);}}))];
   var evForm=[h("p",{class:"sub",text:"Pick a template and a date. Every task, checkpoint and deadline fills in. Then suggest people and send the offers."}),
     nameIn,h("div",{class:"two-col"},tSel,dateIn),forSel,kindCap,
@@ -3291,10 +3291,16 @@ function pDay(s){var d=s?new Date(s+"T00:00:00"):null;return d&&!isNaN(d)?d:null
 function pAdd(d,n){var x=new Date(d.getTime());x.setDate(x.getDate()+Math.round(n));return x;}
 function pIso(d){var m=d.getMonth()+1,dd=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(dd<10?"0":"")+dd;}
 function pShort(d){return d.toLocaleDateString(undefined,{day:"numeric",month:"short"});}
+function pWeekend(d){var w=d.getDay();return w===0||w===6;}
+function pNextWork(d){var x=new Date(d.getTime());while(pWeekend(x))x.setDate(x.getDate()+1);return x;}
+function pPrevWork(d){var x=new Date(d.getTime());while(pWeekend(x))x.setDate(x.getDate()-1);return x;}
+// n working days after d (the end is exclusive, like calendar days elsewhere)
+function pAddWork(d,n){var x=new Date(d.getTime()),k=Math.round(n);while(k>0){x.setDate(x.getDate()+1);if(!pWeekend(x))k--;}return x;}
+function pWorkDays(a,b){var n=0,x=new Date(a.getTime());while(x<b){if(!pWeekend(x))n++;x.setDate(x.getDate()+1);}return n;}
 function pToday(){var t=new Date();t.setHours(0,0,0,0);return t;}
 function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,60).map(function(s){
   return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*10)/10)),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),note:clean(s.note).slice(0,300)};});}
-function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),flyer:cleanFlyer(pr.flyer),thumb:cleanThumb(pr.thumb),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
+function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),flyer:cleanFlyer(pr.flyer),thumb:cleanThumb(pr.thumb),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),noWeekends:!!pr.noWeekends,packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
   files:(pr.files||[]).slice(0,30).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
   created:pr.created||nowIso(),updated:nowIso()};}
 function pjKey(pr){var c=cleanProject(pr);delete c.updated;delete c.created;return JSON.stringify(c);}
@@ -3307,7 +3313,8 @@ function projSchedule(pr){
   var start=pDay(pr.start)||pToday(),cursor=start,prevStart=start,rows=[],today=pToday();
   (pr.steps||[]).forEach(function(s,i){
     var dd=pDay(s.due),so=pDay(s.startOn),fixed=!!(so&&dd),dn=stepDone(pr,s);
-    var st=fixed?so:((s.par&&i>0)?prevStart:cursor),en=fixed?(dd<so?so:dd):pAdd(st,Math.max(0,s.days||0)),over=(!fixed&&dd)?Math.max(0,Math.round((en-dd)/864e5)):0;
+    var st=fixed?so:((s.par&&i>0)?prevStart:cursor);if(!fixed&&pr.noWeekends)st=pNextWork(st);
+    var en=fixed?(dd<so?so:dd):(pr.noWeekends?pAddWork(st,Math.max(0,s.days||0)):pAdd(st,Math.max(0,s.days||0))),over=(!fixed&&dd)?Math.max(0,Math.round((en-dd)/864e5)):0;
     rows.push({s:s,start:st,end:en,due:dd,over:over,fixed:fixed,done:dn,late:!dn&&((dd||en)<today)});
     prevStart=st;if(en>cursor)cursor=en;
   });
@@ -3326,11 +3333,11 @@ function projStats(pr){
 function projSuggest(pr){
   var st=pDay(pr.start)||pToday(),tg=pDay(pr.target);if(!tg||!(pr.steps||[]).length)return null;
   if(pr.steps.every(function(x){return x.startOn&&x.due;}))return null;
-  var F=Math.round((tg-st)/864e5),blocks=[];
+  var nw=!!pr.noWeekends,F=nw?pWorkDays(st,tg):Math.round((tg-st)/864e5),blocks=[];
   pr.steps.filter(function(x){return !(x.startOn&&x.due);}).forEach(function(s,i){var w=Math.max(1,s.days||0);if(s.par&&i>0&&blocks.length)blocks[blocks.length-1].push({s:s,w:w});else blocks.push([{s:s,w:w}]);});
   var E=0;blocks.forEach(function(b){E+=Math.max.apply(null,b.map(function(x){return x.w;}));});
   var k=F>0?(F>=E?Math.min(F/E,1.25):F/E):1,cursor=0,rows=[];
-  blocks.forEach(function(b){var len=0;b.forEach(function(x){var d=Math.max(1,F>=E?Math.round(x.w*k):Math.floor(x.w*k)),en=pAdd(st,cursor+d);if(en>tg)en=tg;len=Math.max(len,d);rows.push({s:x.s,est:x.s.days||0,sug:d,end:en});});cursor+=len;});
+  blocks.forEach(function(b){var len=0;b.forEach(function(x){var d=Math.max(1,F>=E?Math.round(x.w*k):Math.floor(x.w*k)),en=nw?pAddWork(pNextWork(st),cursor+d):pAdd(st,cursor+d);if(en>tg)en=tg;len=Math.max(len,d);rows.push({s:x.s,est:x.s.days||0,sug:d,end:en});});cursor+=len;});
   return {frame:F,est:E,k:k,rows:rows,over:E-F};
 }
 // Milestones: the sections of a project, in plan order, each with its window, progress and state.
@@ -3523,10 +3530,11 @@ function drawProject(root){
   var fitText=!st.steps?"Add steps with estimated days and the page works out the finish.":tg?(st.over>0?"The steps as estimated finish "+pShort(fin)+": "+st.over+" day"+(st.over>1?"s":"")+" after the date you need. Shorten a step, run two together, or move the date.":(st.over===0?"The steps as estimated finish on "+pShort(fin)+", right on the date you need. There is no buffer.":"The steps as estimated finish "+pShort(fin)+": "+(-st.over)+" day"+(st.over<-1?"s":"")+" before the date you need.")):"Set the date it has to be done by.";
   var sd=h("input",{type:"date","aria-label":"Start date","data-k":"pn-start",value:pr.start||""});sd.addEventListener("change",function(){pr.start=sd.value;save(true);rerenderProj();});
   var td=h("input",{type:"date","aria-label":"Done by","data-k":"pn-target",value:pr.target||""});td.addEventListener("change",function(){pr.target=td.value;save(true);rerenderProj();});
-  var frameDays=(tg&&pDay(pr.start))?Math.round((tg-pDay(pr.start))/864e5):null;
+  var frameDays=(tg&&pDay(pr.start))?(pr.noWeekends?pWorkDays(pDay(pr.start),tg):Math.round((tg-pDay(pr.start))/864e5)):null;
   root.append(h("section",{class:"card hsec frame"},h("h3",{class:"q",text:"Time frame"}),
     h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Starts"}),sd),h("div",{class:"field"},h("label",{text:"Must be done by"}),td)),
-    frameDays!=null?h("p",{style:"margin:0"},h("b",{text:frameDays+" days in the frame"}),h("span",{class:"sub",text:" · "+daysTo(pr.target)})):h("p",{class:"sub",style:"margin:0",text:"Give it a start and a done-by date. The steps and suggestions work inside that frame."}),
+    frameDays!=null?h("p",{style:"margin:0"},h("b",{text:frameDays+(pr.noWeekends?" working days":" days")+" in the frame"}),h("span",{class:"sub",text:" · "+daysTo(pr.target)})):h("p",{class:"sub",style:"margin:0",text:"Give it a start and a done-by date. The steps and suggestions work inside that frame."}),
+    h("label",{class:"pcheck"},(function(){var cb=h("input",{type:"checkbox","aria-label":"Keep weekends free"});cb.checked=!!pr.noWeekends;cb.addEventListener("change",function(){pr.noWeekends=cb.checked;save(true);rerenderProj();});return cb;})()," Keep weekends free (no work planned on Saturday or Sunday)"),
     h("div",{class:"jbar","aria-label":st.pct+"% done"},h("i",{style:"width:"+st.pct+"%"})),
     h("p",{style:"margin:0"},h("b",{text:st.pct+"% done · "+st.pace}),h("span",{class:"sub",text:st.steps?" · "+st.left+" of "+st.steps+" steps left":""})),
     h("p",{class:"sub",style:"margin:0",text:fitText}),
@@ -3584,8 +3592,8 @@ function drawProject(root){
       var nt=h("input",{type:"text","aria-label":"Note","data-k":"pnt-"+s.id,placeholder:"Note: what done looks like, who to ask",value:s.note||""});nt.addEventListener("input",function(){s.note=nt.value;save();});
       li.append(h("div",{class:"psedit"},h("div",{class:"field"},h("label",{text:"Step"}),ti),
         h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Estimated days"}),dy),h("div",{class:"field"},h("label",{text:"Who does it"}),ow)),
-        h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Starts on (optional)"}),(function(){var si2=h("input",{type:"date","aria-label":"Start date for this step","data-k":"pson-"+s.id,value:s.startOn||""});si2.addEventListener("change",function(){s.startOn=si2.value;save(true);rerenderProj();});return si2;})()),
-          h("div",{class:"field"},h("label",{text:"Must be done by (optional)"}),(function(){var di=h("input",{type:"date","aria-label":"Deadline for this step","data-k":"pdue-"+s.id,value:s.due||""});di.addEventListener("change",function(){s.due=di.value;save(true);rerenderProj();});return di;})())),
+        h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Starts on (optional)"}),(function(){var si2=h("input",{type:"date","aria-label":"Start date for this step","data-k":"pson-"+s.id,value:s.startOn||""});si2.addEventListener("change",function(){var d0=pDay(si2.value);if(d0&&pr.noWeekends&&pWeekend(d0)){d0=pNextWork(d0);toast("That was a weekend, so it moved to "+pShort(d0)+".");}s.startOn=d0?pIso(d0):si2.value;save(true);rerenderProj();});return si2;})()),
+          h("div",{class:"field"},h("label",{text:"Must be done by (optional)"}),(function(){var di=h("input",{type:"date","aria-label":"Deadline for this step","data-k":"pdue-"+s.id,value:s.due||""});di.addEventListener("change",function(){var d0=pDay(di.value);if(d0&&pr.noWeekends&&pWeekend(d0)){d0=pPrevWork(d0);toast("That was a weekend, so it moved back to "+pShort(d0)+".");}s.due=d0?pIso(d0):di.value;save(true);rerenderProj();});return di;})())),
         h("div",{class:"field"},h("label",{text:"Estimated hours (optional)"}),(function(){var hi=h("input",{type:"number",min:"0",max:"999",step:"0.5","aria-label":"Estimated hours","data-k":"phr-"+s.id,value:s.hours?String(s.hours):""});hi.addEventListener("change",function(){s.hours=Math.max(0,Number(hi.value)||0);save(true);rerenderProj();});return hi;})()),
         h("div",{class:"field"},h("label",{text:"Section (optional)"}),(function(){var si=h("input",{type:"text",list:"psecs-dl","aria-label":"Section","data-k":"psec-"+s.id,placeholder:"For example Banking",value:s.section||""});si.addEventListener("change",function(){s.section=clean(si.value).slice(0,40);save(true);renderEvents();});return si;})()),
         i>0?h("label",{class:"pcheck"},par," Runs alongside \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d (starts at the same time)"):null,
