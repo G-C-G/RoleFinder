@@ -579,6 +579,11 @@ body.has-nav{padding-bottom:104px}
 .pstep[data-s="done"] .pstt b{text-decoration:line-through;color:var(--muted)}
 .psedit{display:grid;gap:10px;margin:10px 0 4px 44px}
 .pcheck{display:flex;gap:8px;align-items:center;font-size:14px}
+.prhead{display:flex;align-items:center;gap:12px}
+.prhead .h-sum{margin:0}
+.pjpic{width:56px;height:56px;border-radius:14px;object-fit:cover;display:block;border:1.5px solid var(--edge-soft)}
+.pjthumb{width:44px;height:44px;border-radius:12px;object-fit:cover;border:1.5px solid var(--edge-soft)}
+.ovrow.haspic{grid-template-columns:44px 1fr auto}
 .psec{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:14px 0 2px;padding-top:6px;font-size:14px;letter-spacing:.02em;text-transform:uppercase}
 .psec:first-child{margin-top:0}
 .psecprev{margin:6px 0}
@@ -3252,7 +3257,7 @@ function pShort(d){return d.toLocaleDateString(undefined,{day:"numeric",month:"s
 function pToday(){var t=new Date();t.setHours(0,0,0,0);return t;}
 function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,60).map(function(s){
   return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),note:clean(s.note).slice(0,300)};});}
-function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
+function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),flyer:cleanFlyer(pr.flyer),thumb:cleanThumb(pr.thumb),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
   files:(pr.files||[]).slice(0,30).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
   created:pr.created||nowIso(),updated:nowIso()};}
 function pjKey(pr){var c=cleanProject(pr);delete c.updated;delete c.created;return JSON.stringify(c);}
@@ -3309,7 +3314,7 @@ var FPLAN=[
   t:["Check registration documents","Check founder agreements","Check tax/statutory status","Check bank setup","Check IP records","Check core documents","Check operational systems","Identify outstanding items","Assign owners for anything incomplete","Archive final documents","Mark project complete"]}
 ];
 var FPLAN_START="2026-10-05";
-function pubOf(pr){var st=projStats(pr);return {name:clean(pr.name).slice(0,80),target:pr.target||"",pct:st.pct,steps:st.steps,left:st.left,late:st.late,pace:st.pace};}
+function pubOf(pr){var st=projStats(pr);return {name:clean(pr.name).slice(0,80),thumb:cleanThumb(pr.thumb),target:pr.target||"",pct:st.pct,steps:st.steps,left:st.left,late:st.late,pace:st.pace};}
 function mineOf(pr,uid){
   var sc=projSchedule(pr),mySteps=sc.rows.filter(function(r){return r.s.owner===uid;});if(!mySteps.length)return null;
   return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),target:pr.target||"",
@@ -3323,7 +3328,7 @@ function syncProjects(){
   clearTimeout(projSyncT);projSyncT=setTimeout(function(){
     var ids={};
     S.projects.forEach(function(pr){ids[pr.id]=1;var nu=pubOf(pr),old=S.projPub[pr.id];
-      if(!old||JSON.stringify([old.name,old.target,old.pct,old.steps,old.left,old.late,old.pace])!==JSON.stringify([nu.name,nu.target,nu.pct,nu.steps,nu.left,nu.late,nu.pace])){
+      if(!old||JSON.stringify([old.name,old.thumb||"",old.target,old.pct,old.steps,old.left,old.late,old.pace])!==JSON.stringify([nu.name,nu.thumb||"",nu.target,nu.pct,nu.steps,nu.left,nu.late,nu.pace])){
         nu.updated=nowIso();S.projPub[pr.id]=nu;S.db.doc("projectpub/"+pr.id).set(nu).catch(function(){});}});
     Object.keys(S.projPub).forEach(function(id){if(!ids[id]&&!projDirty[id]){delete S.projPub[id];S.db.doc("projectpub/"+id).delete().catch(function(){});}});
     var want={};S.projects.forEach(function(pr){(pr.steps||[]).forEach(function(s){if(s.owner&&!want[s.owner])want[s.owner]={};});});
@@ -3347,17 +3352,17 @@ function rerenderProj(){if(S.view==="events")renderEvents();else if(S.view==="pl
 /* Progress tiles on the Events tab: admins see their projects, everyone else sees progress only. */
 function projectsBlock(root){
   var admin=adminView(),list=[];
-  if(admin)S.projects.forEach(function(pr){var st=projStats(pr);list.push({id:pr.id,name:pr.name,target:pr.target,pct:st.pct,pace:st.pace,left:st.left,steps:st.steps,mine:false});});
-  else Object.keys(S.projPub).forEach(function(id){var u=S.projPub[id];list.push({id:id,name:u.name,target:u.target,pct:u.pct,pace:u.pace,left:u.left,steps:u.steps,mine:!!(S.myProj&&S.myProj[id])});});
+  if(admin)S.projects.forEach(function(pr){var st=projStats(pr);list.push({id:pr.id,name:pr.name,thumb:cleanThumb(pr.thumb),target:pr.target,pct:st.pct,pace:st.pace,left:st.left,steps:st.steps,mine:false});});
+  else Object.keys(S.projPub).forEach(function(id){var u=S.projPub[id];list.push({id:id,name:u.name,thumb:cleanThumb(u.thumb),target:u.target,pct:u.pct,pace:u.pace,left:u.left,steps:u.steps,mine:!!(S.myProj&&S.myProj[id])});});
   if(!list.length)return;
   list.sort(function(a,b){return String(a.target||"~").localeCompare(String(b.target||"~"));});
   var box=h("section",{class:"card hsec projects"},h("h3",{class:"q",text:"Projects"}),h("p",{class:"sub",text:admin?"Bigger than an event. Tap one to open its plan, files and steps.":"How far each project has got. You see more of the ones you have a step in."}));
   list.forEach(function(p){
     var tg=pDay(p.target),days=tg?Math.round((tg-pToday())/864e5):null,tap=admin||p.mine;
-    var inner=[h("span",{class:"ovt"},h("b",{text:p.name||"Project"}),h("span",{class:"sub",text:(tg?"Target "+pShort(tg)+(days!=null?(days>=0?" · "+days+" days left":" · "+(-days)+" days past"):""):"No target date")+" · "+p.pace+(p.left?" · "+p.left+" step"+(p.left>1?"s":"")+" left":"")+(!admin&&p.mine?" · you have a step":"")})),
+    var inner=[p.thumb?h("img",{class:"pjthumb",src:p.thumb,alt:""}):null,h("span",{class:"ovt"},h("b",{text:p.name||"Project"}),h("span",{class:"sub",text:(tg?"Target "+pShort(tg)+(days!=null?(days>=0?" · "+days+" days left":" · "+(-days)+" days past"):""):"No target date")+" · "+p.pace+(p.left?" · "+p.left+" step"+(p.left>1?"s":"")+" left":"")+(!admin&&p.mine?" · you have a step":"")})),
       tap?h("span",{class:"chev","aria-hidden":"true",text:"›"}):null,
       h("span",{class:"jbar sm","aria-label":p.pct+"% done"},h("i",{style:"width:"+p.pct+"%"}))];
-    box.append(tap?h("button",{type:"button",class:"ovrow",onclick:function(){if(admin)S.projOpen=p.id;else S.projSel=p.id;rerenderProj();window.scrollTo(0,0);}},inner):h("div",{class:"ovrow noopen"},inner));
+    box.append(tap?h("button",{type:"button",class:"ovrow"+(p.thumb?" haspic":""),onclick:function(){if(admin)S.projOpen=p.id;else S.projSel=p.id;rerenderProj();window.scrollTo(0,0);}},inner):h("div",{class:"ovrow noopen"+(p.thumb?" haspic":"")},inner));
   });
   root.append(box);
 }
@@ -3451,7 +3456,7 @@ function drawProject(root){
   var st=projStats(pr),sc=st.sc,tg=pDay(pr.target);
   function save(now){saveProject(pr,now);}
   root.append(h("button",{type:"button",class:"btn small",text:"← All events and projects",onclick:function(){S.projOpen="";renderEvents();window.scrollTo(0,0);}}),
-    h("h1",{class:"h-sum",text:pr.name||"Project"}));
+    h("div",{class:"prhead"},cleanFlyer(pr.flyer)?h("button",{type:"button",class:"flyer-btn thumb","aria-label":"View the picture full screen",onclick:function(){lightbox(cleanFlyer(pr.flyer),pr.name||"Project");}},h("img",{class:"pjpic",src:cleanThumb(pr.thumb)||cleanFlyer(pr.flyer),alt:""})):null,h("h1",{class:"h-sum",text:pr.name||"Project"})));
   // the time frame: when it starts and when it has to be done
   var fin=sc.finish,sg=projSuggest(pr);
   var fitText=!st.steps?"Add steps with estimated days and the page works out the finish.":tg?(st.over>0?"The steps as estimated finish "+pShort(fin)+": "+st.over+" day"+(st.over>1?"s":"")+" after the date you need. Shorten a step, run two together, or move the date.":(st.over===0?"The steps as estimated finish on "+pShort(fin)+", right on the date you need. There is no buffer.":"The steps as estimated finish "+pShort(fin)+": "+(-st.over)+" day"+(st.over<-1?"s":"")+" before the date you need.")):"Set the date it has to be done by.";
@@ -3579,8 +3584,14 @@ function drawProject(root){
   // edit and delete
   var nm=h("input",{type:"text","aria-label":"Project name","data-k":"pn-name",value:pr.name||""});nm.addEventListener("input",function(){pr.name=nm.value;save();});
   var ab=h("textarea",{rows:"4","aria-label":"What the project is about","data-k":"pn-about"});ab.value=pr.about||"";ab.addEventListener("input",function(){pr.about=ab.value;save();});
-  root.append(h("details",{class:"more",open:S.panel["pr-edit"]?true:null,ontoggle:function(e){S.panel["pr-edit"]=e.currentTarget.open;}},h("summary",{text:"Edit project: name and about"}),
+  var pcSt=h("p",{class:"status",role:"status","aria-live":"polite"}),pcIn=h("input",{type:"file",accept:"image/*",id:"prPicIn",class:"sr"});
+  pcIn.addEventListener("change",function(){var f=pcIn.files&&pcIn.files[0];if(!f)return;say(pcSt,"Preparing the picture…");
+    shrinkImg(f,640,95000,function(big){if(!big){say(pcSt,"That image could not be used or is too large. Try another.","warn");return;}
+      shrinkImg(f,144,14000,function(sm){pr.flyer=big;pr.thumb=sm||"";save(true);renderEvents();toast("Picture added.");});});});
+  root.append(h("details",{class:"more",open:S.panel["pr-edit"]?true:null,ontoggle:function(e){S.panel["pr-edit"]=e.currentTarget.open;}},h("summary",{text:"Edit project: name, about and picture"}),
     h("div",{class:"field"},h("label",{text:"Project name"}),nm),h("div",{class:"field"},h("label",{text:"What it is about"}),ab),
+    h("div",{class:"field"},h("label",{text:"Picture"}),cleanFlyer(pr.flyer)?h("img",{class:"pjpic",src:cleanThumb(pr.thumb)||cleanFlyer(pr.flyer),alt:"Current picture"}):null,pcIn,
+      h("div",{class:"row"},h("label",{for:"prPicIn",class:"btn small go"},cleanFlyer(pr.flyer)?"Change picture":"Choose a picture"),cleanFlyer(pr.flyer)?h("button",{type:"button",class:"btn small",text:"Remove picture",onclick:function(){pr.flyer="";pr.thumb="";save(true);renderEvents();}}):null),pcSt),
     h("button",{type:"button",class:"btn link",text:"Delete this project",onclick:function(e){var b=e.currentTarget;if(b.getAttribute("data-armed")!=="1"){b.setAttribute("data-armed","1");b.textContent="Tap again to delete the project and its files";return;}
       (pr.files||[]).forEach(function(f){if(f.fid)dropChunks("projects/"+pr.id+"/files",f.fid,f.n);});
       S.db.doc("projects/"+pr.id).delete().then(function(){S.projects=S.projects.filter(function(x){return x.id!==pr.id;});S.projOpen="";syncProjects();renderEvents();},function(){say($("projStatus"),"Could not delete.","warn");});}}),
@@ -4719,6 +4730,16 @@ function cvControl(){
       f?h("button",{type:"button",class:"btn small",text:"Remove",onclick:function(){dropChunks("responses/"+S.uid+"/files","cv",f.n);S.cvFile=null;saveDraft();if(S.db&&S.uid)saveResponse();renderProfile();if(S.screen==="proud")render();}}):null),st);
 }
 function cleanFlyer(u){u=String(u||"");return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)&&u.length<110000?u:"";}
+function cleanThumb(u){u=String(u||"");return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)&&u.length<24000?u:"";}
+// Scale a picture down to fit max pixels and a size cap (characters of the data link). Returns null if it cannot be made small enough.
+function shrinkImg(file,max,cap,cb){
+  var rd=new FileReader();
+  rd.onload=function(){var img=new Image();img.onload=function(){
+    try{var k=Math.min(1,max/Math.max(img.width,img.height)),w=Math.round(img.width*k),hh=Math.round(img.height*k),c=document.createElement("canvas");c.width=w;c.height=hh;
+      c.getContext("2d").drawImage(img,0,0,w,hh);var q=0.85,url=c.toDataURL("image/jpeg",q);while(url.length>cap&&q>0.3){q-=0.08;url=c.toDataURL("image/jpeg",q);}cb(url.length<=cap?url:null);}catch(e){cb(null);}
+  };img.onerror=function(){cb(null);};img.src=rd.result;};
+  rd.onerror=function(){cb(null);};rd.readAsDataURL(file);
+}
 function shrinkFlyer(file,cb){
   var rd=new FileReader();
   rd.onload=function(){var img=new Image();img.onload=function(){
