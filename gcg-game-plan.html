@@ -527,6 +527,16 @@ body.has-nav{padding-bottom:104px}
 .hero-move .btn.go{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn.chat{margin:4px 0 2px}
 .crewsearch{width:100%;box-sizing:border-box;margin:0 0 12px;font-size:16px}
+.card.addev{display:block;margin:0 0 12px;padding:0}
+.addev[open]>*+*{margin-top:12px}
+.addev>summary{list-style:none;cursor:pointer;padding:12px 16px;font-weight:800;font-size:16px;line-height:1.2;margin:0}
+.addev>summary::-webkit-details-marker{display:none}
+.addev[open]>summary{border-bottom:1.5px solid var(--soft)}
+.addev>:not(summary){margin-left:16px;margin-right:16px}
+.addev>*:last-child{margin-bottom:16px}
+.evwrap{margin:0}
+.evwrap .evcard{width:100%;box-sizing:border-box}
+.evshare{margin:2px 0 0;padding-left:4px}
 .btn.wa{text-decoration:none;margin:4px 6px 2px 0}
 .credits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:15px}
 .trail-n{font-weight:800;color:var(--gold-ink)}
@@ -3054,7 +3064,7 @@ function drawEvents(root){
       h("div",{class:"row"},
         h("button",{type:"button",class:"btn small",text:"Due-soon message",onclick:function(){S.evMsgs={eid:ev.id,title:"Due soon (paste in the team group)",list:[{text:dueSoonText(ev)}]};renderEvents();}}),
         h("button",{type:"button",class:"btn small",text:"Run sheet",onclick:function(){S.run={eid:ev.id};renderEvents();}}),
-        ev.published===false?null:waButton(eventShareText(ev),"Share on WhatsApp"),
+        ev.published===false?null:waButton(eventShareText(ev),"Share"),
         h("button",{type:"button",class:"btn small",text:"Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
         h("button",{type:"button",class:"btn small",text:"Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}}),
         ev.published===false?null:h("button",{type:"button",class:"btn small",text:"Hide from the team (back to draft)",onclick:function(){ev.published=false;S.panel["cover:"+ev.id]=true;saveEvent(ev,true);renderEvents();}}))),
@@ -3143,7 +3153,7 @@ function drawEventList(root){
   function keyNow(){return tSel.value&&needsFor(tSel.value)?tSel.value+"_"+forSel.value:tSel.value;}
   function syncFor(){forSel.hidden=!needsFor(tSel.value);var k=keyNow();kindCap.textContent=k&&TEMPLATES[k]?"Selected: "+TEMPLATES[k].name:"Selected: Blank event";}
   tSel.addEventListener("change",syncFor);forSel.addEventListener("change",syncFor);syncFor();
-  root.append(h("div",{class:"card"},h("p",{class:"kicker",text:"Events"}),h("h2",{class:"q",text:"Plan an event"}),
+  root.append(h("details",{class:"card addev",open:S.panel.newev?true:null,ontoggle:function(e){S.panel.newev=e.currentTarget.open;}},h("summary",{text:"+ Add an event"}),
     h("p",{class:"sub",text:"Pick a template and a date. Every task, checkpoint and deadline fills in. Then suggest people and send the offers."}),
     nameIn,h("div",{class:"two-col"},tSel,dateIn),forSel,kindCap,
     h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Create event",onclick:function(){
@@ -3153,13 +3163,14 @@ function drawEventList(root){
       e.published=false;if(S.people&&S.people.length)suggestCore(e);S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
   var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
-  if(!list.length)root.append(h("div",{class:"emptystate"},h("h3",{text:"No upcoming events"}),h("p",{text:"Nothing is scheduled yet. Your next event will appear here once it's created. Start with the form above."})));
+  if(!list.length)root.append(h("div",{class:"emptystate"},h("h3",{text:"No upcoming events"}),h("p",{text:"Nothing is scheduled yet. Your next event will appear here once it's created. Tap Add an event to start."})));
   root.append(h("div",{class:"evlist"},list.map(function(e){
     var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
-    return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
+    return h("div",{class:"evwrap"},h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
       h("div",{class:"evmedia"},flyerThumb(e),h("div",{class:"evtxt"},
       h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")+(TEMPLATES[e.type]?" · "+TEMPLATES[e.type].name:"")}),
-      h("span",{class:"evmeta",text:(e.published===false?"Draft, hidden from the team · ":"")+done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")}))));
+      h("span",{class:"evmeta",text:(e.published===false?"Draft, hidden from the team · ":"")+done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")})))),
+      e.published===false?null:h("div",{class:"evshare"},waButton(eventShareText(e),"Share")));
   })));
 }
 // Hinda can record that a task is done, for the person who did it. Only they or an admin can do this.
@@ -3209,8 +3220,7 @@ function adminTask(ev,t,cur){
       t.msg?h("button",{type:"button",class:"btn small",text:"Draft guest message",onclick:function(){S.evMsgs={eid:ev.id,title:"Guest message (paste into Luma, WhatsApp or SMS)",list:[{text:guestMessage(ev,t.msg)}]};renderEvents();window.scrollTo(0,0);}}):null,
       t.owner&&(st==="draft"||st==="offered")?h("button",{type:"button",class:"btn small",text:"Assign directly",title:"Give it to them without asking",onclick:function(){t.offered=true;t.ots=t.ots||nowIso();t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
       t.owner?h("button",{type:"button",class:"btn small",text:"Ping",onclick:function(){S.panel[pk]=!S.panel[pk];renderEvents();}}):null,
-      h("button",{type:"button",class:"btn small",text:"Link",onclick:function(){copyText(taskLink(ev.id,t.id),lk,"Task link copied.");}}),lk,
-      waButton(taskShareText(ev,t),"WhatsApp"),
+      waButton(taskShareText(ev,t),"Share"),lk,
       st!=="done"?h("button",{type:"button",class:"btn small",text:S.panel["md"+t.id]?"Cancel":"Mark done",onclick:function(){S.panel["md"+t.id]=!S.panel["md"+t.id];renderEvents();}}):null,
       st==="done"&&t.manual==="done"?h("button",{type:"button",class:"btn link",text:"Undo done",onclick:function(){t.manual="";saveEvent(ev,true);renderEvents();}}):null,
       t.owner&&st!=="passed"&&st!=="open"&&st!=="done"?h("button",{type:"button",class:"btn link",text:"Mark can't do it",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null),
@@ -3381,7 +3391,15 @@ function taskLink(eid,tid){return appBase()+"#task="+eid+"."+tid;}
 function eventLink(eid){return appBase()+"#event="+eid;}
 function readHash(){var h0=String(location.hash||""),m=h0.match(/task=([^.&]+)\.([^&]+)/),e=h0.match(/event=([^.&]+)/);if(m)S.goTask={eid:decodeURIComponent(m[1]),tid:decodeURIComponent(m[2])};else if(e)S.goTask={eid:decodeURIComponent(e[1]),tid:""};}
 // Share straight into WhatsApp: opens the app (or WhatsApp Web) with the message ready to send to a chat or group.
-function waButton(text,label){return h("a",{class:"btn small wa",href:"https://wa.me/?text="+encodeURIComponent(text),target:"_blank",rel:"noopener",text:label||"Share on WhatsApp"});}
+// One Share button: the phone's share sheet (WhatsApp is in it) when there is one, otherwise WhatsApp itself. The message carries the link.
+function waButton(text,label){
+  var wa="https://wa.me/?text="+encodeURIComponent(text);
+  return h("a",{class:"btn small wa",href:wa,target:"_blank",rel:"noopener",text:label||"Share",onclick:function(e){
+    if(!navigator.share)return;
+    e.preventDefault();
+    navigator.share({text:text}).catch(function(err){if(err&&err.name==="AbortError")return;window.open(wa,"_blank","noopener");});
+  }});
+}
 function eventShareText(ev){
   var L=["New event: "+(ev.name||"GCG event"),fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+(ev.place?", "+ev.place:"")];
   if(ev.about)L.push(ev.about);else if(ev.goal)L.push(ev.goal);
@@ -4284,7 +4302,7 @@ function drawMemberEvent(root,ev){
     ev.about?h("p",{class:"about",text:ev.about}):null,
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     briefLine(ev),filesCard(ev,false),
-    waButton(eventShareText(ev),"Share this event on WhatsApp"),
+    waButton(eventShareText(ev),"Share this event"),
     safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
     h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
     crewDates(ev)||h("span"),
