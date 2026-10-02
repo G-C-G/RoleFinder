@@ -3062,7 +3062,7 @@ function drawEvents(root){
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     evHeader(ev,true),
     h("section",{class:"card hsec evstatus"},
-      h("p",{class:"sub",style:"margin:0"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
+      h("p",{class:"sub",style:"margin:0"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){S.evOpen="";S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}})),
       ev.squeezed?h("p",{class:"sub",style:"margin:0",text:"This event is closer than the template assumes, so the timeline was tightened to fit."}):null,
       eventWhy(ev).why.length?h("p",{class:"sub",style:"margin:0",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
       h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Edit event: name, date, time, place",onclick:function(){S.panel.evdetails=true;renderEvents();var d=$("evDetails");if(d&&d.scrollIntoView)d.scrollIntoView({block:"start"});}}))),
@@ -3179,14 +3179,7 @@ function drawEventList(root){
       var e=tkey?fromTemplate(tkey,clean(nameIn.value),dateIn.value):{id:newId("e"),name:clean(nameIn.value)||"New event",type:"",date:dateIn.value,start:"18:30",place:"",lead:"",links:{},guests:{},debrief:{},cps:[],tasks:[],created:nowIso()};
       e.published=false;if(S.people&&S.people.length)suggestCore(e);S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
-  var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
-  if(!list.length)root.append(h("div",{class:"emptystate"},h("h3",{text:"No upcoming events"}),h("p",{text:"Nothing is scheduled yet. Your next event will appear here once it's created. Tap Add an event to start."})));
-  root.append(h("div",{class:"evlist"},list.map(function(e){
-    var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
-    return h("div",{class:"evwrap card evtile"},evTile(e,{open:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);},
-      lines:[e.published===false?h("span",{class:"phasepill",style:"justify-self:start",text:"Draft, hidden from the team"}):null,
-        h("span",{class:"evmeta",text:done+" of "+ts.length+" tasks done"+(risk?" · "+risk+" at risk":"")})].filter(Boolean)}));
-  })));
+  planCards(root,renderEvents,false);
 }
 // Hinda can record that a task is done, for the person who did it. Only they or an admin can do this.
 function doneForm(ev,t){
@@ -3853,7 +3846,7 @@ function renderInsights(){
 
 /* ---------- Game Plan navigation: Home · Events · Me for the team; Today · Events · Team · Insights · Me for Hinda ---------- */
 var NAV_MEMBER=[["home","home","Home"],["plan","calendar","Events"],["mevents","flag","Tasks"],["crew","users","Crew"],["me","user","Me"]];
-var NAV_ADMIN=[["today","target","Today"],["plan","compass","Plan"],["events","flag","Events"],["team","users","Team"],["insights","chart","Insights"],["me","user","Me"]];
+var NAV_ADMIN=[["today","target","Today"],["events","flag","Events"],["team","users","Team"],["insights","chart","Insights"],["me","user","Me"]];
 S.evSel="";S.teamTab="people";
 function onboarded(){return !!S.sentAt;}
 function navItems(){return S.isAdmin?NAV_ADMIN:NAV_MEMBER;}
@@ -3864,7 +3857,7 @@ function setAsMember(on){
   // Stay on the same page: the matching page of the other view, same event open, same scroll position.
   var from=S.view,ev=S.evOpen||S.evSel,y=window.scrollY||0;
   S.events=visibleEvents(S.rawEvents||S.events);S.evOpen="";S.evSel="";S.panel.notesOpen=false;
-  var MAP=on?{today:"home",plan:"plan",events:"mevents",team:"crew",insights:"home",me:"me",flow:"flow"}:{home:"today",plan:"plan",mevents:"events",crew:"team",me:"me",flow:"flow"};
+  var MAP=on?{today:"home",plan:"plan",events:ev?"mevents":"plan",team:"crew",insights:"home",me:"me",flow:"flow"}:{home:"today",plan:"events",mevents:"events",crew:"team",me:"me",flow:"flow"};
   var to=MAP[from]||homeView();
   if(ev&&(to==="mevents"||to==="events")){if(on)S.evSel=ev;else S.evOpen=ev;}
   if(to==="team")S.teamTab="people";
@@ -4532,6 +4525,10 @@ function drawPlan(root){
   if(loadingNow()){root.append(skeleton(3));return;}
   var mem=!S.isAdmin;
   root.append(h("h1",{class:"h-sum",text:mem?"Events":"The plan"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:mem?"What we are planning, nearest first.":"Where each event is, how ready it is, and where it is heading."}));
+  planCards(root,renderPlan,mem);
+}
+// The event cards with their timelines. Used by the Events tab for everyone (admins and staff).
+function planCards(root,rerender,mem){
   // Everyone sees every event that is on, so the whole team knows what is coming and what is left.
   var mineIds={};myEvents().forEach(function(e){mineIds[e.id]=1;});
   var today=new Date();today.setHours(0,0,0,0);
@@ -4560,12 +4557,12 @@ function drawPlan(root){
       adminView()?left:null,
       (adminView()&&eventWhy(ev).why.length)?h("p",{class:"sub",style:"margin:-4px 0 8px",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
       // Every event shows its timeline: a row of stage dots, tap to open it out and see each stage.
-      open?[journey(ev,{vertical:true,rerender:renderPlan,me:S.uid}),
+      open?[journey(ev,{vertical:true,rerender:rerender,me:S.uid}),
           line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
           next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
-          h("button",{type:"button",class:"btn link",text:"Close the timeline",onclick:function(){S.panel[key]=false;renderPlan();}})]
-        :h("div",{class:"tlmini"},journey(ev,{compact:true,onOpen:function(){S.panel[key]=true;renderPlan();}}),
-          h("button",{type:"button",class:"btn link",text:"Open the timeline ›",onclick:function(){S.panel[key]=true;renderPlan();}})));
+          h("button",{type:"button",class:"btn link",text:"Close the timeline",onclick:function(){S.panel[key]=false;rerender();}})]
+        :h("div",{class:"tlmini"},journey(ev,{compact:true,onOpen:function(){S.panel[key]=true;rerender();}}),
+          h("button",{type:"button",class:"btn link",text:"Open the timeline ›",onclick:function(){S.panel[key]=true;rerender();}})));
     root.append(card);
   });
 }
@@ -4573,6 +4570,7 @@ function drawPlan(root){
 /* ---------- Views and refresh ---------- */
 var VIEWS=["home","plan","mevents","crew","me","flow","today","events","team","insights","tasks","mine"];
 function showView(v){
+  if(v==="plan"&&adminView())v="events";
   S.view=v;
   if(v==="plan")lsSet("gcg_seen_plan","1");
   document.body.classList.toggle("home-band",(v==="home"&&!S.isAdmin)||(v==="today"&&S.isAdmin));
