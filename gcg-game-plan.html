@@ -584,6 +584,7 @@ body.has-nav{padding-bottom:104px}
 .pjpic{width:56px;height:56px;border-radius:14px;object-fit:cover;display:block;border:1.5px solid var(--edge-soft)}
 .pjthumb{width:44px;height:44px;border-radius:12px;object-fit:cover;border:1.5px solid var(--edge-soft)}
 .ovrow.haspic{grid-template-columns:44px 1fr auto}
+.plan-start{font-weight:800;font-size:15px;line-height:1.25}
 .flyer-th.pj{object-fit:contain;background:#0d0a07}
 .pjdots{flex:1;min-width:0}
 .msd{list-style:none;margin:0;padding:0;display:flex;align-items:center;gap:0;width:100%}
@@ -3359,9 +3360,11 @@ function msDots(codes,labels,onTap){
   return h("ol",{class:"msd","aria-label":"Milestones"},arr.map(function(c,i){var st=c==="d"?"done":c==="n"?"now":c==="l"?"late":"todo";
     return h("li",null,h(onTap?"button":"span",{class:"msdot","data-s":st,type:onTap?"button":null,"aria-label":(labels&&labels[i]?labels[i]+": ":"Stage "+(i+1)+": ")+(st==="done"?"done":st==="now"?"in progress":st==="late"?"behind":"to come"),onclick:onTap?function(){onTap(i);}:null},st==="done"?ico("check",12):null));}));
 }
+// "Starts Mon, Oct 5 · in 3 days" before the start, "Started Mon, Oct 5" after.
+function startLine(start){var d=pDay(start);if(!d)return "";var n=Math.round((d-pToday())/864e5);return n>0?"Starts "+fmtDate(start)+" · in "+n+" day"+(n>1?"s":""):n===0?"Starts today, "+fmtDate(start):"Started "+fmtDate(start);}
 function projectLink(id){return appBase()+"#project="+id;}
-function projectShareText(p){var tg=pDay(p.target);return "Gold Coast Games project plan: "+(p.name||"Project")+"\n"+p.pct+"% done"+(p.pace?" · "+p.pace:"")+(tg?" · done by "+fmtDate(p.target):"")+"\nTap to open the plan for "+(p.name||"this project")+" in Game Plan (you will see the parts you have access to):\n"+projectLink(p.id);}
-function pubOf(pr){var st=projStats(pr);st.pace=st.pace==="Plan runs over"?"On track":st.pace;return {name:clean(pr.name).slice(0,80),thumb:cleanThumb(pr.thumb),ms:msCodes(projMilestones(pr)).slice(0,20),target:pr.target||"",pct:st.pct,steps:st.steps,left:st.left,late:st.late,pace:st.pace};}
+function projectShareText(p){var tg=pDay(p.target);return "Gold Coast Games project plan: "+(p.name||"Project")+"\n"+(p.start?startLine(p.start)+" · ":"")+(tg?"done by "+fmtDate(p.target)+" · ":"")+p.pct+"% done"+(p.pace?" · "+p.pace:"")+"\nTap to open the plan for "+(p.name||"this project")+" in Game Plan (you will see the parts you have access to):\n"+projectLink(p.id)+(p.start&&soonNote(p.start)?"\n"+soonNote(p.start):"");}
+function pubOf(pr){var st=projStats(pr);st.pace=st.pace==="Plan runs over"?"On track":st.pace;return {name:clean(pr.name).slice(0,80),thumb:cleanThumb(pr.thumb),ms:msCodes(projMilestones(pr)).slice(0,20),start:pr.start||"",target:pr.target||"",pct:st.pct,steps:st.steps,left:st.left,late:st.late,pace:st.pace};}
 function mineOf(pr,uid){
   var sc=projSchedule(pr),mySteps=sc.rows.filter(function(r){return r.s.owner===uid;});if(!mySteps.length)return null;
   return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),target:pr.target||"",
@@ -3375,7 +3378,7 @@ function syncProjects(){
   clearTimeout(projSyncT);projSyncT=setTimeout(function(){
     var ids={};
     S.projects.forEach(function(pr){ids[pr.id]=1;var nu=pubOf(pr),old=S.projPub[pr.id];
-      if(!old||JSON.stringify([old.name,old.thumb||"",old.ms||"",old.target,old.pct,old.steps,old.left,old.late,old.pace])!==JSON.stringify([nu.name,nu.thumb||"",nu.ms||"",nu.target,nu.pct,nu.steps,nu.left,nu.late,nu.pace])){
+      if(!old||JSON.stringify([old.name,old.thumb||"",old.ms||"",old.start||"",old.target,old.pct,old.steps,old.left,old.late,old.pace])!==JSON.stringify([nu.name,nu.thumb||"",nu.ms||"",nu.start||"",nu.target,nu.pct,nu.steps,nu.left,nu.late,nu.pace])){
         nu.updated=nowIso();S.projPub[pr.id]=nu;S.db.doc("projectpub/"+pr.id).set(nu).catch(function(){});}});
     Object.keys(S.projPub).forEach(function(id){if(!ids[id]&&!projDirty[id]){delete S.projPub[id];S.db.doc("projectpub/"+id).delete().catch(function(){});}});
     var want={};S.projects.forEach(function(pr){(pr.steps||[]).forEach(function(s){if(s.owner&&!want[s.owner])want[s.owner]={};});});
@@ -3399,8 +3402,8 @@ function rerenderProj(){if(S.view==="events")renderEvents();else if(S.view==="pl
 /* Progress tiles on the Events tab: admins see their projects, everyone else sees progress only. */
 function projectsBlock(root){
   var admin=adminView(),list=[];
-  if(admin)S.projects.forEach(function(pr){var st=projStats(pr),ms=projMilestones(pr);list.push({id:pr.id,name:pr.name,pic:cleanFlyer(pr.flyer)||cleanThumb(pr.thumb),target:pr.target,pct:st.pct,pace:st.pace,over:st.over,left:st.left,steps:st.steps,ms:msCodes(ms),msl:ms,mine:false});});
-  else Object.keys(S.projPub).forEach(function(id){var u=S.projPub[id];list.push({id:id,name:u.name,pic:cleanThumb(u.thumb),target:u.target,pct:u.pct,pace:u.pace,over:0,left:u.left,steps:u.steps,ms:u.ms||"",msl:null,mine:!!(S.myProj&&S.myProj[id])});});
+  if(admin)S.projects.forEach(function(pr){var st=projStats(pr),ms=projMilestones(pr);list.push({id:pr.id,name:pr.name,pic:cleanFlyer(pr.flyer)||cleanThumb(pr.thumb),start:pr.start,target:pr.target,pct:st.pct,pace:st.pace,over:st.over,left:st.left,steps:st.steps,ms:msCodes(ms),msl:ms,mine:false});});
+  else Object.keys(S.projPub).forEach(function(id){var u=S.projPub[id];list.push({id:id,name:u.name,pic:cleanThumb(u.thumb),start:u.start,target:u.target,pct:u.pct,pace:u.pace,over:0,left:u.left,steps:u.steps,ms:u.ms||"",msl:null,mine:!!(S.myProj&&S.myProj[id])});});
   if(!list.length)return;
   list.sort(function(a,b){return String(a.target||"~").localeCompare(String(b.target||"~"));});
   root.append(h("p",{class:"hgroup",text:"Projects"}));
@@ -3410,7 +3413,8 @@ function projectsBlock(root){
     var pic=p.pic?h("img",{class:"flyer-th pj",src:p.pic,alt:(p.name||"Project")+" picture"}):h("div",{class:"flyer-th empty","aria-label":"No picture yet",text:"No picture yet"});
     var top=h(tap?"button":"div",{type:tap?"button":null,class:"evlink","aria-label":tap?"Open "+(p.name||"the project"):null,onclick:tap?function(){openIt();}:null},
       h("div",{class:"evmedia"},pic,h("div",{class:"plan-head"},h("b",{class:"plan-name",text:p.name||"Project"}),
-        h("span",{class:"plan-when",text:tg?"Target "+pShort(tg):"No target date"}),
+        p.start?h("span",{class:"plan-start",text:startLine(p.start)}):null,
+        h("span",{class:"plan-when",text:tg?"Done by "+pShort(tg):"No target date"}),
         days!=null?h("span",{class:"plan-days",text:days>=0?days+" days to go":(-days)+" days past"}):null,
         h("span",{class:"plan-left"},h("b",{text:p.pct+"% done"}),(p.pace?" · "+p.pace:"")+(p.left?" · "+p.left+" step"+(p.left>1?"s":"")+" left":"")),
         admin&&p.over>0?h("span",{class:"sub",text:"The plan ends "+p.over+" day"+(p.over>1?"s":"")+" after the target."}):null,
@@ -3521,10 +3525,11 @@ function drawProject(root){
     var pic=big?h("button",{type:"button",class:"flyer-btn thumb","aria-label":"View the picture full screen",onclick:function(){lightbox(big,pr.name||"Project");}},h("img",{class:"flyer-th pj",src:big,alt:""})):h("div",{class:"flyer-th empty",text:"No picture yet"});
     var ms0=projMilestones(pr);
     root.append(h("section",{class:"card evhead2"},h("div",{class:"evmedia"},pic,h("div",{class:"plan-head"},
+        pr.start?h("span",{class:"plan-start",text:startLine(pr.start)}):null,
         h("span",{class:"plan-when",text:tg0?"Done by "+pShort(tg0):"No target date"}),dd!=null?h("span",{class:"plan-days",text:dd>=0?dd+" days to go":(-dd)+" days past"}):null,
         h("span",{class:"plan-left"},h("b",{text:st.pct+"% done"}),(st.pace?" · "+st.pace:"")),
         h("span",{class:"sub",text:st.steps+" steps"+(ms0.length?" in "+ms0.length+" milestones":"")}))),
-      h("div",{class:"tilefoot"},waButton(projectShareText({id:pr.id,name:pr.name,pct:st.pct,pace:st.pace,target:pr.target}),"Share this project"),ms0.length?h("div",{class:"pjdots"},msDots(msCodes(ms0),ms0.map(function(m){return m.n;}),null)):null)));})();
+      h("div",{class:"tilefoot"},waButton(projectShareText({id:pr.id,name:pr.name,pct:st.pct,pace:st.pace,start:pr.start,target:pr.target}),"Share this project"),ms0.length?h("div",{class:"pjdots"},msDots(msCodes(ms0),ms0.map(function(m){return m.n;}),null)):null)));})();
   // the time frame: when it starts and when it has to be done
   var fin=sc.finish,sg=projSuggest(pr);
   var fitText=!st.steps?"Add steps with estimated days and the page works out the finish.":tg?(st.over>0?"The steps as estimated finish "+pShort(fin)+": "+st.over+" day"+(st.over>1?"s":"")+" after the date you need. Shorten a step, run two together, or move the date.":(st.over===0?"The steps as estimated finish on "+pShort(fin)+", right on the date you need. There is no buffer.":"The steps as estimated finish "+pShort(fin)+": "+(-st.over)+" day"+(st.over<-1?"s":"")+" before the date you need.")):"Set the date it has to be done by.";
@@ -3927,15 +3932,21 @@ function waButton(text,label){
     navigator.share({text:text}).catch(function(err){if(err&&err.name==="AbortError")return;window.open(wa,"_blank","noopener");});
   }},ico("share",20));
 }
+// A closing nudge when something is close: "Please open this as soon as you can."
+function soonNote(dateStr){var d=pDay(dateStr);if(!d)return "";var n=Math.round((d-pToday())/864e5);return n<=7?"Please open this as soon as you can.":"";}
 function eventShareText(ev){
-  var L=["Gold Coast Games event: "+(ev.name||"GCG event"),fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+(ev.place?", "+ev.place:"")];
+  var L=["Gold Coast Games event: "+(ev.name||"GCG event"),(function(){var d=pDay(ev.date);if(!d)return "Date to be confirmed";var n=Math.round((d-pToday())/864e5);return (n<0?"Started ":"Starts ")+fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+(n>0?" · in "+n+" day"+(n>1?"s":""):n===0?" · today":"");})()+(ev.place?" · "+ev.place:"")];
   if(ev.about)L.push(ev.about);else if(ev.goal)L.push(ev.goal);
-  L.push("Tap to open the plan and your tasks for "+(ev.name||"this event")+" in Game Plan:",eventLink(ev.id));return L.join("\n");
+  L.push("Tap to open the plan and your tasks for "+(ev.name||"this event")+" in Game Plan:",eventLink(ev.id));
+  var sn=soonNote(ev.date);if(sn)L.push(sn);return L.join("\n");
 }
 function taskShareText(ev,t){
   var due=taskDue(ev,t),st=taskState(ev,t);
   var who=st==="done"?"Done":(t.owner?"With "+nameOf(t.owner):"Up for grabs");
-  return "Gold Coast Games task"+(st==="done"?"":" still open")+": "+t.title+"\nFor "+(ev.name||"the event")+(due?", due "+fmtWhen(due):"")+" · "+who+"\nTap to open this task in Game Plan:\n"+taskLink(ev.id,t.id);
+  var dn=due?Math.round((new Date(due.getFullYear(),due.getMonth(),due.getDate())-pToday())/864e5):null;
+  var L=["Gold Coast Games task"+(st==="done"?"":" still open")+": "+t.title,"For "+(ev.name||"the event")+(due?", due "+fmtWhen(due)+(dn!=null?(dn>0?" · in "+dn+" day"+(dn>1?"s":""):dn===0?" · due today":" · "+(-dn)+" day"+(dn<-1?"s":"")+" overdue"):""):"")+" · "+who,"Tap to open this task in Game Plan:",taskLink(ev.id,t.id)];
+  if(st!=="done"&&dn!=null&&dn<=3)L.push("Please open this as soon as you can.");
+  return L.join("\n");
 }
 // A shared project link: admins land on the project, people with a step on their own view, everyone else on the progress list.
 function openLinkedProject(){
