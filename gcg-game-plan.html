@@ -579,6 +579,10 @@ body.has-nav{padding-bottom:104px}
 .pstep[data-s="done"] .pstt b{text-decoration:line-through;color:var(--muted)}
 .psedit{display:grid;gap:10px;margin:10px 0 4px 44px}
 .pcheck{display:flex;gap:8px;align-items:center;font-size:14px}
+.psec{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:14px 0 2px;padding-top:6px;font-size:14px;letter-spacing:.02em;text-transform:uppercase}
+.psec:first-child{margin-top:0}
+.psecprev{margin:6px 0}
+.psgoal{margin:0 0 4px}
 .overall{margin-top:18px}
 .ovlist{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .ovitem{border-top:1.5px solid var(--soft)}
@@ -3247,8 +3251,8 @@ function pIso(d){var m=d.getMonth()+1,dd=d.getDate();return d.getFullYear()+"-"+
 function pShort(d){return d.toLocaleDateString(undefined,{day:"numeric",month:"short"});}
 function pToday(){var t=new Date();t.setHours(0,0,0,0);return t;}
 function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,60).map(function(s){
-  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),note:clean(s.note).slice(0,300)};});}
-function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
+  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),note:clean(s.note).slice(0,300)};});}
+function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
   files:(pr.files||[]).slice(0,30).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
   created:pr.created||nowIso(),updated:nowIso()};}
 function pjKey(pr){var c=cleanProject(pr);delete c.updated;delete c.created;return JSON.stringify(c);}
@@ -3284,6 +3288,27 @@ function projSuggest(pr){
   blocks.forEach(function(b){var len=0;b.forEach(function(x){var d=Math.max(1,F>=E?Math.round(x.w*k):Math.floor(x.w*k)),en=pAdd(st,cursor+d);if(en>tg)en=tg;len=Math.max(len,d);rows.push({s:x.s,est:x.s.days||0,sug:d,end:en});});cursor+=len;});
   return {frame:F,est:E,k:k,rows:rows,over:E-F};
 }
+/* The foundational business setup plan, written by Hinda: eight sections, each with a date window and its tasks.
+   Offered only inside the foundational setup project, once. All the steps in a section share the section's window. */
+var FPLAN=[
+ {n:"Company / Legal Foundation",to:"2026-10-11",goal:"Goal by 11 Oct: Registration is submitted or in progress and the legal structure is settled.",
+  t:["Confirm business/company name","Confirm registration type","Confirm founders/directors","Confirm registered address","Confirm ownership structure","Prepare registration documents","Submit registration","Determine legal structure","Identify any licences/permits required"]},
+ {n:"Ownership & Founder Agreements",to:"2026-10-25",goal:"Goal by 25 Oct: Everyone knows who owns what, who does what, and who controls what.",
+  t:["Confirm founders/owners","Agree equity percentages","Define roles","Define responsibilities","Define decision-making rights","Define IP ownership","Define what happens if someone leaves","Draft founder agreement","Legal review","Sign"]},
+ {n:"Tax & Statutory",to:"2026-11-08",goal:"Goal by 8 Nov: Coco Scheme\u2019s core regulatory obligations are understood and registrations are underway or completed.",
+  t:["Tax registration","Tax identification","Determine applicable taxes","Identify statutory obligations","Identify required licences","Set up compliance calendar","Assign responsibility for filings"]},
+ {n:"Banking & Financial Setup",to:"2026-11-22",goal:"Goal by 22 Nov: Coco Scheme can legally and cleanly handle money.",
+  t:["Select bank","Open business account","Set signatories","Set up payment methods","Set up bookkeeping","Create invoice template","Create expense process","Create budget","Establish financial records"]},
+ {n:"IP / Trademark",to:"2026-12-06",goal:"Goal by 6 Dec: You know what Coco Scheme owns and what needs protection.",
+  t:["Catalogue Coco Scheme IP","Identify founder-created IP","Determine ownership","Search company/trademark name","Identify trademarks to protect","Identify relevant trademark classes","Prepare applications","Submit where appropriate","Create IP register"]},
+ {n:"Core Documentation",to:"2026-12-13",goal:"Goal by 13 Dec: Anyone working with Coco Scheme can find the important documents without hunting through someone\u2019s laptop or WhatsApp.",
+  t:["Company information sheet","Founder information sheet","Organised legal folder","Organised financial folder","Organised IP folder","Company letterhead","Invoice template","Proposal/quotation template","NDA template","Document naming system","Signing/approval process"]},
+ {n:"Operational Infrastructure",to:"2026-12-20",goal:"Goal by 20 Dec: The company can operate, not just exist on paper. Only build what is needed right now.",
+  t:["Company email","Domain","Shared drive","Task/project management","Internal communication","Roles & responsibilities","Client/vendor records","Expense/purchasing process","Basic onboarding","SOP folder","Recurring admin routines"]},
+ {n:"Final Foundation Audit",to:"2026-12-25",goal:"Goal by 25 Dec: Close everything. Do not start new major work in Christmas week.",
+  t:["Check registration documents","Check founder agreements","Check tax/statutory status","Check bank setup","Check IP records","Check core documents","Check operational systems","Identify outstanding items","Assign owners for anything incomplete","Archive final documents","Mark project complete"]}
+];
+var FPLAN_START="2026-10-05";
 function pubOf(pr){var st=projStats(pr);return {name:clean(pr.name).slice(0,80),target:pr.target||"",pct:st.pct,steps:st.steps,left:st.left,late:st.late,pace:st.pace};}
 function mineOf(pr,uid){
   var sc=projSchedule(pr),mySteps=sc.rows.filter(function(r){return r.s.owner===uid;});if(!mySteps.length)return null;
@@ -3429,7 +3454,7 @@ function drawProject(root){
     h("h1",{class:"h-sum",text:pr.name||"Project"}));
   // the time frame: when it starts and when it has to be done
   var fin=sc.finish,sg=projSuggest(pr);
-  var fitText=!st.steps?"Add steps with estimated days and the page works out the finish.":tg?(st.over>0?"The steps as estimated finish "+pShort(fin)+": "+st.over+" day"+(st.over>1?"s":"")+" after the date you need. Shorten a step, run two together, or move the date.":"The steps as estimated finish "+pShort(fin)+": "+(-st.over)+" day"+(st.over<-1?"s":"")+" before the date you need."):"Set the date it has to be done by.";
+  var fitText=!st.steps?"Add steps with estimated days and the page works out the finish.":tg?(st.over>0?"The steps as estimated finish "+pShort(fin)+": "+st.over+" day"+(st.over>1?"s":"")+" after the date you need. Shorten a step, run two together, or move the date.":(st.over===0?"The steps as estimated finish on "+pShort(fin)+", right on the date you need. There is no buffer.":"The steps as estimated finish "+pShort(fin)+": "+(-st.over)+" day"+(st.over<-1?"s":"")+" before the date you need.")):"Set the date it has to be done by.";
   var sd=h("input",{type:"date","aria-label":"Start date","data-k":"pn-start",value:pr.start||""});sd.addEventListener("change",function(){pr.start=sd.value;save(true);rerenderProj();});
   var td=h("input",{type:"date","aria-label":"Done by","data-k":"pn-target",value:pr.target||""});td.addEventListener("change",function(){pr.target=td.value;save(true);rerenderProj();});
   var frameDays=(tg&&pDay(pr.start))?Math.round((tg-pDay(pr.start))/864e5):null;
@@ -3451,27 +3476,38 @@ function drawProject(root){
   if(st.steps){
     var t0=sc.start,t1=tg&&tg>fin?tg:fin,span=Math.max(1,Math.round((t1-t0)/864e5)),today=pToday();
     function pos(d){return Math.max(0,Math.min(100,Math.round((d-t0)/864e5/span*1000)/10));}
-    var gantt=h("div",{class:"pgantt","aria-label":"Project timeline"},
-      h("div",{class:"pgaxis"},h("span",{text:pShort(t0)}),h("span",{text:pShort(t1)})));
-    sc.rows.forEach(function(r){
-      gantt.append(h("div",{class:"pgrow"},h("span",{class:"pgl",text:r.s.title||"Step"}),
+    function gRow(label,start,end,done,bad,due){
+      return h("div",{class:"pgrow"},h("span",{class:"pgl",text:label}),
         h("span",{class:"pgtrack"},
           today>=t0&&today<=t1?h("i",{class:"pgtoday",style:"left:"+pos(today)+"%",title:"Today"}):null,
           tg&&tg>=t0&&tg<=t1?h("i",{class:"pgtarget",style:"left:"+pos(tg)+"%",title:"Target"}):null,
-          h("b",{class:"pgbar","data-s":r.done?"done":(r.late||r.over>0)?"late":"",style:"left:"+pos(r.start)+"%;width:"+Math.max(1.5,pos(r.end)-pos(r.start))+"%"}),
-          r.due&&r.due>=t0&&r.due<=t1?h("i",{class:"pgdue",style:"left:"+pos(r.due)+"%",title:"Deadline "+pShort(r.due)}):null)));
-    });
-    root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Timeline"}),gantt,h("p",{class:"sub",style:"margin:0",text:"Bars are the estimated days. The gold line is today, the dark line is the date it must be done by, and small ticks are deadlines you set on a step."})));
+          h("b",{class:"pgbar","data-s":done?"done":bad?"late":"",style:"left:"+pos(start)+"%;width:"+Math.max(1.5,pos(end)-pos(start))+"%"}),
+          due&&due>=t0&&due<=t1?h("i",{class:"pgdue",style:"left:"+pos(due)+"%",title:"Deadline "+pShort(due)}):null));
+    }
+    function ganttOf(rows){var g=h("div",{class:"pgantt","aria-label":"Project timeline"},h("div",{class:"pgaxis"},h("span",{text:pShort(t0)}),h("span",{text:pShort(t1)})));rows.forEach(function(x){g.append(x);});return g;}
+    var stepRows=sc.rows.map(function(r){return gRow(r.s.title||"Step",r.start,r.end,r.done,r.late||r.over>0,r.due);});
+    var tlKids;
+    if(sc.rows.some(function(r){return r.s.section;})){
+      // with sections: one bar per section, every step on request
+      var known0=FPLAN.map(function(x){return x.n;}),names=[];sc.rows.forEach(function(r){var n=r.s.section||"Other steps";if(names.indexOf(n)<0)names.push(n);});
+      names.sort(function(x,y){var i=known0.indexOf(x),j=known0.indexOf(y);return (i<0?99:i)-(j<0?99:j);});
+      var secRows=names.map(function(n){var rs=sc.rows.filter(function(r){return (r.s.section||"Other steps")===n;}),a0=rs[0].start,e0=rs[0].end;
+        rs.forEach(function(r){if(r.start<a0)a0=r.start;if(r.end>e0)e0=r.end;});
+        return gRow(n,a0,e0,rs.every(function(r){return r.done;}),rs.some(function(r){return r.late||r.over>0;}),null);});
+      tlKids=[ganttOf(secRows),h("details",{class:"more",open:S.panel["pr-gall"]?true:null,ontoggle:function(e){S.panel["pr-gall"]=e.currentTarget.open;}},h("summary",{text:"Show every step ("+sc.rows.length+")"}),ganttOf(stepRows))];
+    }else tlKids=[ganttOf(stepRows)];
+    root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Timeline"}),tlKids,h("p",{class:"sub",style:"margin:0",text:"Bars are the estimated days. The gold line is today, the dark line is the date it must be done by, and small ticks are deadlines you set on a step."})));
   }
   // steps
-  var list=h("ol",{class:"psteps"});
+  var list=h("div",{class:"psecs"}),secOl={},secOrder=[],hasSec=pr.steps.some(function(x){return x.section;});
+  function secList(name){if(!secOl[name]){secOl[name]=h("ol",{class:"psteps"});secOrder.push(name);}return secOl[name];}
   var people=S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));});
   sc.rows.forEach(function(r,i){var s=r.s,open=S.panel["pstep:"+s.id];
     var top=h("div",{class:"pstop"},
       h("button",{type:"button",class:"pstick","aria-pressed":String(r.done),"aria-label":(r.done?"Mark not done: ":"Mark done: ")+s.title,onclick:function(){s.done=r.done?false:true;s.doneAt=s.done?nowIso():"";save(true);rerenderProj();}},r.done?ico("check",16):null),
       h("button",{type:"button",class:"pstt",onclick:function(){S.panel["pstep:"+s.id]=!open;renderEvents();}},
-        h("b",{text:(i+1)+". "+(s.title||"Untitled step")}),
-        h("span",{class:"sub",text:(s.days?s.days+" day"+(s.days>1?"s":""):"No estimate")+" · "+(s.par?"starts with the step before · ":"")+"ends "+pShort(r.end)+(r.due?" · deadline "+pShort(r.due)+(r.over>0?" ("+r.over+" day"+(r.over>1?"s":"")+" over)":""):"")+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":"")})));
+        h("b",{text:(hasSec?"":(i+1)+". ")+(s.title||"Untitled step")}),
+        h("span",{class:"sub",text:(s.days?s.days+" day"+(s.days>1?"s":""):"No estimate")+" · "+(s.par&&i>0&&!(hasSec&&sc.rows[i-1].s.section===s.section)?"runs with \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d · ":"")+"ends "+pShort(r.end)+(r.due?" · deadline "+pShort(r.due)+(r.over>0?" ("+r.over+" day"+(r.over>1?"s":"")+" over)":""):"")+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":"")})));
     var li=h("li",{class:"pstep","data-s":r.done?"done":r.late?"late":""},top);
     if(open){
       var ti=h("input",{type:"text","aria-label":"Step","data-k":"pst-"+s.id,value:s.title});ti.addEventListener("input",function(){s.title=ti.value;save();});
@@ -3482,23 +3518,48 @@ function drawProject(root){
       li.append(h("div",{class:"psedit"},h("div",{class:"field"},h("label",{text:"Step"}),ti),
         h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Estimated days"}),dy),h("div",{class:"field"},h("label",{text:"Who does it"}),ow)),
         h("div",{class:"field"},h("label",{text:"Must be done by (optional)"}),(function(){var di=h("input",{type:"date","aria-label":"Deadline for this step","data-k":"pdue-"+s.id,value:s.due||""});di.addEventListener("change",function(){s.due=di.value;save(true);rerenderProj();});return di;})()),
-        i>0?h("label",{class:"pcheck"},par," Starts with the step before (runs alongside it)"):null,
+        h("div",{class:"field"},h("label",{text:"Section (optional)"}),(function(){var si=h("input",{type:"text",list:"psecs-dl","aria-label":"Section","data-k":"psec-"+s.id,placeholder:"For example Banking",value:s.section||""});si.addEventListener("change",function(){s.section=clean(si.value).slice(0,40);save(true);renderEvents();});return si;})()),
+        i>0?h("label",{class:"pcheck"},par," Runs alongside \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d (starts at the same time)"):null,
         h("div",{class:"field"},h("label",{text:"Note"}),nt),
         h("div",{class:"row"},
           i>0?h("button",{type:"button",class:"btn small",text:"Move up",onclick:function(){var a=pr.steps;a.splice(i-1,0,a.splice(i,1)[0]);save(true);renderEvents();}}):null,
           i<sc.rows.length-1?h("button",{type:"button",class:"btn small",text:"Move down",onclick:function(){var a=pr.steps;a.splice(i+1,0,a.splice(i,1)[0]);save(true);renderEvents();}}):null,
           h("button",{type:"button",class:"btn link",text:"Remove step",onclick:function(){pr.steps=pr.steps.filter(function(x){return x!==s;});save(true);renderEvents();}}))));
     }
-    list.append(li);
+    secList(s.section||"").append(li);
   });
+  var known=FPLAN.map(function(x){return x.n;});secOrder.sort(function(x,y){var i=known.indexOf(x),j=known.indexOf(y);return (i<0?99:i)-(j<0?99:j);});
+  secOrder.forEach(function(name){var ol=secOl[name],rows=sc.rows.filter(function(r){return (r.s.section||"")===name;}),dn=rows.filter(function(r){return r.done;}).length;
+    if(name||secOrder.length>1)list.append(h("h4",{class:"psec"},h("span",{text:name||"Other steps"}),h("span",{class:"sub",text:dn+" of "+rows.length+" done"})));
+    if(pr.secGoals&&pr.secGoals[name])list.append(h("p",{class:"sub psgoal",text:pr.secGoals[name]}));list.append(ol);});
   var dr=S.pdraft||(S.pdraft={t:"",d:""});
   var nT=h("input",{type:"text","aria-label":"New step","data-k":"pnew",placeholder:"Next step, for example Register the business name"}),nD=h("input",{type:"number",min:"0",max:"365","aria-label":"Estimated days","data-k":"pnewd",placeholder:"Days"});
   nT.value=dr.t;nD.value=dr.d;nT.addEventListener("input",function(){dr.t=nT.value;});nD.addEventListener("input",function(){dr.d=nD.value;});
-  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Steps"}),
+  var secNames=[];pr.steps.forEach(function(x){if(x.section&&secNames.indexOf(x.section)<0)secNames.push(x.section);});
+  var secDl=h("datalist",{id:"psecs-dl"},secNames.map(function(n){return h("option",{value:n});}));
+  var nS=h("input",{type:"text",list:"psecs-dl","aria-label":"Section for the new step","data-k":"pnews",placeholder:"Section (optional), for example Banking"});nS.value=dr.sec||"";nS.addEventListener("input",function(){dr.sec=nS.value;});
+  root.append(h("section",{class:"card hsec"},secDl,h("h3",{class:"q",text:"Steps"}),
     st.steps?list:h("p",{class:"sub",text:"No steps yet. Add the first one below. Put an estimated number of days on each so the timeline and the finish date work."}),
-    h("div",{class:"two-col"},h("div",{class:"field"},nT),h("div",{class:"field"},nD)),
+    h("div",{class:"two-col"},h("div",{class:"field"},nT),h("div",{class:"field"},nD)),h("div",{class:"field"},nS),
     h("button",{type:"button",class:"btn go small",text:"Add step",onclick:function(){var t=clean(nT.value);if(!t){nT.focus();return;}
-      pr.steps.push({id:newId("s"),title:t,days:Math.max(0,Math.round(Number(nD.value)||0)),par:false,owner:"",done:null,doneAt:"",note:""});S.pdraft={t:"",d:""};save(true);renderEvents();}})));
+      pr.steps.push({id:newId("s"),title:t,days:Math.max(0,Math.round(Number(nD.value)||0)),par:false,section:clean(nS.value).slice(0,40),owner:"",done:null,doneAt:"",note:""});S.pdraft={t:"",d:"",sec:clean(nS.value)};save(true);renderEvents();}})));
+  // Hinda's foundational setup plan: offered only inside the foundational setup project, and only once.
+  if(/found|coco/i.test(pr.name||"")&&!pr.packed){
+    var nTasks=0;FPLAN.forEach(function(x){nTasks+=x.t.length;});
+    function addPlan(){
+      pr.start=FPLAN_START;pr.target="2026-12-25";pr.secGoals=pr.secGoals||{};
+      var prevEnd=pDay(FPLAN_START);
+      FPLAN.forEach(function(sec){var end=pDay(sec.to),days=Math.max(1,Math.round((end-prevEnd)/864e5));pr.secGoals[sec.n]=sec.goal;
+        sec.t.forEach(function(t,i){pr.steps.push({id:newId("s"),title:t,days:days,par:i>0,section:sec.n,due:sec.to,owner:"",done:null,doneAt:"",note:""});});
+        prevEnd=end;});
+      pr.packed=true;
+    }
+    root.append(h("details",{class:"more",open:S.panel["pr-pack"]?true:null,ontoggle:function(e){S.panel["pr-pack"]=e.currentTarget.open;}},h("summary",{text:"Your foundational setup plan: "+FPLAN.length+" sections, "+nTasks+" tasks"}),
+      h("p",{class:"sub",text:"This is your plan, section by section, with its date window. Adding it sets the project to 5 Oct to 25 Dec, puts every task under its section with that section's deadline, and shows each section goal. Nothing is assigned to anyone yet. You can edit, move or delete anything afterwards."}),
+      FPLAN.map(function(sec,i){return h("div",{class:"psecprev"},h("p",{class:"lab",text:sec.n+" · to "+pShort(pDay(sec.to))+" · "+sec.t.length+" tasks"}),h("p",{class:"sub",style:"margin:0",text:sec.goal}));}),
+      h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Add all "+nTasks+" tasks",onclick:function(){addPlan();save(true);renderEvents();toast("Plan added. Give the tasks to people next.");}}),
+        h("button",{type:"button",class:"btn link",text:"Not now, hide this",onclick:function(){pr.packed=true;save(true);renderEvents();}}))));
+  }
   // checklist: things to get done that need no timing
   var cl=pr.items=pr.items||[],cdr=S.cdraft||(S.cdraft={t:""});
   var cIn=h("input",{type:"text","aria-label":"New checklist item","data-k":"pcnew",placeholder:"Something to get done, for example Collect everyone's ID copies"});cIn.value=cdr.t;cIn.addEventListener("input",function(){cdr.t=cIn.value;});
