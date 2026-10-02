@@ -2174,11 +2174,10 @@ function renderPeople(){
       if(del.getAttribute("data-armed")!=="1"){del.setAttribute("data-armed","1");del.textContent="Tap again to remove";setTimeout(function(){del.setAttribute("data-armed","0");del.textContent="Remove";},4000);return;}
       S.db.doc("responses/"+p.id).delete().catch(function(){say($("t-exportStatus"),"Could not remove that entry.","warn");});
     });
-    root.append(h("div",{class:"person"},
-      h("h3",{class:"ph-row"},cleanPhoto(p.photo)?h("img",{class:"avatar sm",src:cleanPhoto(p.photo),alt:""}):null,pname(p)),
-      titlesOf(p.id).length?h("div",{class:"chips"},titlesOf(p.id).map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
-      prof?h("p",{class:"ttl",text:prof.title}):h("p",{class:"meta",text:"Situations not answered."}),
-      prof?h("div",{class:"chips"},prof.chips.map(function(c,i){return h("span",{class:"chip t"+i,text:c});})):null,
+    var key="adm:"+p.id,open=!!S.tlOpen[key];
+    var box=h("div",{class:"person"},h("button",{type:"button",class:"crewhead pc-tap","aria-expanded":String(open),"aria-label":pname(p)+": show "+(open?"less":"more"),onclick:function(){S.tlOpen[key]=!open;renderPeople();}},
+      playerCard(p,prof,{pid:p.id}),h("span",{class:"chev","aria-hidden":"true",text:open?"Show less −":"Show more +"})));
+    if(open)[prof?null:h("p",{class:"meta",text:"Situations not answered."}),
       h("p",{class:"meta",text:[p.source==="pasted"?"Added by paste":"Sent from the page",p.confirm?"Card: "+CONFIRM[p.confirm]:"Card not checked"].join(" · ")}),
       p.confirmNote?h("p",null,h("b",{text:"What we missed: "}),p.confirmNote):null,
       p.avoid?h("p",null,h("b",{text:"Would rather avoid (their words): "}),p.avoid):null,
@@ -2193,7 +2192,8 @@ function renderPeople(){
       cleanCvFile(p.cvFile)?(function(){var f=cleanCvFile(p.cvFile),st=h("span",{class:"status"});return h("p",null,h("b",{text:"CV file: "}),f.name+" ("+sizeText(f.size)+") ",h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf("responses/"+p.id+"/files","cv",f.n,f.name,st);}}),st);})():null,
       h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy notes",onclick:function(){copyText(personNotes(p),$("t-exportStatus"),"Copied notes for "+pname(p)+".");}}),
         h("button",{type:"button",class:"btn small",text:"Export their records (CSV)",onclick:function(){exportPerson(p.id,$("t-exportStatus"));}}),
-        (p.id===S.ownerId?h("span",{class:"sub",text:"Owner: never auto-assigned. Can take anything up for grabs."}):h("button",{type:"button",class:"btn small","aria-pressed":String(noAutoOn(p.id)),text:noAutoOn(p.id)?"Kept off auto-assign (tap to allow)":"Keep off auto-assign",onclick:function(){toggleNoAuto(p.id);}})),del)));
+        (p.id===S.ownerId?h("span",{class:"sub",text:"Owner: never auto-assigned. Can take anything up for grabs."}):h("button",{type:"button",class:"btn small","aria-pressed":String(noAutoOn(p.id)),text:noAutoOn(p.id)?"Kept off auto-assign (tap to allow)":"Keep off auto-assign",onclick:function(){toggleNoAuto(p.id);}})),del)].forEach(function(x){if(x)box.append(x);});
+    root.append(box);
   });
 }
 function personNotes(p){
