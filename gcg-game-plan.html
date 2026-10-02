@@ -508,6 +508,8 @@ body.has-nav{padding-bottom:104px}
 .later .laterstage{display:grid;gap:10px;margin-top:10px}
 .later .laterstage>b{font-family:var(--font-display);font-weight:600}
 .goal{font-size:16px;margin:-6px 0 6px;max-width:52ch}
+.crewhead.pc-tap{display:block;width:100%;text-align:left;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}
+.crewhead.pc-tap .chev{display:block;text-align:center;margin-top:8px;font-size:13px;font-weight:700;color:var(--muted)}
 .about{font-size:15px;line-height:1.5;margin:0 0 10px;max-width:56ch;white-space:pre-wrap;color:var(--ink)}
 .needed{font-weight:800;font-size:13.5px;color:var(--ink);background:var(--bg-2);border-radius:8px;padding:4px 8px;justify-self:start}
 .hero-move .needed{background:rgba(255,255,255,.55)}
@@ -4444,10 +4446,10 @@ function playerCard(p,prof,opts){
         h("div",{class:"pc2-side"},
           h("p",{class:"pc-kick",text:"Gold Coast Games · Player card"}),
           h("p",{class:"pc2-name",text:p.name||"You"}),
-          prof?h("p",{class:"pc2-type"},h("span",{text:"The "+prof.chips[0]}),h("br"),h("span",{class:"plus",text:"+ "+prof.chips[1]})):h("p",{class:"pc2-type",text:"Card coming soon"}),
+          prof?h("p",{class:"pc2-type"},h("span",{text:"The "+prof.chips[0]}),prof.chips[1]?h("br"):null,prof.chips[1]?h("span",{class:"plus",text:"+ "+prof.chips[1]}):null):h("p",{class:"pc2-type",text:"Card coming soon"}),
           ts.length?h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
           !ph&&mine&&!opts.reveal?h("button",{type:"button",class:"btn small go",text:"Add your photo",onclick:function(){startExtra("photo");}}):null)),
-      prof?h("ul",{class:"pc2-str"},prof.top.map(function(t){return h("li",{text:TRAIT_LABEL[t]});})):null,
+      prof?h("ul",{class:"pc2-str"},(prof.labels||prof.top.map(function(t){return TRAIT_LABEL[t];})).map(function(t){return h("li",{text:t});})):null,
       opts.statement?h("p",{class:"pc2-about",text:opts.statement}):null,
       opts.counts?h("p",{class:"pc2-n",text:opts.counts}):null));
 }
@@ -4748,7 +4750,7 @@ function renderCrew(){
 }
 function drawCrew(root){
   var ids=Object.keys(S.crew||{});
-  root.append(h("h1",{class:"h-sum",text:"The crew"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Everyone at GCG, and what they do. Tap a person to see what they have chosen to share."}));
+  root.append(h("h1",{class:"h-sum",text:"The crew"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Everyone at GCG, and what they do. Tap a card to see what they have chosen to share."}));
   var tts=S.titles.filter(function(x){return (x.holders||[]).length;});
   if(tts.length)root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"Who does what"}),
     tts.map(function(x){return h("div",{class:"crewtitle"},h("b",{text:x.name}),h("span",{class:"sub",text:(x.holders||[]).map(nameOf).join(", ")}),x.desc?h("span",{class:"sub",text:x.desc}):null);})));
@@ -4757,16 +4759,13 @@ function drawCrew(root){
   ids.forEach(function(id){
     var c=S.crew[id],key="crew:"+id,open=!!S.tlOpen[key],secs=c.sections||{},ts=titlesOf(id),n=Object.keys(secs).length;
     var ph=cleanPhoto(c.photo);
-    var head=h("button",{type:"button",class:"crewhead","aria-expanded":String(open),onclick:function(){S.tlOpen[key]=!open;renderCrew();}},
-      ph?h("img",{class:"avatar md",src:ph,alt:""}):h("div",{class:"avatar md empty","aria-hidden":"true",text:initials(c.name)||"?"}),
-      h("span",{class:"crew-who"},h("b",{text:(c.name||"Someone")+(id===S.uid?" (you)":"")}),
-        ts.length?h("span",{class:"chip t1",text:""+ts.map(function(x){return x.name;}).join(", ")}):null,
-        h("span",{class:"sub",text:c.type||""})),
-      h("span",{class:"chev","aria-hidden":"true",text:open?"−":"+"}));
+    var cp=(c.chips&&c.chips.length)?{chips:c.chips,labels:(c.strengths||[]).slice(0,3)}:(c.type?{chips:[String(c.type).replace(/^The /,"")],labels:(c.strengths||[]).slice(0,3)}:null);
+    var head=h("button",{type:"button",class:"crewhead pc-tap","aria-expanded":String(open),"aria-label":(c.name||"Someone")+": show "+(open?"less":"more"),onclick:function(){S.tlOpen[key]=!open;renderCrew();}},
+      playerCard({name:(c.name||"Someone")+(id===S.uid?" (you)":""),photo:c.photo},cp,{pid:id}),
+      h("span",{class:"chev","aria-hidden":"true",text:open?"Show less −":"Show more +"}));
     var card=h("section",{class:"card crewcard"},head);
     if(id===S.uid)card.append(h("p",{class:"sub",text:"This is how the crew sees you. Everything about you is under Me. Change what is shared in Me, Who sees what."}));
     if(open){
-      card.append(h("div",{class:"chips"},(c.strengths||[]).map(function(s,i){return h("span",{class:"chip t"+i,text:s});})));
       function sec(label,val){return val&&(!Array.isArray(val)||val.length)?h("div",{class:"crewsec"},h("p",{class:"lab",text:label}),Array.isArray(val)?h("div",{class:"chips"},val.map(function(v){return h("span",{class:"chip",text:v});})):h("p",{text:val})):null;}
       card.append(sec("Up for",secs.up),sec("Has done",secs.did),sec("Brings",secs.brings),sec("Proudest work",secs.proud),sec("Works best",secs.works),
         secs.cv?h("div",{class:"crewsec"},h("p",{class:"lab",text:"CV or link"}),safeUrl(secs.cv)&&!/\s/.test(clean(secs.cv))?h("a",{href:safeUrl(secs.cv),target:"_blank",rel:"noopener",text:clean(secs.cv)}):h("p",{text:secs.cv})):null,
