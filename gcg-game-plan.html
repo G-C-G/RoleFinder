@@ -29,14 +29,12 @@
   --warn:#FF8A7F; --ok:#34B872;
   color-scheme:dark;
 }
-/* Colour blocking: each kind of section has its own soft tone so the screen can be skimmed. Sky = events and schedule, sage = progress and crew, blush = needs attention, lilac = files and extras, sand = quiet and secondary, gold = do this now. */
-:root{--t-sky:#DCEAF2;--t-sky-e:#B9D2E0;--t-sage:#DDEBDD;--t-sage-e:#B7D3B9;--t-blush:#F7DED6;--t-blush-e:#E8BFB2;--t-lilac:#E7E0F0;--t-lilac-e:#CBBEDD;--t-sand:#EFE6D2;--t-sand-e:#D9CDB2;--t-gold:#FBE8A8;--t-gold-e:#EBCB62}
-:root[data-gcg-theme="dark"],:root[data-theme="dark"]{--t-sky:#1E2F3A;--t-sky-e:#2F4756;--t-sage:#1F3225;--t-sage-e:#31503B;--t-blush:#3A2520;--t-blush-e:#58382F;--t-lilac:#2D2639;--t-lilac-e:#443A56;--t-sand:#2A2319;--t-sand-e:#40372A;--t-gold:#3B2F0F;--t-gold-e:#5C4A18}
+/* Colour blocking in the GCG brand colours only: gold = events and what to do now, green = progress and crew, red = needs attention, sand = quiet and secondary. */
+:root{--t-sage:#DCEFDF;--t-sage-e:#B3D9BD;--t-blush:#FBDDDD;--t-blush-e:#EDB5B8;--t-sand:#EFE6D2;--t-sand-e:#D9CDB2;--t-gold:#FDEDB8;--t-gold-e:#EBCB62}
+:root[data-gcg-theme="dark"],:root[data-theme="dark"]{--t-sage:#1F3225;--t-sage-e:#31503B;--t-blush:#3D1A1F;--t-blush-e:#5E2A31;--t-sand:#2A2319;--t-sand-e:#40372A;--t-gold:#3B2F0F;--t-gold-e:#5C4A18}
 [data-tone]{border-width:1.5px}
-[data-tone="sky"]{background:var(--t-sky)!important;border-color:var(--t-sky-e)!important}
 [data-tone="sage"]{background:var(--t-sage)!important;border-color:var(--t-sage-e)!important}
 [data-tone="blush"]{background:var(--t-blush)!important;border-color:var(--t-blush-e)!important}
-[data-tone="lilac"]{background:var(--t-lilac)!important;border-color:var(--t-lilac-e)!important}
 [data-tone="sand"]{background:var(--t-sand)!important;border-color:var(--t-sand-e)!important}
 [data-tone="gold"]{background:var(--t-gold)!important;border-color:var(--t-gold-e)!important}
 [data-tone] .btn:not(.go):not(.green):not(.link),[data-tone] .sb,[data-tone] .iconbtn{background:var(--card)}
@@ -4965,19 +4963,18 @@ function drawCrew(root){
 
 /* ---------- Colour blocking: tone each section by what it is ---------- */
 var TONE_RULES=[[/^(your progress|your contributions|crew contributions|your gcg trail|crew on the day|who sees what)/,"sage"],
-  [/^(are you coming|will you be there|where it is heading|events?$|\+ add an event)/,"sky"],
-  [/^(needs you|needs attention)/,"blush"],[/^(your next steps)/,"gold"],
-  [/^(up for grabs|files and links|ideas|my title|share an idea|add results|ping someone)/,"lilac"],
-  [/^(all tasks|add a task|guests, links|debrief|more actions|edit event|what i like|crew$)/,"sand"]];
+  [/^(are you coming|will you be there|where it is heading|events?$|\+ add an event|up for grabs|your next steps)/,"gold"],
+  [/^(needs you|needs attention)/,"blush"],
+  [/^(files and links|ideas|my title|share an idea|add results|ping someone|all tasks|add a task|guests, links|debrief|more actions|edit event|what i like|crew$)/,"sand"]];
 function colorBlock(){
   var root=document.getElementById("wrap");if(!root)return;
   root.querySelectorAll(".card, .tstat").forEach(function(el){
     var tone=null;
-    if(el.classList.contains("tstat")){var all=[].slice.call(el.parentNode.children),i=all.indexOf(el);tone=el.classList.contains("bad")?"blush":["sky","lilac","sand","sage"][i%4];}
+    if(el.classList.contains("tstat")){var all=[].slice.call(el.parentNode.children),i=all.indexOf(el);tone=el.classList.contains("bad")?"blush":["gold","sage","sand"][i%3];}
     else if(el.classList.contains("evtile")||el.classList.contains("plan-card")||el.classList.contains("evhead2")||el.classList.contains("evstatus")){
       var te=el.querySelector("[data-evid]"),id=te?te.getAttribute("data-evid"):(S.evOpen||S.evSel||""),n=0;for(var c=0;c<id.length;c++)n+=id.charCodeAt(c);
-      tone=["sky","lilac","sage","sand"][n%4];}
-    else if(el.classList.contains("attend"))tone="sky";
+      tone=["gold","sage","sand"][n%3];}
+    else if(el.classList.contains("attend"))tone="gold";
     else if(el.classList.contains("startcard"))tone="gold";
     else{var hd=el.querySelector(".q,summary,.k,h2,h3"),t=hd?hd.textContent.trim().toLowerCase():"";for(var k=0;k<TONE_RULES.length;k++){if(TONE_RULES[k][0].test(t)){tone=TONE_RULES[k][1];break;}}}
     if(tone){if(el.getAttribute("data-tone")!==tone)el.setAttribute("data-tone",tone);}else if(el.hasAttribute("data-tone"))el.removeAttribute("data-tone");
