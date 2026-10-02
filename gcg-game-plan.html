@@ -863,7 +863,7 @@ button.chip.on{outline:2px solid var(--ink)}
 .steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;padding:2px 0}.cvline .cv-t{flex:1 1 100%}.cvline .cvbtns{flex:0 0 auto}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
-.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
+.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
@@ -2534,6 +2534,9 @@ function daysTo(date){
 }
 function fmtDate(d){if(!d)return "Date not set";try{return new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});}catch(e){return d;}}
 function fmtWhen(dt){if(!dt)return "";return dt.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})+(dt.getHours()===18&&dt.getMinutes()===0?"":" "+fmtClock(dt));}
+function dueLabel(dt){var n=new Date(),a=new Date(n.getFullYear(),n.getMonth(),n.getDate()),b=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()),d=Math.round((b-a)/864e5);
+  var clock=(dt.getHours()===18&&dt.getMinutes()===0)?"":" "+fmtClock(dt);
+  return d===0?"Due today"+clock:d===1?"Due tomorrow"+clock:"Due "+fmtWhen(dt);}
 function fmtClock(dt){return ("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2);}
 function countdown(due){
   if(!due)return {text:"",k:""};
@@ -2656,7 +2659,7 @@ function taskMatch(p,job,skipEid){
   return {pts:pts,why:why};
 }
 function rankFor(ev,t,load){
-  var out=passersOf(ev,t),g=t.group||t.id;
+  var out=passersOf(ev,t).slice(),g=t.group||t.id,att=attendOf(ev);Object.keys(att).forEach(function(k){if(att[k]==="no"&&out.indexOf(k)<0)out.push(k);});
   var sameGroup=(ev.tasks||[]).filter(function(x){return x!==t&&(x.group||x.id)===g&&x.owner;}).map(function(x){return x.owner;});
   return S.people.filter(function(p){return out.indexOf(p.id)<0&&sameGroup.indexOf(p.id)<0;}).map(function(p){var m=taskMatch(p,t.job,ev.id);return m?{p:p,m:m,v:m.pts-1.2*((load&&load[p.id])||0)}:null;})
     .filter(Boolean).sort(function(a,b){return b.v-a.v;});
@@ -2670,7 +2673,7 @@ var evTimers={},evDirty={};
 function cleanTask(t){
   return {id:t.id,title:clean(t.title).slice(0,120),job:FN[t.job]?t.job:"",phase:t.phase||"before",d:t.d==null||t.d===""?null:Number(t.d),m:t.m==null||t.m===""?null:Number(t.m),
     pri:PRI[t.pri]?t.pri:"should",size:SIZE[t.size]?t.size:"M",cp:t.cp==null?null:Number(t.cp),msg:t.msg||"",all:!!t.all,group:t.group||"",helper:clean(t.helper).slice(0,60),
-    owner:t.owner||"",offered:!!t.offered,ots:t.ots||"",manual:t.manual||"",sug:!!t.sug,ok:!!t.ok,mts:t.mts||{},passed:(t.passed||[]).slice(0,30),handDone:t.handDone||{}};
+    owner:t.owner||"",offered:!!t.offered,ots:t.ots||"",manual:t.manual||"",sug:!!t.sug,ok:!!t.ok,link:clean(t.link).slice(0,400),mts:t.mts||{},passed:(t.passed||[]).slice(0,30),handDone:t.handDone||{}};
 }
 function saveEvent(ev,now){
   clearTimeout(evTimers[ev.id]);evDirty[ev.id]=(evDirty[ev.id]||0)+1;
@@ -2678,6 +2681,8 @@ function saveEvent(ev,now){
     ev=evById(ev.id)||ev;
     if(!S.db){evDirty[ev.id]=0;return;}
     var doc={name:clean(ev.name).slice(0,80),goal:clean(ev.goal).slice(0,200),type:ev.type||"",date:ev.date||"",start:ev.start||"18:30",place:clean(ev.place).slice(0,120),lead:ev.lead||"",
+      client:clean(ev.client).slice(0,80),audience:clean(ev.audience).slice(0,20),games:clean(ev.games).slice(0,160),
+      files:(ev.files||[]).slice(0,20).map(function(f){return {label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};}),
       crew:{extra:clean(ev.crew&&ev.crew.extra).slice(0,300),extraN:Math.max(0,Math.min(200,Number(ev.crew&&ev.crew.extraN)||0)),food:clean(ev.crew&&ev.crew.food).slice(0,300)},
       links:{luma:clean(ev.links&&ev.links.luma).slice(0,300),form:clean(ev.links&&ev.links.form).slice(0,300),group:clean(ev.links&&ev.links.group).slice(0,300)},
       guests:{registered:ev.guests&&ev.guests.registered||"",attended:ev.guests&&ev.guests.attended||"",feedback:ev.guests&&ev.guests.feedback||""},
@@ -2743,6 +2748,7 @@ function whyText(w){
 // Everyone, in three groups, for one task: recommended with reasons, no signal, and the people who said they do not want this kind of work.
 function whyNot(p,job,ev,t){
   var out=t?(function(){var o=[];S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===t.id&&r.answer==="pass"&&r.pid===p.id)o.push(1);});return o.length;})():0;
+  if(attendOf(ev)[p.id]==="no")return "Said they can't make it to this event";
   if(out)return "Declined this task";
   if((p.no||[]).indexOf(job)>-1)return "Said Never offer to "+(FN[job]?FN[job].name:"this job");
   if(areaTurnedDown(p,job))return "Said no to several "+(AREA[FN[job].area]?AREA[FN[job].area].short:"")+" jobs";
@@ -2755,12 +2761,15 @@ function staffGroups(ev,t){
   var no=S.people.filter(function(p){return !ids[p.id]&&p.id!==S.ownerId&&same.indexOf(p.id)<0;}).map(function(p){return {p:p,why:whyNot(p,t.job,ev,t)};});
   return {rec:rank.filter(function(x){return realWhy(x.m);}),mid:rank.filter(function(x){return !realWhy(x.m);}),no:no};
 }
+// Other events on the same date where this person already has a task.
+function clashes(ev,pid){var out=[];S.events.forEach(function(e){if(e.id===ev.id||!e.date||e.date!==ev.date)return;if((e.tasks||[]).some(function(t){return t.owner===pid&&taskState(e,t)!=="passed";}))out.push(e.name||"another event");});return out;}
+function personNotes(ev,pid){var n=[],a=attendOf(ev)[pid],c=clashes(ev,pid);if(a==="maybe")n.push("not sure they can come");if(c.length)n.push("also on "+c[0]+" that day");return n.length?" · "+n.join(" · "):"";}
 function personPicker(ev,t){
   var g=staffGroups(ev,t),owner=t.owner?personById(t.owner):null,key="ovr:"+t.id,box=h("div",{class:"picker"});
-  function lab(x){return pname(x.p)+(x.m&&x.m.why.length?" · "+(x.m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,2).map(whyText).join(" + ")||whyText(x.m.why[0])):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"");}
+  function lab(x){return pname(x.p)+(x.m&&x.m.why.length?" · "+(x.m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,2).map(whyText).join(" + ")||whyText(x.m.why[0])):"")+personNotes(ev,x.p.id)+(/^manual-/.test(x.p.id)?" (answers by message)":"");}
   var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:g.rec.length?"Choose someone…":"No one recommended yet"}));
   if(g.rec.length)sel.append(h("optgroup",{label:"Recommended, with why"},g.rec.map(function(x,i){return h("option",{value:x.p.id,text:lab(x)});})));
-  if(g.mid.length)sel.append(h("optgroup",{label:"Nothing said about this work (no yes from them)"},g.mid.map(function(x){return h("option",{value:x.p.id,text:x.m.why.length?lab(x):pname(x.p)+" · nothing said about this work"});})));
+  if(g.mid.length)sel.append(h("optgroup",{label:"Nothing said about this work (no yes from them)"},g.mid.map(function(x){return h("option",{value:x.p.id,text:x.m.why.length?lab(x):pname(x.p)+" · nothing said about this work"+personNotes(ev,x.p.id)});})));
   if(g.no.length)sel.append(h("optgroup",{label:"NOT INTERESTED: said they do not want this work"},g.no.map(function(x){return h("option",{value:x.p.id,text:pname(x.p)+" · "+x.why});})));
   if(owner&&!g.rec.concat(g.mid).some(function(x){return x.p.id===owner.id;})&&!g.no.some(function(x){return x.p.id===owner.id;}))sel.append(h("option",{value:owner.id,text:pname(owner)}));
   sel.value=t.owner||"";
@@ -2769,7 +2778,8 @@ function personPicker(ev,t){
     var no=g.no.filter(function(x){return x.p.id===sel.value;})[0];
     if(no){S.panel[key]=sel.value;renderEvents();return;}
     assign(sel.value);});
-  box.append(sel);
+  var at=attendOf(ev),coming=g.rec.filter(function(x){return at[x.p.id]==="yes";}).length;
+  box.append(h("p",{class:"sub picker-count",text:g.rec.length+" recommended"+(g.rec.length?" · "+coming+" confirmed coming":"")+(g.no.length?" · "+g.no.length+" not interested":"")}),sel);
   var pend=S.panel[key],nx=pend?g.no.filter(function(x){return x.p.id===pend;})[0]:null;
   if(nx)box.append(h("div",{class:"box warnbox"},h("b",{text:pname(nx.p)+": "+nx.why+"."}),h("p",{class:"sub",text:"They said they do not want this kind of work. Assign anyway only if you have spoken to them."}),
     h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Assign anyway",onclick:function(){assign(pend);}}),h("button",{type:"button",class:"btn small link",text:"Cancel",onclick:function(){S.panel[key]="";renderEvents();}}))));
@@ -2786,7 +2796,7 @@ function crewReview(ev){
     list.map(function(t){var m=t.owner?taskMatch(personById(t.owner)||{id:t.owner,q:[],story:{}},t.job,ev.id):null,d=taskDue(ev,t),chg=!!S.panel["chg:"+t.id];
       return h("div",{class:"rvrow"},
         h("div",{class:"rv-t"},h("b",{text:t.title}),h("span",{class:"sub",text:(d?fmtWhen(d):"")+(t.pri==="must"?" · Essential":"")})),
-        h("div",{class:"rv-p"},h("b",{text:nameOf(t.owner)}),h("span",{class:"sub",text:m&&m.why.length?m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,3).map(whyText).join(" · ")||m.why.map(whyText)[0]:"Suggested"})),
+        h("div",{class:"rv-p"},h("b",{text:nameOf(t.owner)}),h("span",{class:"sub",text:(m&&m.why.length?m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,3).map(whyText).join(" · ")||m.why.map(whyText)[0]:"Suggested")+personNotes(ev,t.owner)})),
         h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Accept",onclick:function(){acceptTask(ev,t);saveEvent(ev,true);renderEvents();}}),
           h("button",{type:"button",class:"btn small",text:chg?"Close":"Change",onclick:function(){S.panel["chg:"+t.id]=!chg;renderEvents();}})),
         chg?personPicker(ev,t):null);}),
@@ -2943,6 +2953,7 @@ function drawEvents(root){
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     ev.squeezed?h("p",{class:"sub"},"This event is closer than the template assumes, so the timeline was tightened to fit."):null,
     h("p",{class:"sub"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
+    eventWhy(ev).why.length?h("p",{class:"sub",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
     h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Edit event: name, date, time, place",onclick:function(){S.panel.evdetails=true;renderEvents();var d=$("evDetails");if(d&&d.scrollIntoView)d.scrollIntoView({block:"start"});}})),
     ev.published===false?setupCard(ev):null,
     ev.published===false?null:h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
@@ -2968,6 +2979,8 @@ function drawEvents(root){
       field("Event name","text",ev.name,function(v){ev.name=v;},"name"),
       field("Goal: what we are trying to make happen","text",ev.goal,function(v){ev.goal=v;},"goal"),
       h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time (24-hour, 18:00 is 6 pm)","time",ev.start,function(v){ev.start=v;},"start")),
+      h("div",{class:"two-col"},field("Client","text",ev.client,function(v){ev.client=v;},"client"),field("Expected guests","number",ev.audience,function(v){ev.audience=v;},"audience")),
+      field("Games being delivered","text",ev.games,function(v){ev.games=v;},"games"),
       h("div",{class:"two-col"},field("Place","text",ev.place,function(v){ev.place=v;},"place"),h("div",{class:"field"},h("label",{text:"Event lead (chases the list)"}),leadSel)),
       ms.all&&ms.must/ms.all>0.45?h("p",{class:"status","data-kind":"warn",text:""+ms.must+" of "+ms.all+" tasks are Essential. Keep it to about a third."}):null,
       (function(){var cst=h("span",{class:"status"});
@@ -3020,6 +3033,7 @@ function drawEvents(root){
       S.evDraft=null;S.panel.alltasks=true;saveEvent(ev,true);renderEvents();toast(msg);}}),
     h("p",{class:"sub",text:"The closest job is optional. It tells the page who fits. Leave \"who\" as up for grabs and anyone can take it, first come, first served."})));
   // guests, links, debrief
+  root.append(briefLine(ev)||h("span"),filesCard(ev,true));
   root.append(h("details",{class:"card fold",style:"margin-top:14px"},h("summary",{class:"fold-h",text:"Guests, links and guest messages"}),
     h("div",{class:"two-col"},field("Luma event link","url",ev.links.luma,function(v){ev.links.luma=v;},"luma"),field("Feedback form link","url",ev.links.form,function(v){ev.links.form=v;},"form")),
     field("Crew WhatsApp group link","url",ev.links.group,function(v){ev.links.group=v;},"group"),
@@ -3090,6 +3104,7 @@ function adminTask(ev,t,cur){
     (function(){var n=slotsOf(ev,t).length,inp=h("input",{type:"number",min:"1",max:"30","aria-label":"How many people for "+t.title,"data-k":"slots-"+t.id,value:String(n)}),msg=h("span",{class:"sub"});
       inp.addEventListener("change",function(){var r=setSlots(ev,t,inp.value);if(!r.ok){inp.value=String(r.n);say(msg,"Can't go below "+r.min+". Take people off slots first.","warn");}});
       return h("div",{class:"field"},h("label",{text:"How many people does this task need?"}),inp,msg);})(),
+    (function(){var i=h("input",{type:"text","aria-label":"Link for "+t.title,"data-k":"link-"+t.id,placeholder:"Link for this task (Canva, Drive, brief...)",value:t.link||""});i.addEventListener("input",function(){t.link=i.value;saveEvent(ev);});return h("div",{class:"field"},h("label",{text:"Link for this task"}),i);})(),
     h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Add a slot (extra hand)",onclick:function(){addSlot(ev,t);}}),
       h("button",{type:"button",class:"btn link",text:"Remove task",onclick:function(){ev.tasks=ev.tasks.filter(function(x){return x!==t;});saveEvent(ev,true);renderEvents();}})));
   var pk="ping"+t.id,lk=h("span",{class:"status"});
@@ -3674,7 +3689,20 @@ function stageData(ev){
 }
 // Admins see the percentage and the pace. Team members only see the pace, so a low number never reads as pressure.
 function adminView(){return !!S.isAdmin&&!S.asMember;}
-function eventPace(ev){if(eventPct(ev)>=100)return "Complete";return stageData(ev).some(function(x){return x.late;})||priorityList(ev).some(function(x){return x.late;})?"Behind":"On track";}
+// Health: Behind = an Essential task is overdue or a stage is past due. At risk = something small is overdue, or a task due within three days has no one, is stuck, or was declined.
+function eventWhy(ev){
+  var pl=priorityList(ev),soon=Date.now()+3*864e5,why=[];
+  var late=pl.filter(function(x){return x.late;}),lateEss=late.filter(function(x){return x.t.pri==="must";});
+  var open=pl.filter(function(x){return !x.late&&x.st==="open"&&x.t.pri==="must"&&x.due&&x.due<soon;}),stuck=pl.filter(function(x){return x.st==="stuck"||x.st==="passed";});
+  var lateStage=stageData(ev).filter(function(x){return x.late;});
+  var gone=0,at=attendOf(ev);(ev.tasks||[]).forEach(function(t){if(t.owner&&at[t.owner]==="no"&&taskState(ev,t)!=="done")gone++;});
+  if(late.length)why.push(late.length+" overdue"+(lateEss.length?" ("+lateEss.length+" Essential)":""));
+  if(open.length)why.push(open.length+" due soon with no one on it");
+  if(stuck.length)why.push(stuck.length+" stuck or handed back");
+  if(gone)why.push(gone+" task"+(gone>1?"s":"")+" held by someone who can't come");
+  return {why:why,behind:lateEss.length>0||lateStage.length>0,risk:late.length+open.length+stuck.length+gone>0};
+}
+function eventPace(ev){if(eventPct(ev)>=100)return "Complete";var w=eventWhy(ev);return w.behind?"Behind":w.risk?"At risk":"On track";}
 function readyText(ev){var p=eventPct(ev),pace=eventPace(ev);if(!adminView())return pace;return (p===0?"Not started":p+"% ready")+" · "+pace;}
 function eventPct(ev){
   var g={};(ev.tasks||[]).forEach(function(t){var k=t.group||t.id;(g[k]=g[k]||[]).push(t);});
@@ -3761,7 +3789,7 @@ function nextMoveCard(x,st,multi){
     :[h("button",{type:"button",class:"btn go big",text:"Mark done",onclick:function(){quickDone(ev,t,st);}}),
       h("button",{type:"button",class:"btn",text:"Open",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}})];
   return h("div",{class:"hero-move"},h("p",{class:"k",text:"Suggested first"}),h("h2",{class:"hm-t",text:t.title}),
-    h("p",{class:"hm-m"},multi?(ev.name||"")+" · ":"",due?(x.late?["",clockSpan(due)]:[""+fmtWhen(due)+" · ",clockSpan(due)]):"no deadline"),
+    h("p",{class:"hm-m"},(ev.name||"")+" · ",due?(x.late?["",clockSpan(due)]:[dueLabel(due)+" · ",clockSpan(due)]):"no deadline"),
     (function(){var me=personById(S.uid)||Object.assign(payload(),{id:S.uid}),m=taskMatch(me,t.job,ev.id);if(!m||!m.why.length)return null;
       return h("p",{class:"whyyou"},h("b",{text:"Why you: "}),(/^Because of/.test(m.why[0])?m.why[0]:lc1(m.why[0].replace(/^\S+\s/,""))));})(),
     h("div",{class:"row"},btns),st);
@@ -3844,7 +3872,7 @@ function drawHome(root){
   var multi=S.events.filter(function(e){return myTasks().some(function(x){return x.ev===e;});}).length>1;
   function line(x,showEv){
     var due=x.due,pr=x.t.pri||"should",canTick=x.st!=="offered";
-    var sub=(showEv?(x.ev.name||"")+(due?" · ":""):"")+(due?(x.late?"overdue, was ":"")+fmtWhen(due):"");
+    var sub=(x.ev.name||"")+(due?" · ":"")+(due?(x.late?"overdue, was "+fmtWhen(due):dueLabel(due)):"");
     return h("div",{class:"trow"+(x.late?" late":"")},
       canTick?h("button",{type:"button",class:"tick","aria-label":"Mark "+x.t.title+" done",onclick:function(){quickDone(x.ev,x.t,st);}}):h("span",{class:"tick off","aria-hidden":"true"}),
       h("button",{type:"button",class:"tr-b",onclick:function(){open(x);}},
@@ -3946,6 +3974,19 @@ function drawMyEvents(root){
       groupByEvent(grabs,"grabs:",grabRow,"open",{kinds:true})));
   }
 }
+function briefLine(ev){var b=[];if(ev.client)b.push("Client: "+ev.client);if(ev.audience)b.push(ev.audience+" guests expected");if(ev.games)b.push("Games: "+ev.games);return b.length?h("p",{class:"sub brief",text:b.join(" · ")}):null;}
+// Files and links: anything the crew needs to open for this event. Admins add them, everyone on the event sees them.
+function filesCard(ev,admin){
+  var fl=ev.files||(ev.files=[]);if(!fl.length&&!admin)return null;
+  var card=h("section",{class:"card hsec",id:"evFiles"},h("h3",{class:"q",text:"Files and links"}));
+  if(!fl.length)card.append(h("p",{class:"sub",text:"Brief, venue map, contract, Canva, Drive folder. Add anything the crew needs."}));
+  fl.forEach(function(f,i){var u=safeUrl(f.url);card.append(h("div",{class:"cvline"},h("span",{class:"cv-t"},u?h("a",{href:u,target:"_blank",rel:"noopener",text:f.label||f.url}):h("b",{text:f.label||f.url})),
+    admin?h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){fl.splice(i,1);saveEvent(ev,true);renderEvents();}}):null));});
+  if(admin){var lb=h("input",{type:"text","aria-label":"File or link name",placeholder:"Name, e.g. Venue map"}),ur=h("input",{type:"text","aria-label":"File or link address",placeholder:"Link, e.g. drive.google.com/..."}),st=h("span",{class:"status"});
+    card.append(h("div",{class:"two-col"},h("div",{class:"field"},lb),h("div",{class:"field"},ur)),h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Add",onclick:function(){
+      if(!safeUrl(ur.value)){say(st,"Add a full web link.","warn");return;}fl.push({label:clean(lb.value)||clean(ur.value),url:clean(ur.value)});saveEvent(ev,true);renderEvents();}}),st));}
+  return card;
+}
 function drawMemberEvent(root,ev){
   var me=personById(S.uid)||Object.assign(payload(),{id:S.uid}),links=ev.links||{},pst=h("p",{class:"status",role:"status","aria-live":"polite"});
   var mine=(ev.tasks||[]).filter(function(t){return t.owner===S.uid&&(t.offered||t.manual);}).sort(function(a,b){return (taskDue(ev,a)||Infinity)-(taskDue(ev,b)||Infinity);});
@@ -3953,6 +3994,7 @@ function drawMemberEvent(root,ev){
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
+    briefLine(ev),filesCard(ev,false),
     safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
     h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
     crewDates(ev)||h("span"),
@@ -4165,6 +4207,7 @@ function drawPlan(root){
     var left=h("p",{class:"plan-left"},h("b",{text:(tk.length-nDone)+" tasks left"}),nDone?" · "+nDone+" done":"",nOpen?" · ":"",nOpen?h("span",{class:"plan-open",text:nOpen+" still need someone"}):null);
     var key="plan:"+ev.id,open=idx===0?S.panel[key]!==false:!!S.panel[key];
     var card=h("section",{class:"card hsec plan-card"},head,left,
+      (adminView()&&eventWhy(ev).why.length)?h("p",{class:"sub",style:"margin:-4px 0 8px",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
       new Date((ev.date||"")+"T23:59:59")>=new Date()&&ev.published!==false?attendCard(ev,"row"):null,
       open?[journey(ev,{vertical:true,rerender:renderPlan}),
         line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
@@ -4257,6 +4300,7 @@ function myTaskCard(ev,t,me){
   function inp(k,ph){var i=h("input",{type:"text",maxlength:"300",placeholder:ph,"aria-label":ph,"data-k":k+"-"+key,value:dr[k]||""});i.addEventListener("input",function(){dr[k]=i.value;});return i;}
   var panel=S.panel[key]||"",body=[],u=urgency(due,st);
   var why=m&&m.why.length?m.why.slice(0,2).map(function(w){return lc1(w.replace(/^\S+\s/,""));}).join(" + "):"";
+  if(safeUrl(t.link))body.push(h("a",{class:"btn small",href:safeUrl(t.link),target:"_blank",rel:"noopener",text:"Open the file or link"}));
   if(st==="offered"){
     body.push(why?h("p",{class:"whyyou"},h("b",{text:"Why you: "}),why):null,
       h("button",{type:"button",class:"btn go big wide",text:"Take it",onclick:function(){writeReply(ev,t,{answer:"take"},stat);}}),
