@@ -508,6 +508,7 @@ body.has-nav{padding-bottom:104px}
 .later .laterstage{display:grid;gap:10px;margin-top:10px}
 .later .laterstage>b{font-family:var(--font-display);font-weight:600}
 .goal{font-size:16px;margin:-6px 0 6px;max-width:52ch}
+.about{font-size:15px;line-height:1.5;margin:0 0 10px;max-width:56ch;white-space:pre-wrap;color:var(--ink)}
 .needed{font-weight:800;font-size:13.5px;color:var(--ink);background:var(--bg-2);border-radius:8px;padding:4px 8px;justify-self:start}
 .hero-move .needed{background:rgba(255,255,255,.55)}
 .hero-move .btn.go{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -1531,7 +1532,7 @@ function grouped(src){
 }
 function payload(){
   var g=grouped(S);
-  return {v:6,share:sanitizeShare(S.share),photo:cleanPhoto(S.photo),name:clean(S.name).slice(0,60),cv:clean(S.cv).slice(0,1500),extra:clean(S.extra).slice(0,600),
+  return {v:6,share:sanitizeShare(S.share),photo:cleanPhoto(S.photo),name:clean(S.name).slice(0,60),cv:clean(S.cv).slice(0,1500),cvFile:cleanCvFile(S.cvFile),extra:clean(S.extra).slice(0,600),
     top:g.top,good:g.good,curious:g.curious,no:g.no,q:normQ(S.q),story:sanitizeStory(S.story),
     confirm:CONFIRM[S.confirm]?S.confirm:"",confirmNote:clean(S.confirmNote).slice(0,300),avoid:clean(S.avoid).slice(0,250),
     updated:new Date().toISOString(),source:"app"};
@@ -1539,13 +1540,13 @@ function payload(){
 function saveDraft(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(function(){
-    lsSet(DRAFT_KEY,JSON.stringify({share:S.share,photo:S.photo,extraMode:!!S.extraMode,name:S.name,cv:S.cv,extra:S.extra,avoid:S.avoid,levels:S.levels,q:S.q,story:S.story,confirm:S.confirm,confirmNote:S.confirmNote,
+    lsSet(DRAFT_KEY,JSON.stringify({share:S.share,photo:S.photo,extraMode:!!S.extraMode,name:S.name,cv:S.cv,cvFile:S.cvFile||null,extra:S.extra,avoid:S.avoid,levels:S.levels,q:S.q,story:S.story,confirm:S.confirm,confirmNote:S.confirmNote,
       screen:S.screen,deck:S.deck,deckSig:S.deckSig,deckAt:S.deckAt,savedAt:new Date().toISOString()}));
   },250);
 }
 function loadDraft(){var raw=lsGet(DRAFT_KEY);if(!raw)return null;try{return JSON.parse(raw);}catch(e){return null;}}
 function applyRecord(d){
-  S.name=d.name||S.name;S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.share=sanitizeShare(d.share);
+  S.name=d.name||S.name;S.cv=d.cv||"";S.cvFile=cleanCvFile(d.cvFile);S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.share=sanitizeShare(d.share);
   S.levels={};S.top=sanitizeIds(d.top).slice(0,3);
   sanitizeIds(d.top).concat(sanitizeIds(d.good)).forEach(function(i){S.levels[i]="good";});
   sanitizeIds(d.curious).forEach(function(i){S.levels[i]="curious";});
@@ -1789,7 +1790,8 @@ var BUILD={
     var cv=h("textarea",{id:"cv",rows:"4",maxlength:"1500",placeholder:"A link (LinkedIn, Google Drive, Dropbox) or paste your CV: roles, studies, skills"});cv.value=S.cv;
     cv.addEventListener("input",function(){S.cv=cv.value;saveDraft();});
     card.append(h("div",{class:"field"},h("label",{for:"proud",text:"Your proudest work"}),ta),
-      h("div",{class:"field"},h("label",{for:"cv"},"Your CV ",h("span",{class:"opt",text:"optional, but it helps us see everything you've done"})),cv));
+      h("div",{class:"field"},h("label",{for:"cv"},"Your CV ",h("span",{class:"opt",text:"optional, but it helps us see everything you've done"})),cv),
+      S.uid?cvControl():null);
     navRow(card,"Next →",function(){if(clean(S.story.proud).length<10){warn("Tell us one thing, even a small one.");ta.focus();return;}next();});
     return hd;
   },
@@ -1981,13 +1983,13 @@ function safeUrl(u){u=clean(u);if(!u)return "";if(!/^[a-z]+:/i.test(u))u="https:
 function shrinkPhoto(file,cb){
   var rd=new FileReader();
   rd.onload=function(){var img=new Image();img.onload=function(){
-    try{var sz=240,c=document.createElement("canvas");c.width=sz;c.height=sz;var x=c.getContext("2d");
+    try{var sz=480,c=document.createElement("canvas");c.width=sz;c.height=sz;var x=c.getContext("2d");
       var s=Math.min(img.width,img.height),sx=(img.width-s)/2,sy=(img.height-s)/2;x.drawImage(img,sx,sy,s,s,0,0,sz,sz);
-      var q=0.82,url=c.toDataURL("image/jpeg",q);while(url.length>60000&&q>0.4){q-=0.1;url=c.toDataURL("image/jpeg",q);}cb(url);}catch(e){cb(null);}
+      var q=0.9,url=c.toDataURL("image/jpeg",q);while(url.length>105000&&q>0.45){q-=0.06;url=c.toDataURL("image/jpeg",q);}cb(url.length<115000?url:null);}catch(e){cb(null);}
   };img.onerror=function(){cb(null);};img.src=rd.result;};
   rd.onerror=function(){cb(null);};rd.readAsDataURL(file);
 }
-function cleanPhoto(u){u=String(u||"");return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)&&u.length<90000?u:"";}
+function cleanPhoto(u){u=String(u||"");return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)&&u.length<120000?u:"";}
 
 /* ---------- Send ---------- */
 function submit(){
@@ -2026,6 +2028,8 @@ function pdfWrap(text,size,maxW){
   if(cur)lines.push(cur);
   return lines.length?lines:[""];
 }
+// Photos saved before the size change are 240 px, newer ones 480 px, so read the real size from the JPEG header.
+function jpegSize(bin){var i=2;while(i<bin.length-9){if(bin.charCodeAt(i)!==255){i++;continue;}var m=bin.charCodeAt(i+1);if(m>=192&&m<=207&&m!==196&&m!==200&&m!==204)return {h:bin.charCodeAt(i+5)*256+bin.charCodeAt(i+6),w:bin.charCodeAt(i+7)*256+bin.charCodeAt(i+8)};i+=2+bin.charCodeAt(i+2)*256+bin.charCodeAt(i+3);}return {w:240,h:240};}
 function buildPdf(blocks){
   var W=595,H=842,M=48,pages=[],cur=[],y=H-M-14,imgData=null,imgPage=-1;
   function newPage(){pages.push(cur);cur=[];y=H-M;}
@@ -2054,7 +2058,7 @@ function buildPdf(blocks){
     add("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");
     add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+W+" "+H+"] /Contents "+(5+i*2)+" 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >>"+(imgData&&i===imgPage?" /XObject << /Im1 "+(5+pages.length*2)+" 0 R >>":"")+" >> >>");
   });
-  if(imgData)add("<< /Type /XObject /Subtype /Image /Width 240 /Height 240 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+imgData.length+" >>\nstream\n"+imgData+"\nendstream");
+  if(imgData)add("<< /Type /XObject /Subtype /Image /Width "+jpegSize(imgData).w+" /Height "+jpegSize(imgData).h+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+imgData.length+" >>\nstream\n"+imgData+"\nendstream");
   var out="%PDF-1.4\n",offs=[];
   objs.forEach(function(o,i){offs.push(out.length);out+=(i+1)+" 0 obj\n"+o+"\nendobj\n";});
   var xr=out.length;
@@ -2184,6 +2188,7 @@ function renderPeople(){
       sl.map(function(l){return h("p",null,h("b",{text:l[0]+": "}),l[1]);}),
       p.extra?h("p",null,h("b",{text:"Also good at: "}),p.extra):null,
       p.cv?h("p",null,h("b",{text:"CV or LinkedIn: "}),p.cv):null,
+      cleanCvFile(p.cvFile)?(function(){var f=cleanCvFile(p.cvFile),st=h("span",{class:"status"});return h("p",null,h("b",{text:"CV file: "}),f.name+" ("+sizeText(f.size)+") ",h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf("responses/"+p.id+"/files","cv",f.n,f.name,st);}}),st);})():null,
       h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy notes",onclick:function(){copyText(personNotes(p),$("t-exportStatus"),"Copied notes for "+pname(p)+".");}}),
         h("button",{type:"button",class:"btn small",text:"Export their records (CSV)",onclick:function(){exportPerson(p.id,$("t-exportStatus"));}}),
         (p.id===S.ownerId?h("span",{class:"sub",text:"Owner: never auto-assigned. Can take anything up for grabs."}):h("button",{type:"button",class:"btn small","aria-pressed":String(noAutoOn(p.id)),text:noAutoOn(p.id)?"Kept off auto-assign (tap to allow)":"Keep off auto-assign",onclick:function(){toggleNoAuto(p.id);}})),del)));
@@ -2738,9 +2743,9 @@ function saveEvent(ev,now){
   function go(){
     ev=evById(ev.id)||ev;
     if(!S.db){evDirty[ev.id]=0;return;}
-    var doc={name:clean(ev.name).slice(0,80),goal:clean(ev.goal).slice(0,200),type:ev.type||"",date:ev.date||"",start:ev.start||"18:30",place:clean(ev.place).slice(0,120),lead:ev.lead||"",
+    var doc={name:clean(ev.name).slice(0,80),goal:clean(ev.goal).slice(0,200),about:clean(ev.about).slice(0,600),type:ev.type||"",date:ev.date||"",start:ev.start||"18:30",place:clean(ev.place).slice(0,120),lead:ev.lead||"",
       flyer:cleanFlyer(ev.flyer),client:clean(ev.client).slice(0,80),audience:clean(ev.audience).slice(0,20),games:clean(ev.games).slice(0,160),
-      files:(ev.files||[]).slice(0,20).map(function(f){return {label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};}),
+      files:(ev.files||[]).slice(0,20).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
       crew:{extra:clean(ev.crew&&ev.crew.extra).slice(0,300),extraN:Math.max(0,Math.min(200,Number(ev.crew&&ev.crew.extraN)||0)),food:clean(ev.crew&&ev.crew.food).slice(0,300)},
       links:{luma:clean(ev.links&&ev.links.luma).slice(0,300),form:clean(ev.links&&ev.links.form).slice(0,300),group:clean(ev.links&&ev.links.group).slice(0,300)},
       guests:{registered:ev.guests&&ev.guests.registered||"",attended:ev.guests&&ev.guests.attended||"",feedback:ev.guests&&ev.guests.feedback||""},
@@ -3012,6 +3017,7 @@ function drawEvents(root){
     flyerHero(ev,true),
     (ev.published!==false&&new Date((ev.date||"")+"T23:59:59")>=new Date())?attendCard(ev,"row"):null,
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):h("p",{class:"sub",text:"Add a one-line goal under Event details."}),
+    ev.about?h("p",{class:"about",text:ev.about}):h("p",{class:"sub",text:"Add a short description of the event under Edit event, so the crew knows what it is about."}),
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     ev.squeezed?h("p",{class:"sub"},"This event is closer than the template assumes, so the timeline was tightened to fit."):null,
     h("p",{class:"sub"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
@@ -3041,6 +3047,7 @@ function drawEvents(root){
       field("Event name","text",ev.name,function(v){ev.name=v;},"name"),
       flyerField(ev),
       field("Goal: what we are trying to make happen","text",ev.goal,function(v){ev.goal=v;},"goal"),
+      field("About this event: a short description for the crew","textarea",ev.about,function(v){ev.about=v;},"about"),
       h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time (24-hour, 18:00 is 6 pm)","time",ev.start,function(v){ev.start=v;},"start")),
       h("div",{class:"two-col"},field("Client","text",ev.client,function(v){ev.client=v;},"client"),field("Expected guests","number",ev.audience,function(v){ev.audience=v;},"audience")),
       field("Games being delivered","text",ev.games,function(v){ev.games=v;},"games"),
@@ -4047,6 +4054,53 @@ function drawMyEvents(root){
   }
 }
 // Event flyer: a picture for each event, shown in lists and big on the event page. No flyer shows a clear placeholder.
+// PDFs: stored in the database in pieces (one record holds about 250 KB), up to about 1 MB per file.
+// Event files live under events/<id>/files (everyone on the page can read, only admins write).
+// A CV lives under responses/<uid>/files (only that person and admins can read it).
+var PDF_CHUNK=180000,PDF_MAX=1000000;
+function cleanCvFile(f){if(!f||!Number(f.n))return null;return {name:clean(f.name).slice(0,80)||"CV.pdf",size:Number(f.size)||0,n:Math.max(1,Math.min(12,Number(f.n)||1)),at:clean(f.at).slice(0,40)};}
+function sizeText(b){return b>=1e6?(b/1e6).toFixed(1)+" MB":Math.max(1,Math.round(b/1e3))+" KB";}
+function readPdf(file,cb){
+  if(!file){cb("none");return;}
+  if(file.size>PDF_MAX){cb("big");return;}
+  var rd=new FileReader();
+  rd.onload=function(){var b64=String(rd.result||"").split(",")[1]||"";if(b64.indexOf("JVBER")!==0){cb("type");return;}cb(null,b64,file.size);};
+  rd.onerror=function(){cb("read");};rd.readAsDataURL(file);
+}
+function pdfProblem(code){return code==="big"?"That PDF is over 1 MB. Compress it, or add a link to it instead.":code==="type"?"That does not look like a PDF.":code==="save"?"Could not save the file. Try again.":"Could not read that file.";}
+function putChunks(base,fid,b64,cb){
+  if(!S.db||!S.uid||S.canWrite===false){cb("save");return;}
+  var n=Math.ceil(b64.length/PDF_CHUNK),i=0;
+  (function next(){if(i>=n){cb(null,n);return;}
+    S.db.doc(base+"/"+fid+"_"+i).set({fid:fid,i:i,n:n,data:b64.slice(i*PDF_CHUNK,(i+1)*PDF_CHUNK)}).then(function(){i++;next();},function(){dropChunks(base,fid,i);cb("save");});})();
+}
+function dropChunks(base,fid,n){if(!S.db)return;for(var i=0;i<n;i++)S.db.doc(base+"/"+fid+"_"+i).delete().catch(function(){});}
+function getPdf(base,fid,n,name,st){
+  if(!S.db){say(st,"Opening files needs the live page.","warn");return;}
+  say(st,"Fetching the file…");var jobs=[];for(var i=0;i<n;i++)jobs.push(S.db.doc(base+"/"+fid+"_"+i).get());
+  Promise.all(jobs).then(function(snaps){
+    var b64="";for(var k=0;k<snaps.length;k++){if(!snaps[k].exists){say(st,"That file is no longer there.","warn");return;}b64+=snaps[k].data().data||"";}
+    var bin=atob(b64),bytes=new Uint8Array(bin.length);for(var j=0;j<bin.length;j++)bytes[j]=bin.charCodeAt(j);
+    var fn=/\.pdf$/i.test(name)?name:name+".pdf";
+    if(S.dl){S.dl.save({filename:fn,data:bytes}).then(function(){say(st,"Saved "+fn+".","ok");},function(e){say(st,e&&e.code==="declined"?"Save cancelled.":"Could not save the file here.","warn");});return;}
+    try{var bl=new Blob([bytes],{type:"application/pdf"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=fn;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(a.href);},500);say(st,"Downloading "+fn+".","ok");}catch(e){say(st,"Could not save the file here.","warn");}
+  },function(){say(st,"Could not fetch the file.","warn");});
+}
+// The person's own CV file: private to them and to admins.
+function cvControl(){
+  var st=h("p",{class:"status",role:"status","aria-live":"polite"}),f=S.cvFile,fi=h("input",{type:"file",accept:"application/pdf,.pdf",id:"cvFileIn",class:"sr"});
+  fi.addEventListener("change",function(){var file=fi.files&&fi.files[0];if(!file)return;say(st,"Uploading your CV…");
+    readPdf(file,function(err,b64,size){if(err){say(st,pdfProblem(err),"warn");return;}
+      var old=S.cvFile;putChunks("responses/"+S.uid+"/files","cv",b64,function(e2,n){if(e2){say(st,pdfProblem(e2),"warn");return;}
+        if(old&&old.n>n)for(var i=n;i<old.n;i++)S.db.doc("responses/"+S.uid+"/files/cv_"+i).delete().catch(function(){});
+        S.cvFile={name:file.name,size:size,n:n,at:nowIso()};saveDraft();if(S.db&&S.uid)saveResponse();renderProfile();if(S.screen==="proud")render();toast("CV attached.");});});});
+  return h("div",{class:"field cvfile"},h("label",{text:"CV as a PDF"}),
+    f?h("p",{class:"sub"},h("b",{text:f.name}),"  "+sizeText(f.size)):h("p",{class:"sub",text:"Optional. Up to 1 MB."}),
+    h("p",{class:"sub",text:"Only you and Hinda can open it. It is never shown to the crew."}),fi,
+    h("div",{class:"row"},f?h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf("responses/"+S.uid+"/files","cv",f.n,f.name,st);}}):null,
+      h("label",{for:"cvFileIn",class:"btn small go"},f?"Replace":"Attach a PDF"),
+      f?h("button",{type:"button",class:"btn small",text:"Remove",onclick:function(){dropChunks("responses/"+S.uid+"/files","cv",f.n);S.cvFile=null;saveDraft();if(S.db&&S.uid)saveResponse();renderProfile();if(S.screen==="proud")render();}}):null),st);
+}
 function cleanFlyer(u){u=String(u||"");return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)&&u.length<110000?u:"";}
 function shrinkFlyer(file,cb){
   var rd=new FileReader();
@@ -4076,13 +4130,24 @@ function briefLine(ev){var b=[];if(ev.client)b.push("Client: "+ev.client);if(ev.
 // Files and links: anything the crew needs to open for this event. Admins add them, everyone on the event sees them.
 function filesCard(ev,admin){
   var fl=ev.files||(ev.files=[]);if(!fl.length&&!admin)return null;
-  var card=h("section",{class:"card hsec",id:"evFiles"},h("h3",{class:"q",text:"Files and links"}));
+  var card=h("section",{class:"card hsec",id:"evFiles"},h("h3",{class:"q",text:"Files and links"})),fst=h("p",{class:"status",role:"status","aria-live":"polite"});
   if(!fl.length)card.append(h("p",{class:"sub",text:"Brief, venue map, contract, Canva, Drive folder. Add anything the crew needs."}));
-  fl.forEach(function(f,i){var u=safeUrl(f.url);card.append(h("div",{class:"cvline"},h("span",{class:"cv-t"},u?h("a",{href:u,target:"_blank",rel:"noopener",text:f.label||f.url}):h("b",{text:f.label||f.url})),
-    admin?h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){fl.splice(i,1);saveEvent(ev,true);renderEvents();}}):null));});
-  if(admin){var lb=h("input",{type:"text","aria-label":"File or link name",placeholder:"Name, e.g. Venue map"}),ur=h("input",{type:"text","aria-label":"File or link address",placeholder:"Link, e.g. drive.google.com/..."}),st=h("span",{class:"status"});
-    card.append(h("div",{class:"two-col"},h("div",{class:"field"},lb),h("div",{class:"field"},ur)),h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Add",onclick:function(){
-      if(!safeUrl(ur.value)){say(st,"Add a full web link.","warn");return;}fl.push({label:clean(lb.value)||clean(ur.value),url:clean(ur.value)});saveEvent(ev,true);renderEvents();}}),st));}
+  fl.forEach(function(f,i){var u=safeUrl(f.url);
+    card.append(h("div",{class:"cvline"},h("span",{class:"cv-t"},
+      f.fid?h("b",{text:(f.label||f.name||"PDF")}):(u?h("a",{href:u,target:"_blank",rel:"noopener",text:f.label||f.url}):h("b",{text:f.label||f.url})),
+      f.fid?h("span",{class:"sub",text:"PDF · "+sizeText(f.size)}):null),
+      h("span",{class:"cvbtns"},f.fid?h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf("events/"+ev.id+"/files",f.fid,f.n,f.name||f.label||"file.pdf",fst);}}):null,
+        admin?h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){if(f.fid)dropChunks("events/"+ev.id+"/files",f.fid,f.n);fl.splice(i,1);saveEvent(ev,true);renderEvents();}}):null)));});
+  card.append(fst);
+  if(admin){var lb=h("input",{type:"text","aria-label":"File or link name",placeholder:"Name, e.g. Venue map"}),ur=h("input",{type:"text","aria-label":"File or link address",placeholder:"Link, e.g. drive.google.com/..."}),st=h("span",{class:"status"}),fi=h("input",{type:"file",accept:"application/pdf,.pdf",id:"evPdfIn",class:"sr"});
+    fi.addEventListener("change",function(){var file=fi.files&&fi.files[0];if(!file)return;say(st,"Uploading…");
+      readPdf(file,function(err,b64,size){if(err){say(st,pdfProblem(err),"warn");return;}var fid="f"+Date.now().toString(36);
+        putChunks("events/"+ev.id+"/files",fid,b64,function(e2,n){if(e2){say(st,pdfProblem(e2),"warn");return;}
+          fl.push({label:clean(lb.value)||file.name.replace(/\.pdf$/i,""),url:"",fid:fid,name:file.name,size:size,n:n});saveEvent(ev,true);renderEvents();toast("PDF added.");});});});
+    card.append(h("div",{class:"two-col"},h("div",{class:"field"},lb),h("div",{class:"field"},ur)),fi,
+      h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Add link",onclick:function(){
+        if(!safeUrl(ur.value)){say(st,"Add a full web link.","warn");return;}fl.push({label:clean(lb.value)||clean(ur.value),url:clean(ur.value)});saveEvent(ev,true);renderEvents();}}),
+        h("label",{for:"evPdfIn",class:"btn small"},"Upload a PDF (up to 1 MB)"),st));}
   return card;
 }
 function drawMemberEvent(root,ev){
@@ -4092,6 +4157,7 @@ function drawMemberEvent(root,ev){
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     flyerHero(ev,false),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
+    ev.about?h("p",{class:"about",text:ev.about}):null,
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     briefLine(ev),filesCard(ev,false),
     safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
@@ -4616,7 +4682,7 @@ function drawMe(root){
     mrow("skills","Skills and what I bring",brings.length?String(brings.length):"",[brings.length?h("div",{class:"chips"},brings.map(function(x){return h("span",{class:"chip",text:x});})):null]),
     mrow("how","How I work","",[line("Works best",ws)]),
     mrow("want","What I want from GCG","",[line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",st.future?M_FUTURE[st.future].label:"")]),
-    mrow("proof","Proof of experience",clean(p.cv)?"CV added":"",[line("CV or link",clean(p.cv))])));
+    mrow("proof","Proof of experience",(clean(p.cv)||S.cvFile)?"CV added":"",[line("CV or link",clean(p.cv)),cvControl()])));
   root.append(h("p",{class:"sub accessline",text:"Hinda sees your answers too. The crew only sees what you chose to share, under Who sees what below."}));
   // title
   root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"My title"}),
@@ -4793,7 +4859,7 @@ function boot(){
   if(LOGO.indexOf("data:")===0){var m=$("miniLogo");m.src=LOGO;m.hidden=false;$("miniFb").hidden=true;}
   var d=loadDraft();
   if(d){
-    S.name=d.name||"";S.cv=d.cv||"";S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.share=sanitizeShare(d.share);S.extraMode=!!d.extraMode;
+    S.name=d.name||"";S.cv=d.cv||"";S.cvFile=cleanCvFile(d.cvFile);S.extra=d.extra||"";S.photo=cleanPhoto(d.photo);S.share=sanitizeShare(d.share);S.extraMode=!!d.extraMode;
     S.levels={};Object.keys(d.levels||{}).forEach(function(k){if(FN[k]&&(d.levels[k]==="good"||d.levels[k]==="curious"||d.levels[k]==="no"))S.levels[k]=d.levels[k];});
     S.q=normQ(d.q);S.story=sanitizeStory(d.story);S.confirm=CONFIRM[d.confirm]?d.confirm:"";S.confirmNote=d.confirmNote||"";S.avoid=clean(d.avoid).slice(0,250);
     S.deck=Array.isArray(d.deck)?sanitizeIds(d.deck):null;S.deckSig=d.deckSig||"";S.deckAt=Math.max(0,Number(d.deckAt)||0);
