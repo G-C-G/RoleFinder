@@ -3564,6 +3564,14 @@ function titlesByPerson(top){
     (p.no&&p.no.length)?h("div",{class:"chips"},p.no.map(function(i){return h("span",{class:"chip",text:FN[i].name});})):h("p",{class:"meta",text:"Has not marked any jobs as not for them."}),
     p.avoid?h("p",null,h("b",{text:"In their words: "}),p.avoid):null,
     done.length?h("p",{class:"meta"},h("b",{text:"Has done: "}),done.join("; ")):null);
+  // Jobs under each title they hold: take a job off as the team grows, or add one they said yes to.
+  have.forEach(function(tt){
+    var jobs=(tt.jobs||[]).filter(function(i){return FN[i];}),can=yes.filter(function(i){return jobs.indexOf(i)<0;}),no=p.no||[];
+    box.append(h("div",{class:"titlejobs"},h("p",{class:"lab",text:"Jobs under "+tt.name}),
+      jobs.length?h("div",{class:"chips"},jobs.map(function(i){return h("button",{type:"button",class:"chip good addchip","aria-label":"Take "+FN[i].name+" off "+tt.name,text:FN[i].name+(no.indexOf(i)>-1?" (they said not for them)":"")+" ×",onclick:function(){tt.jobs=(tt.jobs||[]).filter(function(x){return x!==i;});saveTitle(tt,true);renderTitles();}});})):h("p",{class:"meta",text:"No jobs under this title yet."}),
+      can.length?h("details",{class:"more"},h("summary",{text:"Add a job they said yes to"}),h("div",{class:"chips"},can.map(function(i){return h("button",{type:"button",class:"chip addchip",text:"+ "+FN[i].name,onclick:function(){tt.jobs=(tt.jobs||[]).concat([i]);saveTitle(tt,true);renderTitles();}});}))):null,
+      (tt.holders||[]).length>1?h("p",{class:"sub",text:"This title is shared with "+((tt.holders||[]).length-1)+" other"+((tt.holders||[]).length>2?"s":"")+", so changing its jobs changes it for them too."}):null));
+  });
   var haveNames=have.map(function(x){return String(x.name).toLowerCase();});
   var sug=titleSuggestions(p).filter(function(x){return haveNames.indexOf(x.name.toLowerCase())<0;});
   box.append(h("p",{class:"lab",text:"Suggested titles, from what they said"}));
