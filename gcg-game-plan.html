@@ -861,14 +861,14 @@ button.chip.on{outline:2px solid var(--ink)}
 .steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;padding:2px 0}.cvline .cv-t{flex:1 1 100%}.cvline .cvbtns{flex:0 0 auto}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
-.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.pc2-photo{width:104px;height:104px;border-radius:24px;object-fit:cover;border:2px solid #F6B80F;background:#2A2218}.pc2-photo.empty{display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:34px;color:#FFE08A}.pc2-about{margin:6px 0 0;font-size:15px;line-height:1.5;max-width:34ch;opacity:.92;font-weight:400}.evrow{display:flex;gap:14px;align-items:flex-start}.evtxt{display:grid;gap:4px;min-width:0;flex:1}.evrow .plan-head{flex:1;min-width:0}
+.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.pc2-photo{width:104px;height:104px;border-radius:24px;object-fit:cover;border:2px solid #F6B80F;background:#2A2218}.pc2-photo.empty{display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:34px;color:#FFE08A}.pc2-about{margin:6px 0 0;font-size:15px;line-height:1.5;max-width:34ch;opacity:.92;font-weight:400}.evmedia{display:flex;gap:16px;align-items:flex-start}.evtxt{display:grid;gap:4px;min-width:0;flex:1}.evmedia .plan-head{flex:1;min-width:0}
 .flyer-th{width:64px;height:84px;flex:none;border-radius:12px;object-fit:cover;border:1.5px solid var(--edge-soft);background:var(--bg-2);display:block}
 .flyer-th.empty{display:grid;place-items:center;text-align:center;padding:4px;font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-style:dashed}
 .flyer-btn{display:block;width:100%;padding:0;margin:8px 0;border:0;background:none;cursor:pointer}
 .flyer-hero{display:block;width:100%;max-height:440px;object-fit:contain;border-radius:16px;background:var(--bg-2);border:1.5px solid var(--edge-soft)}
 .flyer-empty{display:grid;gap:6px;justify-items:start;padding:16px;margin:8px 0;border:1.5px dashed var(--edge-soft);border-radius:16px;background:var(--card)}
 .lightbox{position:fixed;inset:0;z-index:80;background:rgba(21,17,12,.94);display:grid;place-items:center;padding:16px;cursor:pointer}.lightbox img{max-width:100%;max-height:86vh;border-radius:12px}.lb-x{color:#FBF5E6;font-size:14px;margin:8px 0 0}
-.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
+.evlink{display:block;width:100%;padding:0;margin:0 0 8px;border:0;background:none;text-align:left;cursor:pointer;color:inherit;font:inherit}.mytl{display:grid;gap:4px}.mytl-b{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;background:none;border:0;padding:4px 0;text-align:left;cursor:pointer;color:inherit;font:inherit}.mytl-t{display:grid;flex:1;gap:2px}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
@@ -962,6 +962,28 @@ details>.mr-b,details[open]>.more-b{animation:fadeup .2s ease}
 .tier[data-t="top"]{background:var(--green-soft);border-color:var(--green)}.tier[data-t="strong"]{background:var(--gold-soft);border-color:var(--gold)}
 .emptystate{padding:24px 8px;text-align:center}.emptystate h3{font-family:var(--font-display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}.emptystate p{margin:0 0 12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* Bigger pictures: the image takes the left side, the details sit on the right */
+.flyer-th{width:120px;height:160px;border-radius:16px}.flyer-th.empty{font-size:12px}
+.pc2-row{display:grid;gap:14px;text-align:left;justify-items:stretch;padding:20px 18px 22px}
+.pc2-hd{display:flex;gap:16px;align-items:flex-start}
+.pc2-photo{width:132px;height:176px;border-radius:20px;flex:none}.pc2-photo.empty{font-size:40px}
+.pc2-side{display:grid;gap:6px;min-width:0;flex:1;justify-items:start}
+.pc2-row .pc-kick{margin:0;font-size:11px;letter-spacing:.1em}
+.pc2-row .pc2-name{font-size:clamp(1.35rem,6.4vw,1.8rem);overflow-wrap:anywhere;margin:0}
+.pc2-row .pc2-type{font-size:clamp(.95rem,4.2vw,1.15rem);margin:0}
+.pc2-row .chips{justify-content:flex-start}
+.pc2-row .pc2-str{margin:0;font-size:15px;text-align:left}
+.pc2-row .pc2-about{max-width:none}
+.pc2 .pc2-row{text-align:left;justify-items:stretch}.pc2 .pc2-side,.pc2 .pc2-side p{text-align:left}.pc2 .pc2-row .pc2-str{justify-items:start}.pc2 .pc2-row .pc2-n{text-align:left}
+/* balanced crew card: photo and details are the same height, then one line of text and the counts */
+.pc2 .pc2-hd{align-items:stretch}.pc2-photo{width:136px;height:188px}.pc2 .pc2-side{justify-content:space-between;align-content:space-between;gap:8px}
+.pc2 .pc2-row .pc2-str{font-size:14px;gap:4px;font-weight:700}.pc2 .pc2-row .pc2-str li{line-height:1.25}
+.pc2 .pc2-row .pc2-name{font-size:clamp(1.3rem,6vw,1.7rem);line-height:1.05}
+.pc2 .pc2-row .pc2-type{line-height:1.15}.pc2 .pc2-row .pc2-type .plus{font-size:.85em}
+.pc2 .pc2-row .pc2-about{margin:0;padding-top:14px;border-top:1px solid rgba(251,245,230,.16)}
+.pc2 .pc2-row .pc2-n{margin:0;font-size:14px}
+.pc2 .pc2-photo{height:auto;min-height:188px;align-self:stretch;width:136px}.pc2 .pc2-photo.empty{min-height:188px}
 </style>
 
 <div class="wrap" id="wrap">
@@ -2996,6 +3018,7 @@ function drawEvents(root){
   root.append(h("button",{type:"button",class:"btn small",text:"← All events",onclick:function(){S.evOpen="";S.evMsgs=null;S.run=null;renderEvents();}}),
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
     flyerHero(ev,true),
+    (ev.published!==false&&new Date((ev.date||"")+"T23:59:59")>=new Date())?attendCard(ev,"row"):null,
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):h("p",{class:"sub",text:"Add a one-line goal under Event details."}),
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     ev.squeezed?h("p",{class:"sub"},"This event is closer than the template assumes, so the timeline was tightened to fit."):null,
@@ -3036,7 +3059,6 @@ function drawEvents(root){
           h("button",{type:"button",class:"btn small",text:"Copy an update for the team",onclick:function(){copyText("Update: "+(ev.name||"the event")+" is now on "+fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+". Your deadlines in Game Plan have moved with it, so please check your tasks.",cst,"Copied. Paste it into your team chat.");}}),cst);})()));
   if(S.evMsgs&&S.evMsgs.eid===ev.id&&S.evMsgs.list.length)root.append(h("div",{style:"margin-top:14px"},msgBox(S.evMsgs.title,S.evMsgs.list)));
   if(S.run&&S.run.eid===ev.id)root.append(h("div",{id:"runBox",class:"card",style:"margin-top:14px"}));
-  if(ev.published!==false&&(ev.covered||[]).length)root.append(h("details",{class:"card fold",style:"margin-top:14px"},h("summary",{class:"fold-h",text:"Already done before the event ("+ev.covered.length+")"}),ev.covered.map(function(c){return h("p",{class:"sub"},h("b",{text:c.title}),c.note?" · "+c.note:"");})));
   root.append(crewOnDay(ev,true));
   var cc=crewCredits(ev);if(cc)root.append(cc);
   // tasks by phase and checkpoint
@@ -3120,7 +3142,7 @@ function drawEventList(root){
   root.append(h("div",{class:"evlist"},list.map(function(e){
     var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
     return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
-      h("div",{class:"evrow"},flyerThumb(e),h("div",{class:"evtxt"},
+      h("div",{class:"evmedia"},flyerThumb(e),h("div",{class:"evtxt"},
       h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")+(TEMPLATES[e.type]?" · "+TEMPLATES[e.type].name:"")}),
       h("span",{class:"evmeta",text:(e.published===false?"Draft, hidden from the team · ":"")+done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")}))));
   })));
@@ -3770,16 +3792,23 @@ function journey(ev,opts){
       "aria-label":s.name+": "+(s.done?"done":s.cur?"happening now":s.late?"behind":"to come"),
       onclick:opts.compact?(opts.onOpen||null):function(){S.tlOpen[key]=!open;(opts.rerender||function(){})();}},
       h("span",{class:"jpe","aria-hidden":"true"},ico(s.done?"check":s.emo,22)),h("span",{class:"jpn",text:s.name}),
-      opts.vertical?h("span",{class:"jpm",text:s.done?"done":s.due?(s.late?"was due ":"due ")+fmtWhen(s.due):""}):null,
+      opts.vertical?h("span",{class:"jpm",text:(s.done?"done":s.due?(s.late?"was due ":"due ")+fmtWhen(s.due):"")+(!adminView()&&mine.length?(function(){var n=mine.filter(function(t){return s.tasks.indexOf(t)>-1&&taskState(ev,t)!=="passed";}).length;return n?" · "+n+" for you":"";})():"")}):null,
       s.cur?h("span",{class:"jpnow",text:"NOW"}):null,you?h("span",{class:"jpyou",text:"YOU"}):null);
     row.append(h("li",null,b));
   });
   var bar=adminView()?h("div",{class:"jbar","aria-label":pct+"% ready"},h("i",{style:"width:"+pct+"%"})):null;
   var box=h("div",{class:"journey"},opts.vertical?bar:null,row,opts.vertical?null:bar,
+    (!adminView()&&opts.vertical&&!opts.compact)?h("p",{class:"sub",text:"Tap a stage to see your tasks in it."}):null,
     h("p",{class:"jpct"},h("b",{text:readyText(ev)}),(function(){var c=st.filter(function(s){return s.cur;})[0];return c&&c.due&&!opts.compact?[" · "+c.name+" ",clockSpan(c.due)]:"";})()));
   if(!opts.compact){
     st.forEach(function(s){
       if(!S.tlOpen[ev.id+":"+s.key])return;
+      if(!adminView()){
+        var my=s.tasks.filter(function(t){return t.owner===S.uid&&(t.offered||t.manual)&&taskState(ev,t)!=="passed";});
+        box.append(h("div",{class:"jdetail"},h("b",{text:s.name+": your tasks"}),my.length?h("ul",{class:"tl-who mytl"},my.map(function(t){var ts=taskState(ev,t),d=taskDue(ev,t);
+          return h("li",{"data-s":ts},h("button",{type:"button",class:"mytl-b",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}},h("i",{class:"mk","data-s":ts==="done"?"done":""}),
+            h("span",{class:"mytl-t"},h("b",{text:t.title}),h("span",{class:"sub",text:ts==="done"?"Done":(d?dueLabel(d):"No deadline")})),ico("chevR",16)));})):h("p",{class:"sub",text:"Nothing for you in this stage."})));
+        return;}
       box.append(h("div",{class:"jdetail"},h("b",{text:s.emo+" "+s.name}),h("ul",{class:"tl-who"},s.tasks.map(function(t){var ts=taskState(ev,t),d=ts==="done"?doneAt(ev,t):null;
         return h("li",{"data-s":ts},h("i",{class:"mk","data-s":ts==="done"?"done":""}),h("b",{text:t.title}),ts==="done"?(seeDone(t)?" · "+(t.owner?nameOf(t.owner):t.helper||"")+(d?", "+fmtWhen(d):""):" · done"):(t.owner||t.helper?" · "+(t.owner?nameOf(t.owner):t.helper):" · up for grabs"));}))));
     });
@@ -4016,7 +4045,7 @@ function drawMyEvents(root){
     var nxt=priorityList(e,S.uid).filter(function(x){return (x.t.offered||x.t.manual)&&isNow(e,x.t);})[0];
     open=open.filter(function(t){return isNow(e,t);});
     root.append(h("button",{type:"button",class:"card evcard2",onclick:function(){S.evSel=e.id;renderMyEvents();window.scrollTo(0,0);}},
-      h("div",{class:"evrow"},flyerThumb(e),h("div",{class:"evtxt"},h("div",{class:"evhead"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:fmtDate(e.date)+(daysTo(e.date)?" · "+daysTo(e.date):"")+" ›"})),
+      h("div",{class:"evmedia"},flyerThumb(e),h("div",{class:"evtxt"},h("div",{class:"evhead"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:fmtDate(e.date)+(daysTo(e.date)?" · "+daysTo(e.date):"")+" ›"})),
       h("p",{class:"sub",text:(open.length?open.length+" to do now":"Nothing needed from you right now")+(nxt?" · next: "+nxt.t.title:"")})))));
   });
   var grabs=upForGrabs();
@@ -4287,15 +4316,17 @@ function drawPlan(root){
     var tk=ev.tasks||[],nDone=tk.filter(function(x){return taskState(ev,x)==="done";}).length,nOpen=tk.filter(function(x){return taskState(ev,x)==="open";}).length;
     var left=h("p",{class:"plan-left"},h("b",{text:(tk.length-nDone)+" tasks left"}),nDone?" · "+nDone+" done":"",nOpen?" · ":"",nOpen?h("span",{class:"plan-open",text:nOpen+" still need someone"}):null);
     var key="plan:"+ev.id,open=idx===0?S.panel[key]!==false:!!S.panel[key];
-    var card=h("section",{class:"card hsec plan-card"},h("div",{class:"evrow"},flyerThumb(ev),head),left,
+    var myTs=tk.filter(function(x){return x.owner===S.uid&&(x.offered||x.manual)&&taskState(ev,x)!=="passed";}),myDone=myTs.filter(function(x){return taskState(ev,x)==="done";}).length;
+    var mine2=h("p",{class:"plan-left"},myTs.length?[h("b",{text:"Your tasks: "+myDone+" of "+myTs.length+" done"})]:"You have no tasks on this one yet.");
+    var openEv=function(){if(S.isAdmin&&!S.asMember){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}};
+    var card=h("section",{class:"card hsec plan-card"},h("button",{type:"button",class:"evlink","aria-label":"Open "+(ev.name||"the event"),onclick:openEv},h("div",{class:"evmedia"},flyerThumb(ev),head)),adminView()?left:mine2,
       (adminView()&&eventWhy(ev).why.length)?h("p",{class:"sub",style:"margin:-4px 0 8px",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
-      new Date((ev.date||"")+"T23:59:59")>=new Date()&&ev.published!==false?attendCard(ev,"row"):null,
-      open?[journey(ev,{vertical:true,rerender:renderPlan}),
+      open?[journey(ev,{vertical:true,rerender:renderPlan,me:S.uid}),
         line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
         next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null]:null,
       h("div",{class:"row"},
         h("button",{type:"button",class:"btn small",text:open?"Hide timeline":"Show timeline",onclick:function(){S.panel[key]=!open;renderPlan();}}),
-        S.isAdmin||mineIds[ev.id]?h("button",{type:"button",class:"btn small go",text:S.isAdmin?"Open event":"Open my tasks",onclick:function(){if(S.isAdmin){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}}}):null));
+        S.isAdmin||mineIds[ev.id]?h("button",{type:"button",class:"btn small go",text:S.isAdmin&&!S.asMember?"Open event":"Open event and my tasks",onclick:openEv}):null));
     root.append(card);
   });
 }
@@ -4350,13 +4381,15 @@ function playerCard(p,prof,opts){
   var logo=ph?h("img",{class:"pc2-photo",src:ph,alt:(p.name||"Crew member")+" photo"}):h("div",{class:"pc2-photo empty","aria-hidden":"true",text:initials(p.name)||"?"});
   var ts=S.uid?titlesOf(opts.pid||S.uid):[];
   return h("article",{class:"pcard pc2"+(opts.reveal?" reveal":""),"aria-label":(p.name||"Your")+" player card"},
-    h("div",{class:"pc2-in"},logo,
-      !ph&&mine&&!opts.reveal?h("button",{type:"button",class:"btn small go",text:"Add your photo",onclick:function(){startExtra("photo");}}):null,
-      h("p",{class:"pc-kick",text:"Gold Coast Games · Player card"}),
-      h("p",{class:"pc2-name",text:p.name||"You"}),
-      prof?h("p",{class:"pc2-type"},h("span",{text:"The "+prof.chips[0]}),h("br"),h("span",{class:"plus",text:"+ "+prof.chips[1]})):h("p",{class:"pc2-type",text:"Card coming soon"}),
-      ts.length?h("div",{class:"chips center"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
-      prof?h("ul",{class:"pc2-str"},prof.top.map(function(t){return h("li",{text:TRAIT_LABEL[t]});})):null,
+    h("div",{class:"pc2-in pc2-row"},
+      h("div",{class:"pc2-hd"},logo,
+        h("div",{class:"pc2-side"},
+          h("p",{class:"pc-kick",text:"GCG player card"}),
+          h("p",{class:"pc2-name",text:p.name||"You"}),
+          prof?h("p",{class:"pc2-type"},h("span",{text:"The "+prof.chips[0]}),h("br"),h("span",{class:"plus",text:"+ "+prof.chips[1]})):h("p",{class:"pc2-type",text:"Card coming soon"}),
+          ts.length?h("div",{class:"chips"},ts.map(function(x){return h("span",{class:"chip t1",text:""+x.name});})):null,
+          prof?h("ul",{class:"pc2-str"},prof.top.map(function(t){return h("li",{text:TRAIT_LABEL[t]});})):null,
+          !ph&&mine&&!opts.reveal?h("button",{type:"button",class:"btn small go",text:"Add your photo",onclick:function(){startExtra("photo");}}):null)),
       opts.statement?h("p",{class:"pc2-about",text:opts.statement}):null,
       opts.counts?h("p",{class:"pc2-n",text:opts.counts}):null));
 }
