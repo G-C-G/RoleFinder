@@ -2131,7 +2131,7 @@ function submit(){
   say(st,"Sending…");
   S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
   S.db.doc("responses/"+S.uid).set(p).then(function(){
-    var first=!S.sentAt;S.sentAt=p.updated;say(st,"Saved. Opening your Game Plan…","ok");
+    var first=!S.sentAt;S.sentAt=p.updated;if(first)startAutoShare();say(st,"Saved. Opening your Game Plan…","ok");
     setTimeout(function(){if(S.view==="flow"&&!S.goProj)showView(homeView());if(first)toast("Welcome to your Game Plan");},900);
   },function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});
 }
@@ -3946,16 +3946,17 @@ function openShared(sh,key){
   else if(sh.kind==="task"){S.goTask={eid:sh.eid,tid:sh.tid};openLinkedTask();if(S.goTask){S.goTask=null;showView(adminView()?"events":"plan");}}
   else{var ev=evById(sh.id);if(ev&&adminView()){S.evOpen=sh.id;showView("events");}else if(ev){S.evSel=sh.id;showView("mevents");}else showView(adminView()?"events":"plan");}
 }
-// Landing from a shared link: if something was shared in the last 30 minutes and this person has not opened it yet,
-// take them straight into it. Older shares wait as a card on Home or Today.
+// The link cannot carry its target (the viewer drops everything after the address), so the share record does the job:
+// if someone else shared something in the last 3 days (or you did, in the last 30 minutes) and this person has not opened it yet,
+// take them straight into it, after their profile is saved if they are new. Older shares wait as a card on Home or Today.
 function startAutoShare(){
   var tries=0,iv=setInterval(function(){
     tries++;if(tries>30){clearInterval(iv);return;}
     if(!S.sharesLoaded||!S.uid||!(onboarded()||S.realAdmin))return;
     clearInterval(iv);
     if(S.goProj||S.goTask)return;
-    var seen=shareSeen(),cut=Date.now()-30*60*1000;
-    var list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){return Date.parse(x.s.at)>cut&&!(seen[x.k]&&seen[x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));});
+    var seen=shareSeen(),now=Date.now();
+    var list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){return Date.parse(x.s.at)>now-(x.s.by===S.uid?30*60*1000:3*864e5)&&!(seen[x.k]&&seen[x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));});
     if(list.length)openShared(list[0].s,list[0].k);
   },700);
 }
