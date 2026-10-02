@@ -4771,8 +4771,9 @@ function drawCrew(root){
       playerCard({name:(c.name||"Someone")+(id===S.uid?" (you)":""),photo:c.photo},cp,{pid:id}),
       h("span",{class:"chev","aria-hidden":"true",text:open?"Show less −":"Show more +"}));
     var card=h("section",{class:"card crewcard"},head);
-    if(id===S.uid)card.append(h("p",{class:"sub",text:"This is how the crew sees you. Open your card to choose what they can see."}));
-    if(open&&id===S.uid)card.append(h("p",{class:"lab",text:"What the crew can see"}),shareToggles(function(){saveResponse();}));
+    if(id===S.uid){var ed=!!S.panel["crew-edit"];
+      card.append(h("div",{class:"row"},h("span",{class:"sub",text:"This is how the crew sees you."}),h("button",{type:"button",class:"btn small"+(ed?" go":""),text:ed?"Done":"Edit what is shared",onclick:function(){S.panel["crew-edit"]=!ed;renderCrew();}})));
+      if(ed)card.append(h("p",{class:"lab",text:"What the crew can see"}),shareToggles(function(){saveResponse();}));}
     if(open){
       function sec(label,val){return val&&(!Array.isArray(val)||val.length)?h("div",{class:"crewsec"},h("p",{class:"lab",text:label}),Array.isArray(val)?h("div",{class:"chips"},val.map(function(v){return h("span",{class:"chip",text:v});})):h("p",{text:val})):null;}
       card.append(sec("Up for",secs.up),sec("Has done",secs.did),sec("Brings",secs.brings),sec("Proudest work",secs.proud),sec("Works best",secs.works),
