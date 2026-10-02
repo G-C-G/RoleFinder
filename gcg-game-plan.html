@@ -510,6 +510,9 @@ body.has-nav{padding-bottom:104px}
 .goal{font-size:16px;margin:-6px 0 6px;max-width:52ch}
 .crewhead.pc-tap{display:block;width:100%;text-align:left;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}
 .crewhead.pc-tap .chev{display:block;text-align:center;margin-top:8px;font-size:13px;font-weight:700;color:var(--muted)}
+.titleperson{margin:0 0 12px}
+.titlesug{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line,rgba(0,0,0,.1))}
+.titlesug p{margin:2px 0 0}
 .about{font-size:15px;line-height:1.5;margin:0 0 10px;max-width:56ch;white-space:pre-wrap;color:var(--ink)}
 .needed{font-weight:800;font-size:13.5px;color:var(--ink);background:var(--bg-2);border-radius:8px;padding:4px 8px;justify-self:start}
 .hero-move .needed{background:rgba(255,255,255,.55)}
@@ -3528,11 +3531,51 @@ function renderTitles(){
   var keep=focusKeep(root);clear(root);
   try{drawTitles(root);}finally{focusRestore(root,keep);}
 }
-function drawTitles(root){
+var AREA_TITLE={A:"Leadership",B:"Strategy lead",C:"Live events lead",D:"Content lead",E:"Sales lead",F:"Operations lead",G:"Finance and legal lead",H:"Funding lead",I:"People lead",J:"Tech lead"};
+// Titles to offer one person, from the jobs they said yes to: strongest areas first, with the reason.
+function titleSuggestions(p){
+  var tops=p.top||[],goods=p.good||[],out=[];
+  AREAS.forEach(function(a){
+    var t=tops.filter(function(i){return FN[i]&&FN[i].area===a.id;}),g=goods.filter(function(i){return FN[i]&&FN[i].area===a.id;});
+    if(t.length+g.length<2&&!t.length)return;
+    out.push({name:AREA_TITLE[a.id]||a.short,area:a.short,jobs:t.concat(g),score:t.length*2+g.length,top:t.length});
+  });
+  return out.sort(function(x,y){return y.score-x.score;}).slice(0,3);
+}
+function giveTitle(pid,tt){tt.holders=tt.holders||[];if(tt.holders.indexOf(pid)<0)tt.holders.push(pid);saveTitle(tt,true);renderTitles();}
+function takeTitle(pid,tt){tt.holders=(tt.holders||[]).filter(function(x){return x!==pid;});saveTitle(tt,true);renderTitles();}
+function titlesByPerson(top){
+  top.append(h("h3",{class:"q",text:"People first"}),h("p",{class:"sub",text:"Each person with the titles that fit what they said they are good at. Give a title in one tap, or take it away."}));
+  if(!S.people.length){top.append(h("p",{class:"sub",text:"Nobody has finished a profile yet. Suggestions appear here as people do."}));return;}
+  S.people.slice().sort(function(a,b){var an=titlesOf(a.id).length?1:0,bn=titlesOf(b.id).length?1:0;return an-bn||pname(a).localeCompare(pname(b));}).forEach(function(p){
+    var have=titlesOf(p.id),ph=cleanPhoto(p.photo);
+    var haveNames=have.map(function(x){return String(x.name).toLowerCase();});
+    var sug=titleSuggestions(p).filter(function(x){return haveNames.indexOf(x.name.toLowerCase())<0;});
+    var box=h("section",{class:"card titleperson"},
+      h("h3",{class:"ph-row"},ph?h("img",{class:"avatar sm",src:ph,alt:""}):null,pname(p)),
+      have.length?h("div",{class:"chips"},have.map(function(x){return h("button",{type:"button",class:"chip good addchip","aria-label":"Take away the title "+x.name,text:x.name+" ×",onclick:function(){takeTitle(p.id,x);}});})):h("p",{class:"meta",text:"No title yet."}));
+    if(sug.length){
+      box.append(h("p",{class:"lab",text:"Suggested from what they said they are good at"}));
+      sug.forEach(function(x){
+        var ex=S.titles.filter(function(t){return String(t.name).toLowerCase()===x.name.toLowerCase();})[0];
+        box.append(h("div",{class:"titlesug"},
+          h("div",null,h("b",{text:x.name}),h("p",{class:"sub",text:"Said yes to "+x.jobs.length+" "+x.area+" job"+(x.jobs.length>1?"s":"")+(x.top?" and marked "+x.top+" as a strength":"")+": "+x.jobs.slice(0,4).map(function(i){return FN[i].name;}).join(", ")+(x.jobs.length>4?" and more":"")+"."})),
+          h("button",{type:"button",class:"btn small go",text:"Give this title",onclick:function(){
+            if(!S.db){say($("t-titleStatus"),"Titles need the live page.","warn");return;}
+            if(ex){giveTitle(p.id,ex);return;}
+            var tt={id:newId("ti"),name:x.name,desc:"",jobs:x.jobs.slice(0,30),holders:[p.id]};S.titles.push(tt);saveTitle(tt,true);renderTitles();}})));
+      });
+    }else if(!have.length)box.append(h("p",{class:"sub",text:"Not enough yes answers yet to suggest a title."}));
+    top.append(box);
+  });
+}
+function drawTitles(top){
+  var root=h("div",{class:"titlelist"});
   var st=h("p",{class:"status",id:"t-titleStatus",role:"status","aria-live":"polite"});
+  titlesByPerson(top);top.append(st);
   root.append(h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"New title",onclick:function(){
     if(!S.db){say(st,"Titles need the live page.","warn");return;}
-    var tt={id:newId("ti"),name:"New title",desc:"",jobs:[],holders:[]};S.titles.push(tt);S.titleOpen=tt.id;saveTitle(tt,true);renderTitles();}}),st));
+    var tt={id:newId("ti"),name:"New title",desc:"",jobs:[],holders:[]};S.titles.push(tt);S.titleOpen=tt.id;saveTitle(tt,true);renderTitles();}})));
   if(!S.titles.length)root.append(h("p",{class:"sub",text:"No titles yet. For now people help across many jobs. When you decide, bundle jobs into a title (for example Head of Operations: running operations, project management, logistics, equipment) and give it to someone. It then shows on their profile, and tasks under those jobs go to them first."}));
   S.titles.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));}).forEach(function(tt){
     var open=S.titleOpen===tt.id;
@@ -3563,6 +3606,7 @@ function drawTitles(root){
     }
     root.append(card);
   });
+  top.append(h("details",{class:"more",open:S.panel["titles-all"]?true:null,ontoggle:function(e){S.panel["titles-all"]=e.currentTarget.open;}},h("summary",{text:"All titles: edit what each one covers ("+S.titles.length+")"}),root));
 }
 
 /* ---------- My profile: who you are at GCG, once onboarding is done ---------- */
