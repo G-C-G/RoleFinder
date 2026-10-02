@@ -863,7 +863,7 @@ button.chip.on{outline:2px solid var(--ink)}
 .steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;padding:2px 0}.cvline .cv-t{flex:1 1 100%}.cvline .cvbtns{flex:0 0 auto}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
-.covered-line{margin:4px 0}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
+.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
@@ -2670,7 +2670,7 @@ var evTimers={},evDirty={};
 function cleanTask(t){
   return {id:t.id,title:clean(t.title).slice(0,120),job:FN[t.job]?t.job:"",phase:t.phase||"before",d:t.d==null||t.d===""?null:Number(t.d),m:t.m==null||t.m===""?null:Number(t.m),
     pri:PRI[t.pri]?t.pri:"should",size:SIZE[t.size]?t.size:"M",cp:t.cp==null?null:Number(t.cp),msg:t.msg||"",all:!!t.all,group:t.group||"",helper:clean(t.helper).slice(0,60),
-    owner:t.owner||"",offered:!!t.offered,ots:t.ots||"",manual:t.manual||"",mts:t.mts||{},passed:(t.passed||[]).slice(0,30),handDone:t.handDone||{}};
+    owner:t.owner||"",offered:!!t.offered,ots:t.ots||"",manual:t.manual||"",sug:!!t.sug,ok:!!t.ok,mts:t.mts||{},passed:(t.passed||[]).slice(0,30),handDone:t.handDone||{}};
 }
 function saveEvent(ev,now){
   clearTimeout(evTimers[ev.id]);evDirty[ev.id]=(evDirty[ev.id]||0)+1;
@@ -2719,15 +2719,74 @@ S.noAuto={};
 // The owner runs the games and the plan. She is never suggested or offered a task; she picks up what is left in Up for grabs herself.
 function noAutoOn(id){return !!(id&&id===S.ownerId)||!!(S.noAuto&&S.noAuto[id]);}
 function toggleNoAuto(id){S.noAuto=Object.assign({},S.noAuto);if(S.noAuto[id])delete S.noAuto[id];else S.noAuto[id]=true;if(S.db)S.db.doc("settings/noauto").set({ids:S.noAuto}).catch(function(){});renderTeam();}
-function suggestEvent(ev){
-  var n=0;
-  var left=0;
+// The first draft of the crew. Marks each pick as "sug" (suggested, not yet checked by Hinda). Nothing is sent from here.
+function suggestCore(ev){
+  var n=0,left=0;
   (ev.tasks||[]).forEach(function(t){if(taskState(ev,t)!=="open"||t.helper)return;
     var r=rankFor(ev,t,eventLoad(ev,t)).filter(function(x){return !noAutoOn(x.p.id);})[0];
     // Only suggest someone with a real reason (said yes or maybe, title, experience, brings, did it before). A personality guess alone is not enough.
-    if(r&&r.m.why.some(function(w){return !/^(Strong in|Because of )/.test(w);})){t.owner=r.p.id;t.offered=false;n++;}else left++;});
-  saveEvent(ev,true);renderEvents();
-  say($("evStatus"),(n?"Suggested people for "+n+" task"+(n>1?"s":"")+". Check them, then send the offers.":"Nothing to suggest.")+(left?" "+left+" task"+(left>1?"s":"")+" left open because nobody has said they want it. They go to Up for grabs.":""),n?"ok":"");
+    if(r&&realWhy(r.m)){t.owner=r.p.id;t.offered=false;t.sug=true;t.ok=false;n++;}else left++;});
+  return {n:n,left:left};
+}
+function realWhy(m){return m.why.some(function(w){return !/^(Strong in|Because of )/.test(w);});}
+function suggestEvent(ev){
+  var r=suggestCore(ev);saveEvent(ev,true);renderEvents();
+  say($("evStatus"),(r.n?"Suggested people for "+r.n+" task"+(r.n>1?"s":"")+". Review them above, then send the offers.":"Nothing to suggest.")+(r.left?" "+r.left+" task"+(r.left>1?"s":"")+" left open because nobody has said they want it. They go to Up for grabs.":""),r.n?"ok":"");
+}
+function unreviewed(ev){return (ev.tasks||[]).filter(function(t){return t.owner&&t.sug&&!t.ok&&taskState(ev,t)==="draft";});}
+function acceptTask(ev,t){t.ok=true;t.sug=false;}
+function whyText(w){return /^Because of/.test(w)?w:w;}
+// Everyone, in three groups, for one task: recommended with reasons, no signal, and the people who said they do not want this kind of work.
+function whyNot(p,job,ev,t){
+  var out=t?(function(){var o=[];S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===t.id&&r.answer==="pass"&&r.pid===p.id)o.push(1);});return o.length;})():0;
+  if(out)return "Declined this task";
+  if((p.no||[]).indexOf(job)>-1)return "Said Never offer to "+(FN[job]?FN[job].name:"this job");
+  if(areaTurnedDown(p,job))return "Said no to several "+(AREA[FN[job].area]?AREA[FN[job].area].short:"")+" jobs";
+  return "Said they do not want this kind of work";
+}
+function staffGroups(ev,t){
+  var rank=rankFor(ev,t,eventLoad(ev,t)).filter(function(x){return x.p.id!==S.ownerId;}),ids={};
+  rank.forEach(function(x){ids[x.p.id]=1;});
+  var same=(ev.tasks||[]).filter(function(x){return x!==t&&(x.group||x.id)===(t.group||t.id)&&x.owner;}).map(function(x){return x.owner;});
+  var no=S.people.filter(function(p){return !ids[p.id]&&p.id!==S.ownerId&&same.indexOf(p.id)<0;}).map(function(p){return {p:p,why:whyNot(p,t.job,ev,t)};});
+  return {rec:rank.filter(function(x){return realWhy(x.m);}),mid:rank.filter(function(x){return !realWhy(x.m);}),no:no};
+}
+function personPicker(ev,t){
+  var g=staffGroups(ev,t),owner=t.owner?personById(t.owner):null,key="ovr:"+t.id,box=h("div",{class:"picker"});
+  function lab(x){return pname(x.p)+(x.m&&x.m.why.length?" · "+(/^Because of/.test(x.m.why[0])?x.m.why[0].replace(/^Because of (your CV|what you wrote about your proudest work): /,"CV: "):x.m.why[0].replace(/^\S+ /,"")):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"");}
+  var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:g.rec.length?"Choose someone…":"No one recommended yet"}));
+  if(g.rec.length)sel.append(h("optgroup",{label:"Recommended, with why"},g.rec.map(function(x,i){return h("option",{value:x.p.id,text:lab(x)});})));
+  if(g.mid.length)sel.append(h("optgroup",{label:"Nothing said about this work (no yes from them)"},g.mid.map(function(x){return h("option",{value:x.p.id,text:x.m.why.length?lab(x):pname(x.p)+" · nothing said about this work"});})));
+  if(g.no.length)sel.append(h("optgroup",{label:"NOT INTERESTED: said they do not want this work"},g.no.map(function(x){return h("option",{value:x.p.id,text:pname(x.p)+" · "+x.why});})));
+  if(owner&&!g.rec.concat(g.mid).some(function(x){return x.p.id===owner.id;})&&!g.no.some(function(x){return x.p.id===owner.id;}))sel.append(h("option",{value:owner.id,text:pname(owner)}));
+  sel.value=t.owner||"";
+  function assign(id){t.owner=id;t.offered=false;t.ots="";t.manual="";t.ok=true;t.sug=false;S.panel[key]="";saveEvent(ev,true);renderEvents();}
+  sel.addEventListener("change",function(){
+    var no=g.no.filter(function(x){return x.p.id===sel.value;})[0];
+    if(no){S.panel[key]=sel.value;renderEvents();return;}
+    assign(sel.value);});
+  box.append(sel);
+  var pend=S.panel[key],nx=pend?g.no.filter(function(x){return x.p.id===pend;})[0]:null;
+  if(nx)box.append(h("div",{class:"box warnbox"},h("b",{text:pname(nx.p)+": "+nx.why+"."}),h("p",{class:"sub",text:"They said they do not want this kind of work. Assign anyway only if you have spoken to them."}),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Assign anyway",onclick:function(){assign(pend);}}),h("button",{type:"button",class:"btn small link",text:"Cancel",onclick:function(){S.panel[key]="";renderEvents();}}))));
+  return box;
+}
+// The review step: the first draft of the crew, checked by Hinda before anything is released.
+function crewReview(ev){
+  var list=unreviewed(ev);if(!list.length)return null;
+  var open=(ev.tasks||[]).filter(function(t){return taskState(ev,t)==="open"&&!t.helper;}).length;
+  return h("section",{class:"card hsec review",id:"crewReview"},h("span",{class:"phasepill",text:"First draft"}),
+    h("h3",{class:"q",text:"Suggested crew: check it before anything is sent"}),
+    h("p",{class:"sub",text:"Nobody has been told. Accept what looks right, change what you know better, then send."}),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Accept all "+list.length,onclick:function(){list.forEach(function(t){acceptTask(ev,t);});saveEvent(ev,true);renderEvents();}})),
+    list.map(function(t){var m=t.owner?taskMatch(personById(t.owner)||{id:t.owner,q:[],story:{}},t.job,ev.id):null,d=taskDue(ev,t),chg=!!S.panel["chg:"+t.id];
+      return h("div",{class:"rvrow"},
+        h("div",{class:"rv-t"},h("b",{text:t.title}),h("span",{class:"sub",text:(d?fmtWhen(d):"")+(t.pri==="must"?" · Essential":"")})),
+        h("div",{class:"rv-p"},h("b",{text:nameOf(t.owner)}),h("span",{class:"sub",text:m&&m.why.length?m.why.slice(0,2).join(" · "):"Suggested"})),
+        h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Accept",onclick:function(){acceptTask(ev,t);saveEvent(ev,true);renderEvents();}}),
+          h("button",{type:"button",class:"btn small",text:chg?"Close":"Change",onclick:function(){S.panel["chg:"+t.id]=!chg;renderEvents();}})),
+        chg?personPicker(ev,t):null);}),
+    open?h("p",{class:"sub",text:open+" more task"+(open>1?"s":"")+" had no one with a reason to suggest. They stay open, so they go to Up for grabs."}):null);
 }
 function nextBest(ev,t){
   if(t.owner&&(t.passed||[]).indexOf(t.owner)<0)(t.passed=t.passed||[]).push(t.owner);
@@ -2771,7 +2830,7 @@ function offerMessages(ev){
 }
 // "For now": tasks due within a week, or in a stage the event has reached.
 function offerNow(ev,t){var due=taskDue(ev,t);return !!(due&&due<Date.now()+7*864e5)||taskStageIdx(ev,t)<=curStageIdx(ev);}
-function draftCount(ev,onlyNow){return (ev.tasks||[]).filter(function(t){return t.owner&&taskState(ev,t)==="draft"&&(!onlyNow||offerNow(ev,t));}).length;}
+function draftCount(ev,onlyNow){return (ev.tasks||[]).filter(function(t){return t.owner&&taskState(ev,t)==="draft"&&!(t.sug&&!t.ok)&&(!onlyNow||offerNow(ev,t));}).length;}
 // Two different things. "Not needed": this event does not use that service at all, so it leaves no trace anywhere but the setup list.
 // "Already done": the work exists and something covers it, so we keep a note of what.
 function coverGroup(ev,key,note,notNeeded){
@@ -2809,9 +2868,9 @@ function setupCard(ev){
           S.panel["pub:"+ev.id]=false;ev.published=true;saveEvent(ev,true);renderEvents();toast("Published. The team can see it now.");}});})()));
 }
 function sendOffers(ev,all){
-  var n=0,ts=nowIso();(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"&&(all||offerNow(ev,t))){t.offered=true;t.ots=ts;n++;}});
+  var n=0,ts=nowIso(),held=unreviewed(ev).length;(ev.tasks||[]).forEach(function(t){if(t.owner&&taskState(ev,t)==="draft"&&!(t.sug&&!t.ok)&&(all||offerNow(ev,t))){t.offered=true;t.ots=ts;n++;}});
   saveEvent(ev,true);S.evMsgs={eid:ev.id,title:"Messages to nudge people",list:offerMessages(ev)};renderEvents();
-  say($("evStatus"),n?"Sent "+n+" offer"+(n>1?"s":"")+". People see them under My tasks. Copy a message below to nudge them on WhatsApp.":"No new offers to send.",n?"ok":"");
+  S.evNote={eid:ev.id,at:Date.now(),kind:n?"ok":(held?"warn":""),text:(n?"Sent "+n+" offer"+(n>1?"s":"")+". People see them under My tasks. Copy a message below to nudge them on WhatsApp.":"No new offers to send.")+(held?" "+held+" suggestion"+(held>1?"s":"")+" still need your OK, so they were not sent.":"")};say($("evStatus"),S.evNote.text,S.evNote.kind);
 }
 function dueSoonText(ev){
   var lim=Date.now()+7*864e5,by={},none=[];
@@ -2887,11 +2946,12 @@ function drawEvents(root){
         return h("li",{"data-sev":now?"now":"soon"},h("span",{class:"sev",text:now?"Now":"Soon"}),
           h("div",null,h("b",{text:x.t.title}),h("p",{class:"sub",text:[(x.t.owner?nameOf(x.t.owner):x.t.helper||"no one"),riskWhyShort(x),x.waiting?"waits on "+x.waiting:""].filter(Boolean).join(" · ")}),x.due?clockSpan(x.due):null),
           h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.panel.alltasks=true;S.goTask={eid:ev.id,tid:x.t.id};renderEvents();openLinkedTask();}}));})):null),
+    crewReview(ev),
     h("div",{class:"row actions"},
       h("button",{type:"button",class:"btn go",text:"Suggest people",onclick:function(){suggestEvent(ev);}}),
       h("button",{type:"button",class:"btn green",text:"Send offers for now ("+draftCount(ev,true)+")",onclick:function(){sendOffers(ev);}}),
       draftCount(ev,false)>draftCount(ev,true)?h("button",{type:"button",class:"btn link",text:"Send all "+draftCount(ev,false)+" instead",onclick:function(){sendOffers(ev,true);}}):null),
-    h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"}),
+    h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite","data-kind":(S.evNote&&S.evNote.eid===ev.id&&Date.now()-S.evNote.at<90000)?S.evNote.kind:null,text:(S.evNote&&S.evNote.eid===ev.id&&Date.now()-S.evNote.at<90000)?S.evNote.text:""}),
     h("details",{class:"more"},h("summary",{text:"More actions: due-soon message, run sheet, PDFs"}),
       h("div",{class:"row"},
         h("button",{type:"button",class:"btn small",text:"Due-soon message",onclick:function(){S.evMsgs={eid:ev.id,title:"Due soon (paste in the team group)",list:[{text:dueSoonText(ev)}]};renderEvents();}}),
@@ -2987,7 +3047,7 @@ function drawEventList(root){
       if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
       var tkey=tSel.value&&needsFor(tSel.value)?tSel.value+"_"+forSel.value:tSel.value;
       var e=tkey?fromTemplate(tkey,clean(nameIn.value),dateIn.value):{id:newId("e"),name:clean(nameIn.value)||"New event",type:"",date:dateIn.value,start:"18:30",place:"",lead:"",links:{},guests:{},debrief:{},cps:[],tasks:[],created:nowIso()};
-      e.published=false;S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
+      e.published=false;if(S.people&&S.people.length)suggestCore(e);S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
   var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
   if(!list.length)root.append(h("p",{class:"sub",style:"margin-top:14px",text:"No events yet."}));
@@ -3012,11 +3072,7 @@ function doneForm(ev,t){
 }
 function adminTask(ev,t,cur){
   var st=taskState(ev,t),rank=rankFor(ev,t,eventLoad(ev,t)),owner=t.owner?personById(t.owner):null,due=taskDue(ev,t);
-  var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:rank.length?"Choose someone…":"Nobody fits yet"}),
-    rank.map(function(x,i){return h("option",{value:x.p.id,text:(i===0?" ":"")+pname(x.p)+(x.m.why.length?" · "+(/^Because of/.test(x.m.why[0])?x.m.why[0].replace(/^Because of (your CV|what you wrote about your proudest work): /,"CV: "):x.m.why[0].replace(/^\S+ /,"")):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"")});}));
-  if(owner&&!rank.some(function(x){return x.p.id===owner.id;}))sel.append(h("option",{value:owner.id,text:pname(owner)}));
-  sel.value=t.owner||"";
-  sel.addEventListener("change",function(){t.owner=sel.value;t.offered=false;t.ots="";t.manual="";saveEvent(ev,true);renderEvents();});
+  var sel=personPicker(ev,t);
   var why=owner?taskMatch(owner,t.job,ev.id):null,r=replyOf(ev,t),claims=claimsOf(ev,t);
   var hands=S.replies.filter(function(x){return x.eid===ev.id&&x.tid===t.id&&x.hand&&x.hand.at&&!(t.handDone&&t.handDone[x.pid+x.hand.at]);});
   var title=h("input",{type:"text",value:t.title,"aria-label":"Task","data-k":"title-"+t.id});
