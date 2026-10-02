@@ -3360,7 +3360,7 @@ function msDots(codes,labels,onTap){
     return h("li",null,h(onTap?"button":"span",{class:"msdot","data-s":st,type:onTap?"button":null,"aria-label":(labels&&labels[i]?labels[i]+": ":"Stage "+(i+1)+": ")+(st==="done"?"done":st==="now"?"in progress":st==="late"?"behind":"to come"),onclick:onTap?function(){onTap(i);}:null},st==="done"?ico("check",12):null));}));
 }
 function projectLink(id){return appBase()+"#project="+id;}
-function projectShareText(p){var tg=pDay(p.target);return "Project: "+(p.name||"Project")+"\n"+p.pct+"% done"+(p.pace?" · "+p.pace:"")+(tg?"\nTarget: "+fmtDate(p.target):"")+"\nOpen in Game Plan: "+projectLink(p.id);}
+function projectShareText(p){var tg=pDay(p.target);return "Gold Coast Games project plan: "+(p.name||"Project")+"\n"+p.pct+"% done"+(p.pace?" · "+p.pace:"")+(tg?" · done by "+fmtDate(p.target):"")+"\nTap to open the plan for "+(p.name||"this project")+" in Game Plan (you will see the parts you have access to):\n"+projectLink(p.id);}
 function pubOf(pr){var st=projStats(pr);st.pace=st.pace==="Plan runs over"?"On track":st.pace;return {name:clean(pr.name).slice(0,80),thumb:cleanThumb(pr.thumb),ms:msCodes(projMilestones(pr)).slice(0,20),target:pr.target||"",pct:st.pct,steps:st.steps,left:st.left,late:st.late,pace:st.pace};}
 function mineOf(pr,uid){
   var sc=projSchedule(pr),mySteps=sc.rows.filter(function(r){return r.s.owner===uid;});if(!mySteps.length)return null;
@@ -3928,14 +3928,14 @@ function waButton(text,label){
   }},ico("share",20));
 }
 function eventShareText(ev){
-  var L=["New event: "+(ev.name||"GCG event"),fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+(ev.place?", "+ev.place:"")];
+  var L=["Gold Coast Games event: "+(ev.name||"GCG event"),fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+(ev.place?", "+ev.place:"")];
   if(ev.about)L.push(ev.about);else if(ev.goal)L.push(ev.goal);
-  L.push("Details and your tasks in Game Plan: "+eventLink(ev.id));return L.join("\n");
+  L.push("Tap to open the plan and your tasks for "+(ev.name||"this event")+" in Game Plan:",eventLink(ev.id));return L.join("\n");
 }
 function taskShareText(ev,t){
   var due=taskDue(ev,t),st=taskState(ev,t);
   var who=st==="done"?"Done":(t.owner?"With "+nameOf(t.owner):"Up for grabs");
-  return (st==="done"?"Task: ":"Task not done yet: ")+t.title+"\n"+(ev.name||"Event")+(due?", due "+fmtWhen(due):"")+" · "+who+"\nOpen it in Game Plan: "+taskLink(ev.id,t.id);
+  return "Gold Coast Games task"+(st==="done"?"":" still open")+": "+t.title+"\nFor "+(ev.name||"the event")+(due?", due "+fmtWhen(due):"")+" · "+who+"\nTap to open this task in Game Plan:\n"+taskLink(ev.id,t.id);
 }
 // A shared project link: admins land on the project, people with a step on their own view, everyone else on the progress list.
 function openLinkedProject(){
@@ -4403,9 +4403,19 @@ function renderNav(){
       n[0]==="home"&&np?h("span",{class:"badge-n",text:String(np)}):null));
   });
 }
+// Tapping a tab in the bottom bar always opens that tab fresh: no event, project or plan left open from before.
+function resetTab(v){
+  function dropPanels(prefixes){Object.keys(S.panel||{}).forEach(function(k){if(prefixes.some(function(x){return k.indexOf(x)===0;}))delete S.panel[k];});}
+  if(v==="events"||v==="plan"||v==="mevents"){
+    S.evOpen="";S.evSel="";S.projOpen="";S.projSel="";S.evMsgs=null;S.run=null;S.goTask=null;S.goProj="";S.tlOpen={};
+    dropPanels(["fp:","pmil:","pms:","pstep:","pr-","plan:","alltasks","evdetails","setup","cover:","title-new","md","ping"]);
+  }
+  if(v==="team"){S.titlePerson="";S.titleOpen="";S.titleDraft=null;S.tlOpen={};dropPanels(["titles-","cvr","notes"]);}
+  if(v==="crew"){S.crewQ="";Object.keys(S.tlOpen||{}).forEach(function(k){if(k.indexOf("crew:")===0||k.indexOf("adm:")===0)delete S.tlOpen[k];});}
+  if(v==="today"||v==="home"){S.goTask=null;}
+}
 function go2(v){
-  if(v==="mevents"&&S.view==="mevents"&&S.evSel){S.evSel="";}
-  if(v==="events"&&S.view==="events"&&S.evOpen){S.evOpen="";S.evMsgs=null;S.run=null;}
+  resetTab(v);
   showView(v);
 }
 function greeting(){var hr=new Date().getHours();return hr<12?"Good morning":hr<17?"Good afternoon":"Good evening";}
