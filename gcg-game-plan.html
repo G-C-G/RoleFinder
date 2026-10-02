@@ -3948,6 +3948,19 @@ function openShared(sh,key){
   else if(sh.kind==="task"){S.goTask={eid:sh.eid,tid:sh.tid};openLinkedTask();if(S.goTask){S.goTask=null;showView(adminView()?"events":"plan");}}
   else{var ev=evById(sh.id);if(ev&&adminView()){S.evOpen=sh.id;showView("events");}else if(ev){S.evSel=sh.id;showView("mevents");}else showView(adminView()?"events":"plan");}
 }
+// Landing from a shared link: if something was shared in the last 30 minutes and this person has not opened it yet,
+// take them straight into it. Older shares wait as a card on Home or Today.
+function startAutoShare(){
+  var tries=0,iv=setInterval(function(){
+    tries++;if(tries>30){clearInterval(iv);return;}
+    if(!S.sharesLoaded||!S.uid||!(onboarded()||S.realAdmin))return;
+    clearInterval(iv);
+    if(S.goProj||S.goTask)return;
+    var seen=shareSeen(),cut=Date.now()-30*60*1000;
+    var list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){return Date.parse(x.s.at)>cut&&!(seen[x.k]&&seen[x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));});
+    if(list.length)openShared(list[0].s,list[0].k);
+  },700);
+}
 function sharedWithYou(root){
   var seen=shareSeen(),cut=Date.now()-10*864e5,list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){
     var t=Date.parse(x.s.at);return t>cut&&!(seen[x.k]&&seen[x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));}).slice(0,3);
@@ -5647,7 +5660,8 @@ function initCaps(){
         S.db.collection("projectup").onSnapshot(function(snap){S.pup={};snap.docs.forEach(function(d){S.pup[d.id]=thaw(d.data());});rerenderProj();},function(){});
         S.db.collection("projectmine").onSnapshot(function(snap){S.pmineAll={};snap.docs.forEach(function(d){S.pmineAll[d.id]={items:thaw(d.data()).items||{}};});},function(){});
       }
-      S.db.collection("shares").onSnapshot(function(snap){S.shares={};snap.docs.forEach(function(d){S.shares[d.id]=thaw(d.data());});if(S.view==="home")renderHome();if(S.view==="today")renderToday();},function(){});
+      if(S.realAdmin||S.isAdmin){try{S.db.doc("linkdebug/"+S.uid).set({href:String(location.href).slice(0,300),hash:String(location.hash||"").slice(0,200),search:String(location.search||"").slice(0,200),name:String(window.name||"").slice(0,100),referrer:String(document.referrer||"").slice(0,300),at:nowIso()}).catch(function(){});}catch(e){}}
+      S.db.collection("shares").onSnapshot(function(snap){S.shares={};snap.docs.forEach(function(d){S.shares[d.id]=thaw(d.data());});S.sharesLoaded=true;if(S.view==="home")renderHome();if(S.view==="today")renderToday();},function(){S.sharesLoaded=true;});
       S.db.collection("replies").onSnapshot(function(snap){
         S.replies=snap.docs.map(function(d){return thaw(d.data());}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
         applyClaims();syncProjects();
@@ -5711,6 +5725,7 @@ function boot(){
   window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
     suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,setSlots:setSlots,slotsOf:slotsOf,setAsMember:setAsMember,noAutoOn:noAutoOn,toggleNoAuto:toggleNoAuto,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
+  startAutoShare();
 }
 boot();
 })();
