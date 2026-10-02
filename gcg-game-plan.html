@@ -2735,7 +2735,11 @@ function suggestEvent(ev){
 }
 function unreviewed(ev){return (ev.tasks||[]).filter(function(t){return t.owner&&t.sug&&!t.ok&&taskState(ev,t)==="draft";});}
 function acceptTask(ev,t){t.ok=true;t.sug=false;}
-function whyText(w){return /^Because of/.test(w)?w:w;}
+// Reasons are written to the person ("your CV"). Hinda reads them about someone else, so rephrase for her.
+function whyText(w){
+  return w.replace(/^Because of your CV: it mentions/,"Their CV mentions").replace(/^Because of what you wrote about your proudest work: /,"Their proudest-work answer mentions ")
+    .replace(/^Your title covers this/,"Their title covers this").replace(/^Said maybe to (.*)$/,"Open to $1 (said maybe)").replace(/^Said yes to (.*)$/,"Said yes to $1");
+}
 // Everyone, in three groups, for one task: recommended with reasons, no signal, and the people who said they do not want this kind of work.
 function whyNot(p,job,ev,t){
   var out=t?(function(){var o=[];S.replies.forEach(function(r){if(r.eid===ev.id&&r.tid===t.id&&r.answer==="pass"&&r.pid===p.id)o.push(1);});return o.length;})():0;
@@ -2753,7 +2757,7 @@ function staffGroups(ev,t){
 }
 function personPicker(ev,t){
   var g=staffGroups(ev,t),owner=t.owner?personById(t.owner):null,key="ovr:"+t.id,box=h("div",{class:"picker"});
-  function lab(x){return pname(x.p)+(x.m&&x.m.why.length?" · "+(/^Because of/.test(x.m.why[0])?x.m.why[0].replace(/^Because of (your CV|what you wrote about your proudest work): /,"CV: "):x.m.why[0].replace(/^\S+ /,"")):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"");}
+  function lab(x){return pname(x.p)+(x.m&&x.m.why.length?" · "+(x.m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,2).map(whyText).join(" + ")||whyText(x.m.why[0])):"")+(/^manual-/.test(x.p.id)?" (answers by message)":"");}
   var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:g.rec.length?"Choose someone…":"No one recommended yet"}));
   if(g.rec.length)sel.append(h("optgroup",{label:"Recommended, with why"},g.rec.map(function(x,i){return h("option",{value:x.p.id,text:lab(x)});})));
   if(g.mid.length)sel.append(h("optgroup",{label:"Nothing said about this work (no yes from them)"},g.mid.map(function(x){return h("option",{value:x.p.id,text:x.m.why.length?lab(x):pname(x.p)+" · nothing said about this work"});})));
@@ -2782,7 +2786,7 @@ function crewReview(ev){
     list.map(function(t){var m=t.owner?taskMatch(personById(t.owner)||{id:t.owner,q:[],story:{}},t.job,ev.id):null,d=taskDue(ev,t),chg=!!S.panel["chg:"+t.id];
       return h("div",{class:"rvrow"},
         h("div",{class:"rv-t"},h("b",{text:t.title}),h("span",{class:"sub",text:(d?fmtWhen(d):"")+(t.pri==="must"?" · Essential":"")})),
-        h("div",{class:"rv-p"},h("b",{text:nameOf(t.owner)}),h("span",{class:"sub",text:m&&m.why.length?m.why.slice(0,2).join(" · "):"Suggested"})),
+        h("div",{class:"rv-p"},h("b",{text:nameOf(t.owner)}),h("span",{class:"sub",text:m&&m.why.length?m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,3).map(whyText).join(" · ")||m.why.map(whyText)[0]:"Suggested"})),
         h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Accept",onclick:function(){acceptTask(ev,t);saveEvent(ev,true);renderEvents();}}),
           h("button",{type:"button",class:"btn small",text:chg?"Close":"Change",onclick:function(){S.panel["chg:"+t.id]=!chg;renderEvents();}})),
         chg?personPicker(ev,t):null);}),
