@@ -510,7 +510,15 @@ body.has-nav{padding-bottom:104px}
 .goal{font-size:16px;margin:-6px 0 6px;max-width:52ch}
 .crewhead.pc-tap{display:block;width:100%;text-align:left;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}
 .crewhead.pc-tap .chev{display:block;text-align:center;margin-top:8px;font-size:13px;font-weight:700;color:var(--muted)}
-.titleperson{margin:0 0 12px}
+.titleperson{margin:0 0 10px;padding:12px 14px}
+.trow{appearance:none;display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;padding:0;cursor:pointer;font:inherit;color:inherit}
+.trow .tw{display:grid;flex:1;min-width:0}.trow .tnone{color:var(--muted)}
+.tcount{font-weight:700;margin:0 0 10px}
+.tpanel{margin-top:12px;border-top:1.5px solid var(--soft);padding-top:6px}
+.tstep{display:flex;align-items:center;gap:8px;margin:16px 0 6px;font-size:16px}
+.tstep .tn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:12px;font-weight:800}
+.tflat{margin:2px 0 8px;line-height:1.45}
+.tcur{border:1.5px solid var(--soft);border-radius:12px;padding:10px 12px;margin:0 0 10px}
 .titlesug{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line,rgba(0,0,0,.1))}
 .titlesug p{margin:2px 0 0}
 .about{font-size:15px;line-height:1.5;margin:0 0 10px;max-width:56ch;white-space:pre-wrap;color:var(--ink)}
@@ -3545,58 +3553,73 @@ function titleSuggestions(p){
 function giveTitle(pid,tt){tt.holders=tt.holders||[];if(tt.holders.indexOf(pid)<0)tt.holders.push(pid);saveTitle(tt,true);renderTitles();}
 function takeTitle(pid,tt){tt.holders=(tt.holders||[]).filter(function(x){return x!==pid;});saveTitle(tt,true);renderTitles();}
 S.titlePerson="";S.titleDraft=null;
-function titlesByPerson(top){
-  top.append(h("h3",{class:"q",text:"Give a title"}),h("p",{class:"sub",text:"Choose a person first. You will see what they like and what they would rather not do, then pick a title."}));
-  if(!S.people.length){top.append(h("p",{class:"sub",text:"Nobody has finished a profile yet. People appear here as they do."}));return;}
-  var people=S.people.slice().sort(function(a,b){var an=titlesOf(a.id).length?1:0,bn=titlesOf(b.id).length?1:0;return an-bn||pname(a).localeCompare(pname(b));});
-  top.append(h("div",{class:"chips"},people.map(function(p){var on=S.titlePerson===p.id;
-    return h("button",{type:"button",class:"chip addchip"+(on?" good":""),"aria-pressed":String(on),text:pname(p)+(titlesOf(p.id).length?"":" (no title)"),onclick:function(){S.titlePerson=on?"":p.id;S.titleDraft=null;renderTitles();}});})));
-  var p=people.filter(function(x){return x.id===S.titlePerson;})[0];
-  if(!p){top.append(h("p",{class:"sub",text:"Choose a person above to start."}));return;}
-  var have=titlesOf(p.id),ph=cleanPhoto(p.photo),yes=yesOf(p),done=maskLabels(EXP,p.q&&p.q[NQ]);
-  var box=h("section",{class:"card titleperson"},
-    h("h3",{class:"ph-row"},ph?h("img",{class:"avatar sm",src:ph,alt:""}):null,pname(p)),
-    have.length?h("div",{class:"chips"},have.map(function(x){return h("button",{type:"button",class:"chip good addchip","aria-label":"Take away the title "+x.name,text:x.name+" ×",onclick:function(){takeTitle(p.id,x);}});})):h("p",{class:"meta",text:"No title yet."}),
-    h("p",{class:"lab",text:"What they like (said yes to)"}),
-    yes.length?h("div",{class:"chips"},yes.map(function(i){return h("span",{class:"chip good",text:FN[i].name+((p.top||[]).indexOf(i)>-1?" · strength":"")});})):h("p",{class:"meta",text:"Nothing marked yet."}),
-    (p.curious&&p.curious.length)?h("p",{class:"meta",text:"Curious about: "+listText(p.curious)}):null,
-    h("p",{class:"lab",text:"What they would rather not do"}),
-    (p.no&&p.no.length)?h("div",{class:"chips"},p.no.map(function(i){return h("span",{class:"chip",text:FN[i].name});})):h("p",{class:"meta",text:"Has not marked any jobs as not for them."}),
-    p.avoid?h("p",null,h("b",{text:"In their words: "}),p.avoid):null,
-    done.length?h("p",{class:"meta"},h("b",{text:"Has done: "}),done.join("; ")):null);
-  // Jobs under each title they hold: take a job off as the team grows, or add one they said yes to.
-  have.forEach(function(tt){
-    var jobs=(tt.jobs||[]).filter(function(i){return FN[i];}),can=yes.filter(function(i){return jobs.indexOf(i)<0;}),no=p.no||[];
-    box.append(h("div",{class:"titlejobs"},h("p",{class:"lab",text:"Jobs under "+tt.name}),
-      jobs.length?h("div",{class:"chips"},jobs.map(function(i){return h("button",{type:"button",class:"chip good addchip","aria-label":"Take "+FN[i].name+" off "+tt.name,text:FN[i].name+(no.indexOf(i)>-1?" (they said not for them)":"")+" ×",onclick:function(){tt.jobs=(tt.jobs||[]).filter(function(x){return x!==i;});saveTitle(tt,true);renderTitles();}});})):h("p",{class:"meta",text:"No jobs under this title yet."}),
-      can.length?h("details",{class:"more"},h("summary",{text:"Add a job they said yes to"}),h("div",{class:"chips"},can.map(function(i){return h("button",{type:"button",class:"chip addchip",text:"+ "+FN[i].name,onclick:function(){tt.jobs=(tt.jobs||[]).concat([i]);saveTitle(tt,true);renderTitles();}});}))):null,
-      (tt.holders||[]).length>1?h("p",{class:"sub",text:"This title is shared with "+((tt.holders||[]).length-1)+" other"+((tt.holders||[]).length>2?"s":"")+", so changing its jobs changes it for them too."}):null));
-  });
+function titlePanel(p){
+  var have=titlesOf(p.id),yes=yesOf(p),no=p.no||[],done=maskLabels(EXP,p.q&&p.q[NQ]);
+  var box=h("div",{class:"tpanel"});
+  // 1. What they said
+  box.append(h("h4",{class:"tstep"},h("span",{class:"tn",text:"1"}),"What they said"),
+    h("p",{class:"lab",text:"Likes"}),
+    yes.length?h("p",{class:"tflat",text:yes.map(function(i){return FN[i].name+((p.top||[]).indexOf(i)>-1?" (strength)":"");}).join(", ")}):h("p",{class:"meta",text:"Nothing marked yet."}),
+    h("p",{class:"lab",text:"Would rather not"}),
+    no.length?h("p",{class:"tflat",text:no.map(function(i){return FN[i].name;}).join(", ")}):h("p",{class:"meta",text:"Has not marked any jobs as not for them."}),
+    p.avoid?h("p",{class:"tflat"},h("b",{text:"In their words: "}),p.avoid):null,
+    done.length?h("p",{class:"tflat"},h("b",{text:"Has done: "}),done.join("; ")):null);
+  // 2. Their title and its jobs
+  if(have.length){
+    box.append(h("h4",{class:"tstep"},h("span",{class:"tn",text:"2"}),"Their title"));
+    have.forEach(function(tt){
+      var jobs=(tt.jobs||[]).filter(function(i){return FN[i];}),can=yes.filter(function(i){return jobs.indexOf(i)<0;});
+      box.append(h("div",{class:"tcur"},
+        h("div",{class:"row"},h("b",{text:tt.name}),h("button",{type:"button",class:"btn link",text:"Take this title away",onclick:function(){takeTitle(p.id,tt);}})),
+        h("p",{class:"sub",text:"Tap a job to take it off this title."}),
+        jobs.length?h("div",{class:"chips"},jobs.map(function(i){return h("button",{type:"button",class:"chip addchip","aria-label":"Take "+FN[i].name+" off "+tt.name,text:FN[i].name+(no.indexOf(i)>-1?" (they said not for them)":"")+"  ×",onclick:function(){tt.jobs=(tt.jobs||[]).filter(function(x){return x!==i;});saveTitle(tt,true);renderTitles();}});})):h("p",{class:"meta",text:"No jobs under this title yet."}),
+        can.length?h("details",{class:"more"},h("summary",{text:"Add a job they said yes to"}),h("div",{class:"chips"},can.map(function(i){return h("button",{type:"button",class:"chip addchip",text:"+ "+FN[i].name,onclick:function(){tt.jobs=(tt.jobs||[]).concat([i]);saveTitle(tt,true);renderTitles();}});}))):null,
+        (tt.holders||[]).length>1?h("p",{class:"sub",text:"Shared with "+((tt.holders||[]).length-1)+" other"+((tt.holders||[]).length>2?"s":"")+", so changing its jobs changes it for them too."}):null));
+    });
+  }
+  // 3. Pick a title (or add another)
   var haveNames=have.map(function(x){return String(x.name).toLowerCase();});
   var sug=titleSuggestions(p).filter(function(x){return haveNames.indexOf(x.name.toLowerCase())<0;});
-  box.append(h("p",{class:"lab",text:"Suggested titles, from what they said"}));
+  box.append(h("h4",{class:"tstep"},h("span",{class:"tn",text:have.length?"3":"2"}),have.length?"Add another title":"Pick a title"));
   if(sug.length)sug.forEach(function(x){
     var ex=S.titles.filter(function(t){return String(t.name).toLowerCase()===x.name.toLowerCase();})[0];
     box.append(h("div",{class:"titlesug"},
-      h("div",null,h("b",{text:x.name}),h("p",{class:"sub",text:"Said yes to "+x.jobs.length+" "+x.area+" job"+(x.jobs.length>1?"s":"")+(x.top?" and marked "+x.top+" as a strength":"")+": "+x.jobs.slice(0,4).map(function(i){return FN[i].name;}).join(", ")+(x.jobs.length>4?" and more":"")+"."})),
-      h("button",{type:"button",class:"btn small go",text:"Give this title",onclick:function(){
+      h("div",null,h("b",{text:x.name}),h("p",{class:"sub",text:"Said yes to "+x.jobs.length+" "+x.area+" job"+(x.jobs.length>1?"s":"")+(x.top?", "+x.top+" a strength":"")+": "+x.jobs.slice(0,3).map(function(i){return FN[i].name;}).join(", ")+(x.jobs.length>3?" and more":"")+"."})),
+      h("button",{type:"button",class:"btn small go",text:"Give",onclick:function(){
         if(!S.db){say($("t-titleStatus"),"Titles need the live page.","warn");return;}
         if(ex){giveTitle(p.id,ex);return;}
         var tt={id:newId("ti"),name:x.name,desc:"",jobs:x.jobs.slice(0,30),holders:[p.id]};S.titles.push(tt);saveTitle(tt,true);renderTitles();}})));
   });else box.append(h("p",{class:"sub",text:"Not enough yes answers yet to suggest a title."}));
   var others=S.titles.filter(function(t){return haveNames.indexOf(String(t.name).toLowerCase())<0&&!sug.some(function(x){return x.name.toLowerCase()===String(t.name).toLowerCase();});});
-  if(others.length)box.append(h("p",{class:"lab",text:"Or give a title that already exists"}),h("div",{class:"chips"},others.map(function(t){
-    var fit=titleFit(p,t);return h("button",{type:"button",class:"chip addchip",text:t.name+(fit!=null&&fit>=3?"  good fit":""),onclick:function(){giveTitle(p.id,t);}});})));
-  // A title of your own, built from the jobs they said yes to (untick any you do not want in it).
+  if(others.length)box.append(h("p",{class:"lab",text:"Titles that already exist"}),h("div",{class:"chips"},others.map(function(t){
+    var fit=titleFit(p,t);return h("button",{type:"button",class:"chip addchip",text:"+ "+t.name+(fit!=null&&fit>=3?"  (good fit)":""),onclick:function(){giveTitle(p.id,t);}});})));
   var d=S.titleDraft&&S.titleDraft.pid===p.id?S.titleDraft:(S.titleDraft={pid:p.id,name:"",jobs:yes.slice(0,30)});
-  var nm=h("input",{type:"text","aria-label":"Name of the new title",placeholder:"Name the title, for example Head of Operations","data-k":"tnew"});nm.value=d.name;nm.addEventListener("input",function(){d.name=nm.value;});
-  box.append(h("p",{class:"lab",text:"Or make a new title for them"}),nm,
+  var nm=h("input",{type:"text","aria-label":"Name of the new title",placeholder:"Title name, for example Head of Operations","data-k":"tnew"});nm.value=d.name;nm.addEventListener("input",function(){d.name=nm.value;});
+  box.append(h("details",{class:"more",open:S.panel["title-new"]?true:null,ontoggle:function(e){S.panel["title-new"]=e.currentTarget.open;}},h("summary",{text:"Make a different title"}),
+    nm,h("p",{class:"sub",text:"Jobs to put under it (tap to leave one out)."}),
     yes.length?h("div",{class:"chips"},yes.map(function(i){var on=d.jobs.indexOf(i)>-1;return h("button",{type:"button",class:"chip addchip"+(on?" good":""),"aria-pressed":String(on),text:FN[i].name,onclick:function(){var k=d.jobs.indexOf(i);if(k>-1)d.jobs.splice(k,1);else d.jobs.push(i);renderTitles();}});})):null,
     h("button",{type:"button",class:"btn go small",text:"Create and give",onclick:function(){
       var nmv=clean(d.name);if(!nmv){say($("t-titleStatus"),"Name the title first.","warn");return;}
       if(!S.db){say($("t-titleStatus"),"Titles need the live page.","warn");return;}
-      var tt={id:newId("ti"),name:nmv.slice(0,80),desc:"",jobs:d.jobs.slice(0,30),holders:[p.id]};S.titles.push(tt);S.titleDraft=null;saveTitle(tt,true);renderTitles();}}));
-  top.append(box);
+      var tt={id:newId("ti"),name:nmv.slice(0,80),desc:"",jobs:d.jobs.slice(0,30),holders:[p.id]};S.titles.push(tt);S.titleDraft=null;saveTitle(tt,true);renderTitles();}})));
+  return box;
+}
+function titlesByPerson(top){
+  var n=S.people.length,got=S.people.filter(function(x){return titlesOf(x.id).length;}).length;
+  if(!n){top.append(h("p",{class:"sub",text:"Nobody has finished a profile yet. People appear here as they do."}));return;}
+  top.append(h("p",{class:"tcount",text:got+" of "+n+" "+(n===1?"person has":"people have")+" a title. Tap a person to start."}));
+  var list=h("div",{class:"tlist"});
+  S.people.slice().sort(function(a,b){var an=titlesOf(a.id).length?1:0,bn=titlesOf(b.id).length?1:0;return an-bn||pname(a).localeCompare(pname(b));}).forEach(function(p){
+    var on=S.titlePerson===p.id,have=titlesOf(p.id),ph=cleanPhoto(p.photo);
+    var row=h("button",{type:"button",class:"trow","aria-expanded":String(on),onclick:function(){S.titlePerson=on?"":p.id;S.titleDraft=null;renderTitles();}},
+      ph?h("img",{class:"avatar sm",src:ph,alt:""}):h("div",{class:"avatar sm empty","aria-hidden":"true",text:initials(pname(p))||"?"}),
+      h("span",{class:"tw"},h("b",{text:pname(p)}),h("span",{class:have.length?"sub":"sub tnone",text:have.length?have.map(function(x){return x.name;}).join(", "):"No title yet"})),
+      h("span",{class:"chev","aria-hidden":"true",text:on?"−":"+"}));
+    var card=h("section",{class:"card titleperson"},row);
+    if(on)card.append(titlePanel(p));
+    list.append(card);
+  });
+  top.append(list);
 }
 function drawTitles(top){
   var root=h("div",{class:"titlelist"});
