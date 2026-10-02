@@ -553,6 +553,26 @@ body.has-nav{padding-bottom:104px}
 .evwrap.evtile{padding:14px;gap:0}
 .tlmini{margin-top:12px;border-top:1.5px solid var(--soft);padding-top:10px}
 .tlmini .btn.link{margin-top:2px}
+.ovrow.noopen{cursor:default}
+.pgantt{display:grid;gap:6px}
+.pgaxis{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:700}
+.pgrow{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:center}
+.pgl{font-size:12px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pgtrack{position:relative;height:18px;background:var(--bg-2);border-radius:6px;overflow:hidden}
+.pgbar{position:absolute;top:3px;bottom:3px;border-radius:5px;background:var(--ink)}
+.pgbar[data-s="done"]{background:var(--green)}.pgbar[data-s="late"]{background:var(--red)}
+.pgtoday,.pgtarget{position:absolute;top:0;bottom:0;width:2px;background:var(--gold);z-index:1}
+.pgtarget{background:var(--ink);width:3px}
+.psteps{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.pstep{border-top:1.5px solid var(--soft);padding:8px 0}
+.pstep:first-child{border-top:0}
+.pstop{display:flex;align-items:flex-start;gap:12px}
+.pstick{appearance:none;flex:none;width:32px;height:32px;border-radius:50%;border:2px solid var(--edge);background:var(--card);display:grid;place-items:center;cursor:pointer;color:var(--on-green)}
+.pstick[aria-pressed="true"]{background:var(--green);border-color:var(--green)}
+.pstt{appearance:none;border:0;background:none;padding:0;text-align:left;display:grid;gap:2px;flex:1;min-width:0;cursor:pointer;color:inherit;font:inherit}
+.pstep[data-s="done"] .pstt b{text-decoration:line-through;color:var(--muted)}
+.psedit{display:grid;gap:10px;margin:10px 0 4px 44px}
+.pcheck{display:flex;gap:8px;align-items:center;font-size:14px}
 .overall{margin-top:18px}
 .ovlist{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .ovitem{border-top:1.5px solid var(--soft)}
@@ -3053,6 +3073,7 @@ function msgBox(title,list){
     return h("div",{class:"msgrow"},h("pre",{class:"mono",text:m.text}),h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Copy"+(m.name?" for "+m.name:""),onclick:function(){copyText(m.text,st,"Copied.");}}),st));}));
 }
 function drawEvents(root){
+  if(S.projOpen&&adminView()){drawProject(root);return;}
   var ev=S.evOpen?evById(S.evOpen):null;
   if(!ev){drawEventList(root);return;}
   var ts=ev.tasks||(ev.tasks=[]);ev.links=ev.links||{};ev.guests=ev.guests||{};ev.debrief=ev.debrief||{};ev.cps=ev.cps||[];
@@ -3179,18 +3200,319 @@ function drawEventList(root){
   function keyNow(){return tSel.value&&needsFor(tSel.value)?tSel.value+"_"+forSel.value:tSel.value;}
   function syncFor(){forSel.hidden=!needsFor(tSel.value);var k=keyNow();kindCap.textContent=k&&TEMPLATES[k]?"Selected: "+TEMPLATES[k].name:"Selected: Blank event";}
   tSel.addEventListener("change",syncFor);forSel.addEventListener("change",syncFor);syncFor();
-  root.append(h("details",{class:"card addev",open:S.panel.newev?true:null,ontoggle:function(e){S.panel.newev=e.currentTarget.open;}},h("summary",{text:"+ Add an event"}),
-    h("p",{class:"sub",text:"Pick a template and a date. Every task, checkpoint and deadline fills in. Then suggest people and send the offers."}),
+  var kind=S.panel.addkind==="project"?"project":"event";
+  var kseg=h("div",{class:"seg3 two"},[["event","Event"],["project","Project"]].map(function(o){return h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(kind===o[0]),text:o[1],onclick:function(){S.panel.addkind=o[0];renderEvents();}});}));
+  var pName=h("input",{type:"text","aria-label":"Project name",placeholder:"Project name, for example Set up the business","data-k":"pj-name"});
+  var pAbout=h("textarea",{rows:"3","aria-label":"What the project is about",placeholder:"What it is about, in a few lines","data-k":"pj-about"});
+  var pStart=h("input",{type:"date","aria-label":"Start date","data-k":"pj-start",value:pIso(pToday())}),pTarget=h("input",{type:"date","aria-label":"Target date","data-k":"pj-target"});
+  var prForm=[h("p",{class:"sub",text:"A project is bigger than an event and has no game attached. Add steps with estimated days, files and links. Only admins and people you give a step see inside it. Everyone else sees how far along it is."}),
+    pName,pAbout,h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Start"}),pStart),h("div",{class:"field"},h("label",{text:"Target date"}),pTarget)),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Create project",onclick:function(){
+      if(!S.db){say($("evStatus"),"Projects need the live page.","warn");return;}
+      var nmv=clean(pName.value);if(!nmv){pName.focus();return;}
+      var pr={id:newId("pr"),name:nmv,about:clean(pAbout.value),start:pStart.value||pIso(pToday()),target:pTarget.value||"",steps:[],files:[],created:nowIso()};
+      S.projects.push(pr);S.projOpen=pr.id;saveProject(pr,true);renderEvents();window.scrollTo(0,0);}}))];
+  var evForm=[h("p",{class:"sub",text:"Pick a template and a date. Every task, checkpoint and deadline fills in. Then suggest people and send the offers."}),
     nameIn,h("div",{class:"two-col"},tSel,dateIn),forSel,kindCap,
     h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Create event",onclick:function(){
       if(!S.db){say($("evStatus"),"Events need the live page.","warn");return;}
       var tkey=tSel.value&&needsFor(tSel.value)?tSel.value+"_"+forSel.value:tSel.value;
       var e=tkey?fromTemplate(tkey,clean(nameIn.value),dateIn.value):{id:newId("e"),name:clean(nameIn.value)||"New event",type:"",date:dateIn.value,start:"18:30",place:"",lead:"",links:{},guests:{},debrief:{},cps:[],tasks:[],created:nowIso()};
-      e.published=false;if(S.people&&S.people.length)suggestCore(e);S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
+      e.published=false;if(S.people&&S.people.length)suggestCore(e);S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}}))];
+  root.append(h("details",{class:"card addev",open:S.panel.newev?true:null,ontoggle:function(e){S.panel.newev=e.currentTarget.open;}},h("summary",{text:"+ Add an event or project"}),
+    kseg,kind==="project"?prForm:evForm,
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
   planCards(root,renderEvents,false);
+  projectsBlock(root);
   overallPlan(root);
 }
+/* ---------- Projects: bigger than an event, no game attached. Private to admins and the people given a step. ----------
+   projects/<id>          the whole project (admin only): about, steps with estimated days, files and links
+   projects/<id>/files/*  PDFs (admin only)
+   projectpub/<id>        progress only (everyone): name, target, percent, pace
+   projectmine/<uid>      what one person may see: their own steps and the project's about and links (admin writes, that person reads)
+   replies/p_<id>__<step>__<uid>   a person marking their own step done */
+S.projects=[];S.projPub={};S.myProj={};S.pmineAll={};S.projOpen="";S.projSel="";
+var projTimers={},projDirty={};
+function projById(id){return S.projects.filter(function(p){return p.id===id;})[0]||null;}
+function pDay(s){var d=s?new Date(s+"T00:00:00"):null;return d&&!isNaN(d)?d:null;}
+function pAdd(d,n){var x=new Date(d.getTime());x.setDate(x.getDate()+Math.round(n));return x;}
+function pIso(d){var m=d.getMonth()+1,dd=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(dd<10?"0":"")+dd;}
+function pShort(d){return d.toLocaleDateString(undefined,{day:"numeric",month:"short"});}
+function pToday(){var t=new Date();t.setHours(0,0,0,0);return t;}
+function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,60).map(function(s){
+  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),note:clean(s.note).slice(0,300)};});}
+function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),
+  files:(pr.files||[]).slice(0,30).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
+  created:pr.created||nowIso(),updated:nowIso()};}
+function pjKey(pr){var c=cleanProject(pr);delete c.updated;delete c.created;return JSON.stringify(c);}
+function stepDone(pr,s){
+  if(s.done===true)return true;if(s.done===false)return false;
+  if(!s.owner)return false;var r=latestReply("p_"+pr.id,s.id,s.owner);return !!(r&&r.done===true);
+}
+// Estimated schedule: steps run one after another, unless a step is set to start with the one before it.
+function projSchedule(pr){
+  var start=pDay(pr.start)||pToday(),cursor=start,prevStart=start,rows=[],today=pToday();
+  (pr.steps||[]).forEach(function(s,i){
+    var st=(s.par&&i>0)?prevStart:cursor,en=pAdd(st,Math.max(0,s.days||0)),dn=stepDone(pr,s);
+    rows.push({s:s,start:st,end:en,done:dn,late:!dn&&en<today});
+    prevStart=st;if(en>cursor)cursor=en;
+  });
+  return {start:start,finish:cursor,rows:rows};
+}
+function projStats(pr){
+  var sc=projSchedule(pr),total=0,done=0,late=0,left=0;
+  sc.rows.forEach(function(r){var w=Math.max(1,r.s.days||0);total+=w;if(r.done)done+=w;else left++;if(r.late)late++;});
+  var tg=pDay(pr.target),over=tg?Math.round((sc.finish-tg)/864e5):0,pct=total?Math.round(done/total*100):0;
+  var n=sc.rows.length,pace=!n?"Not planned yet":(left===0?"Complete":late?"Behind":(tg&&over>0?"At risk":"On track"));
+  return {sc:sc,pct:pct,late:late,left:left,steps:n,over:over,pace:pace,finish:sc.finish};
+}
+function pubOf(pr){var st=projStats(pr);return {name:clean(pr.name).slice(0,80),target:pr.target||"",pct:st.pct,steps:st.steps,left:st.left,late:st.late,pace:st.pace};}
+function mineOf(pr,uid){
+  var sc=projSchedule(pr),mySteps=sc.rows.filter(function(r){return r.s.owner===uid;});if(!mySteps.length)return null;
+  return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),target:pr.target||"",
+    links:(pr.files||[]).filter(function(f){return !f.fid&&safeUrl(f.url);}).slice(0,20).map(function(f){return {label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};}),
+    steps:mySteps.map(function(r){return {id:r.s.id,title:r.s.title,days:r.s.days||0,end:pIso(r.end),done:r.done,note:r.s.note||""};})};
+}
+// Admin only: keep the progress-only docs and each person's own docs in step with the full project.
+var projSyncT=null;
+function syncProjects(){
+  if(!S.db||!(S.realAdmin||S.isAdmin)||S.canWrite===false)return;
+  clearTimeout(projSyncT);projSyncT=setTimeout(function(){
+    var ids={};
+    S.projects.forEach(function(pr){ids[pr.id]=1;var nu=pubOf(pr),old=S.projPub[pr.id];
+      if(!old||JSON.stringify([old.name,old.target,old.pct,old.steps,old.left,old.late,old.pace])!==JSON.stringify([nu.name,nu.target,nu.pct,nu.steps,nu.left,nu.late,nu.pace])){
+        nu.updated=nowIso();S.projPub[pr.id]=nu;S.db.doc("projectpub/"+pr.id).set(nu).catch(function(){});}});
+    Object.keys(S.projPub).forEach(function(id){if(!ids[id]&&!projDirty[id]){delete S.projPub[id];S.db.doc("projectpub/"+id).delete().catch(function(){});}});
+    var want={};S.projects.forEach(function(pr){(pr.steps||[]).forEach(function(s){if(s.owner&&!want[s.owner])want[s.owner]={};});});
+    Object.keys(want).forEach(function(uid){S.projects.forEach(function(pr){var m=mineOf(pr,uid);if(m)want[uid][pr.id]=m;});});
+    Object.keys(S.pmineAll).forEach(function(uid){if(!want[uid])want[uid]={};});
+    Object.keys(want).forEach(function(uid){var old=(S.pmineAll[uid]&&S.pmineAll[uid].items)||{};
+      if(JSON.stringify(old)!==JSON.stringify(want[uid])){S.pmineAll[uid]={items:want[uid]};S.db.doc("projectmine/"+uid).set({items:want[uid],updated:nowIso()}).catch(function(){});}});
+  },400);
+}
+function saveProject(pr,now){
+  clearTimeout(projTimers[pr.id]);projDirty[pr.id]=(projDirty[pr.id]||0)+1;
+  function go(){
+    pr=projById(pr.id)||pr;if(!S.db){projDirty[pr.id]=0;return;}
+    var id=pr.id,mark=projDirty[id];
+    S.db.doc("projects/"+id).set(cleanProject(pr)).then(function(){if(projDirty[id]===mark)projDirty[id]=0;syncProjects();},function(){projDirty[id]=0;say($("projStatus"),"Could not save the project.","warn");});
+  }
+  if(now)go();else projTimers[pr.id]=setTimeout(go,700);
+}
+function rerenderProj(){if(S.view==="events")renderEvents();else if(S.view==="plan")renderPlan();}
+
+/* Progress tiles on the Events tab: admins see their projects, everyone else sees progress only. */
+function projectsBlock(root){
+  var admin=adminView(),list=[];
+  if(admin)S.projects.forEach(function(pr){var st=projStats(pr);list.push({id:pr.id,name:pr.name,target:pr.target,pct:st.pct,pace:st.pace,left:st.left,steps:st.steps,mine:false});});
+  else Object.keys(S.projPub).forEach(function(id){var u=S.projPub[id];list.push({id:id,name:u.name,target:u.target,pct:u.pct,pace:u.pace,left:u.left,steps:u.steps,mine:!!(S.myProj&&S.myProj[id])});});
+  if(!list.length)return;
+  list.sort(function(a,b){return String(a.target||"~").localeCompare(String(b.target||"~"));});
+  var box=h("section",{class:"card hsec projects"},h("h3",{class:"q",text:"Projects"}),h("p",{class:"sub",text:admin?"Bigger than an event. Tap one to open its plan, files and steps.":"How far each project has got. You see more of the ones you have a step in."}));
+  list.forEach(function(p){
+    var tg=pDay(p.target),days=tg?Math.round((tg-pToday())/864e5):null,tap=admin||p.mine;
+    var inner=[h("span",{class:"ovt"},h("b",{text:p.name||"Project"}),h("span",{class:"sub",text:(tg?"Target "+pShort(tg)+(days!=null?(days>=0?" · "+days+" days left":" · "+(-days)+" days past"):""):"No target date")+" · "+p.pace+(p.left?" · "+p.left+" step"+(p.left>1?"s":"")+" left":"")+(!admin&&p.mine?" · you have a step":"")})),
+      tap?h("span",{class:"chev","aria-hidden":"true",text:"›"}):null,
+      h("span",{class:"jbar sm","aria-label":p.pct+"% done"},h("i",{style:"width:"+p.pct+"%"}))];
+    box.append(tap?h("button",{type:"button",class:"ovrow",onclick:function(){if(admin)S.projOpen=p.id;else S.projSel=p.id;rerenderProj();window.scrollTo(0,0);}},inner):h("div",{class:"ovrow noopen"},inner));
+  });
+  root.append(box);
+}
+
+/* Files people add to a project: each person writes only their own (projectup/<uid>), admins read all. */
+S.pup={};
+function pupItems(uid,pid){var d=S.pup[uid];return ((d&&d.items)||[]).filter(function(x){return !pid||x.pid===pid;});}
+function savePup(uid,items,cb){
+  if(!S.db)return;var doc={items:items.slice(0,40).map(function(f){var o={pid:clean(f.pid).slice(0,40),label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400),at:f.at||nowIso()};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),updated:nowIso()};
+  S.pup[uid]={items:doc.items};S.db.doc("projectup/"+uid).set(doc).then(function(){if(cb)cb();},function(){});
+}
+// A person adds a PDF or link to a project they have a step in.
+function addToProjectCard(pid){
+  var st=h("p",{class:"status",role:"status","aria-live":"polite"}),lb=h("input",{type:"text","aria-label":"File or link name",placeholder:"Name, e.g. Signed form","data-k":"pup-l"}),ur=h("input",{type:"text","aria-label":"Link address",placeholder:"Link (optional), e.g. drive.google.com/...","data-k":"pup-u"});
+  var fi=h("input",{type:"file",accept:"application/pdf,.pdf",id:"pupIn",class:"sr"});
+  fi.addEventListener("change",function(){var file=fi.files&&fi.files[0];if(!file)return;say(st,"Uploading…");
+    readPdf(file,function(err,b64,size){if(err){say(st,pdfProblem(err),"warn");return;}var fid="u"+Date.now().toString(36);
+      putChunks("projectup/"+S.uid+"/files",fid,b64,function(e2,n){if(e2){say(st,pdfProblem(e2),"warn");return;}
+        var items=pupItems(S.uid).concat([{pid:pid,label:clean(lb.value)||file.name.replace(/\.pdf$/i,""),url:"",fid:fid,name:file.name,size:size,n:n,at:nowIso()}]);
+        savePup(S.uid,items,function(){toast("File added.");rerenderProj();});});});});
+  var mine=pupItems(S.uid,pid);
+  return h("section",{class:"card hsec"},h("h3",{class:"q",text:"Files you added"}),
+    mine.length?mine.map(function(f){var u=safeUrl(f.url);return h("div",{class:"cvline"},h("span",{class:"cv-t"},f.fid?h("b",{text:f.label||f.name}):(u?h("a",{href:u,target:"_blank",rel:"noopener",text:f.label||f.url}):h("b",{text:f.label||f.url})),f.fid?h("span",{class:"sub",text:"PDF · "+sizeText(f.size)}):null),
+      h("span",{class:"cvbtns"},f.fid?h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf("projectup/"+S.uid+"/files",f.fid,f.n,f.name||f.label||"file.pdf",st);}}):null,
+        h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){if(f.fid)dropChunks("projectup/"+S.uid+"/files",f.fid,f.n);savePup(S.uid,pupItems(S.uid).filter(function(x){return x!==f&&!(x.fid&&x.fid===f.fid);}),rerenderProj);}})));}):h("p",{class:"sub",text:"Add a PDF or a link for this project. Only you and the admins can see what you add."}),
+    st,h("div",{class:"two-col"},h("div",{class:"field"},lb),h("div",{class:"field"},ur)),fi,
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Add link",onclick:function(){if(!safeUrl(ur.value)){say(st,"Add a full web link.","warn");return;}
+      savePup(S.uid,pupItems(S.uid).concat([{pid:pid,label:clean(lb.value)||clean(ur.value),url:clean(ur.value),at:nowIso()}]),rerenderProj);}}),
+      h("label",{for:"pupIn",class:"btn small"},"Upload a PDF (up to 1 MB)")));
+}
+// Admin: what the team has added to this project.
+function teamFilesCard(pr){
+  var rows=[];Object.keys(S.pup).forEach(function(uid){pupItems(uid,pr.id).forEach(function(f){rows.push({uid:uid,f:f});});});
+  if(!rows.length)return null;var st=h("p",{class:"status",role:"status","aria-live":"polite"});
+  return h("section",{class:"card hsec"},h("h3",{class:"q",text:"Added by the team"}),
+    rows.map(function(x){var f=x.f,u=safeUrl(f.url);return h("div",{class:"cvline"},h("span",{class:"cv-t"},f.fid?h("b",{text:f.label||f.name}):(u?h("a",{href:u,target:"_blank",rel:"noopener",text:f.label||f.url}):h("b",{text:f.label||f.url})),
+      h("span",{class:"sub",text:nameOf(x.uid)+(f.fid?" · PDF · "+sizeText(f.size):" · link")})),
+      f.fid?h("span",{class:"cvbtns"},h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf("projectup/"+x.uid+"/files",f.fid,f.n,f.name||f.label||"file.pdf",st);}})):null);}),st);
+}
+
+/* Export a whole project as one zip: a summary, every PDF, and a list of links. */
+var CRC_T=null;
+function crc32(b){if(!CRC_T){CRC_T=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);CRC_T[n]=c>>>0;}}var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC_T[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function zipBuild(files){
+  var enc=new TextEncoder(),parts=[],cen=[],off=0,d=new Date(),dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1))&0xFFFF,dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xFFFF;
+  files.forEach(function(f){
+    var nm=enc.encode(f.name),data=f.data,crc=crc32(data),lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);lh.setUint16(10,dt,true);lh.setUint16(12,dd,true);lh.setUint32(14,crc,true);lh.setUint32(18,data.length,true);lh.setUint32(22,data.length,true);lh.setUint16(26,nm.length,true);lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),nm,data);
+    var ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(10,0,true);ch.setUint16(12,dt,true);ch.setUint16(14,dd,true);ch.setUint32(16,crc,true);ch.setUint32(20,data.length,true);ch.setUint32(24,data.length,true);ch.setUint16(28,nm.length,true);ch.setUint32(42,off,true);
+    cen.push(new Uint8Array(ch.buffer),nm);off+=30+nm.length+data.length;
+  });
+  var csz=0;cen.forEach(function(x){csz+=x.length;});var end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);end.setUint32(12,csz,true);end.setUint32(16,off,true);
+  var all=parts.concat(cen,[new Uint8Array(end.buffer)]),tot=0;all.forEach(function(x){tot+=x.length;});var out=new Uint8Array(tot),p=0;all.forEach(function(x){out.set(x,p);p+=x.length;});return out;
+}
+function fetchPdfBytes(base,fid,n){
+  var jobs=[];for(var i=0;i<n;i++)jobs.push(S.db.doc(base+"/"+fid+"_"+i).get());
+  return Promise.all(jobs).then(function(snaps){var b64="";for(var k=0;k<snaps.length;k++){if(!snaps[k].exists)return null;b64+=snaps[k].data().data||"";}
+    var bin=atob(b64),bytes=new Uint8Array(bin.length);for(var j=0;j<bin.length;j++)bytes[j]=bin.charCodeAt(j);return bytes;});
+}
+function projectSummary(pr){
+  var st=projStats(pr),L=["# "+(pr.name||"Project"),""];
+  if(pr.about)L.push(pr.about,"");
+  L.push("Start: "+(pr.start||"not set")+"  ","Target: "+(pr.target||"not set")+"  ","Estimated finish: "+pIso(st.finish)+"  ","Progress: "+st.pct+"% ("+st.pace+")","","## Steps","","| # | Step | Days | Runs | Who | Ends | Status | Note |","|---|------|------|------|-----|------|--------|------|");
+  st.sc.rows.forEach(function(r,i){L.push("| "+(i+1)+" | "+(r.s.title||"")+" | "+(r.s.days||0)+" | "+(r.s.par?"with previous":"after previous")+" | "+(r.s.owner?nameOf(r.s.owner):"nobody")+" | "+pIso(r.end)+" | "+(r.done?"done":r.late?"behind":"to do")+" | "+(r.s.note||"")+" |");});
+  L.push("","## Files and links","");
+  (pr.files||[]).forEach(function(f){L.push("- "+(f.label||f.name||f.url)+(f.fid?" (PDF: "+f.name+")":": "+f.url));});
+  Object.keys(S.pup).forEach(function(uid){pupItems(uid,pr.id).forEach(function(f){L.push("- "+(f.label||f.name||f.url)+(f.fid?" (PDF: "+f.name+")":": "+f.url)+" (added by "+nameOf(uid)+")");});});
+  return L.join("\n")+"\n";
+}
+function exportProject(pr,stEl){
+  if(!S.db){say(stEl,"Export needs the live page.","warn");return;}
+  say(stEl,"Gathering the files…");
+  var enc=new TextEncoder(),files=[{name:"project-summary.md",data:enc.encode(projectSummary(pr))}],jobs=[],used={};
+  function uniq(n){var base=n,k=1;while(used[n]){n=base.replace(/(\.pdf)?$/i,"-"+(++k)+"$1");}used[n]=1;return n;}
+  function pdfName(f){var n=(f.name||f.label||"file").replace(/[\\\/:*?"<>|]+/g,"-");return /\.pdf$/i.test(n)?n:n+".pdf";}
+  (pr.files||[]).forEach(function(f){if(f.fid)jobs.push(fetchPdfBytes("projects/"+pr.id+"/files",f.fid,f.n).then(function(b){if(b)files.push({name:"files/"+uniq(pdfName(f)),data:b});}));});
+  Object.keys(S.pup).forEach(function(uid){pupItems(uid,pr.id).forEach(function(f){if(f.fid)jobs.push(fetchPdfBytes("projectup/"+uid+"/files",f.fid,f.n).then(function(b){if(b)files.push({name:"from-the-team/"+uniq(nameOf(uid).replace(/[^\w ]+/g,"")+" - "+pdfName(f)),data:b});}));});});
+  Promise.all(jobs).then(function(){
+    var zip=zipBuild(files),fn=((pr.name||"project").replace(/[^\w ]+/g,"").trim().replace(/\s+/g,"-")||"project")+".zip";
+    if(S.dl){S.dl.save({filename:fn,data:zip}).then(function(){say(stEl,"Saved "+fn+" with "+files.length+" file"+(files.length>1?"s":"")+".","ok");},function(e){say(stEl,e&&e.code==="declined"?"Save cancelled.":"Could not save the file here.","warn");});return;}
+    try{var bl=new Blob([zip],{type:"application/zip"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=fn;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(a.href);},500);say(stEl,"Downloading "+fn+".","ok");}catch(e){say(stEl,"Could not save the file here.","warn");}
+  },function(){say(stEl,"Could not fetch every file.","warn");});
+}
+
+/* The project page (admins) */
+function drawProject(root){
+  var pr=projById(S.projOpen);if(!pr){S.projOpen="";drawEventList(root);return;}
+  var st=projStats(pr),sc=st.sc,tg=pDay(pr.target);
+  function save(now){saveProject(pr,now);}
+  root.append(h("button",{type:"button",class:"btn small",text:"← All events and projects",onclick:function(){S.projOpen="";renderEvents();window.scrollTo(0,0);}}),
+    h("h1",{class:"h-sum",text:pr.name||"Project"}));
+  // header: what it is, where it stands
+  var fin=sc.finish,fitText=!st.steps?"Add steps with estimated days and the page works out the finish.":tg?(st.over>0?"Estimated finish "+pShort(fin)+": "+st.over+" day"+(st.over>1?"s":"")+" after the target. Shorten a step, run two together, or move the target.":"Estimated finish "+pShort(fin)+": "+(-st.over)+" day"+(st.over<-1?"s":"")+" before the target."):"Estimated finish "+pShort(fin)+". Set a target date to compare.";
+  root.append(h("section",{class:"card hsec"},
+    pr.about?h("p",{class:"about",style:"margin:0",text:pr.about}):h("p",{class:"sub",style:"margin:0",text:"Say what this project is about, under Edit project."}),
+    h("p",{class:"sub",style:"margin:0",text:(tg?"Target "+fmtDate(pr.target)+" · "+daysTo(pr.target):"No target date")+(pDay(pr.start)?" · started "+pShort(pDay(pr.start)):"")}),
+    h("div",{class:"jbar","aria-label":st.pct+"% done"},h("i",{style:"width:"+st.pct+"%"})),
+    h("p",{style:"margin:0"},h("b",{text:st.pct+"% done · "+st.pace}),h("span",{class:"sub",text:st.steps?" · "+st.left+" of "+st.steps+" steps left":""})),
+    h("p",{class:"sub",style:"margin:0",text:fitText})));
+  // timeline
+  if(st.steps){
+    var t0=sc.start,t1=tg&&tg>fin?tg:fin,span=Math.max(1,Math.round((t1-t0)/864e5)),today=pToday();
+    function pos(d){return Math.max(0,Math.min(100,Math.round((d-t0)/864e5/span*1000)/10));}
+    var gantt=h("div",{class:"pgantt","aria-label":"Project timeline"},
+      h("div",{class:"pgaxis"},h("span",{text:pShort(t0)}),h("span",{text:pShort(t1)})));
+    sc.rows.forEach(function(r){
+      gantt.append(h("div",{class:"pgrow"},h("span",{class:"pgl",text:r.s.title||"Step"}),
+        h("span",{class:"pgtrack"},
+          today>=t0&&today<=t1?h("i",{class:"pgtoday",style:"left:"+pos(today)+"%",title:"Today"}):null,
+          tg&&tg>=t0&&tg<=t1?h("i",{class:"pgtarget",style:"left:"+pos(tg)+"%",title:"Target"}):null,
+          h("b",{class:"pgbar","data-s":r.done?"done":r.late?"late":"",style:"left:"+pos(r.start)+"%;width:"+Math.max(1.5,pos(r.end)-pos(r.start))+"%"}))));
+    });
+    root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Timeline"}),gantt,h("p",{class:"sub",style:"margin:0",text:"Bars are the estimated days. The tall line is today, the dark line is the target date."})));
+  }
+  // steps
+  var list=h("ol",{class:"psteps"});
+  var people=S.people.slice().sort(function(a,b){return pname(a).localeCompare(pname(b));});
+  sc.rows.forEach(function(r,i){var s=r.s,open=S.panel["pstep:"+s.id];
+    var top=h("div",{class:"pstop"},
+      h("button",{type:"button",class:"pstick","aria-pressed":String(r.done),"aria-label":(r.done?"Mark not done: ":"Mark done: ")+s.title,onclick:function(){s.done=r.done?false:true;s.doneAt=s.done?nowIso():"";save(true);rerenderProj();}},r.done?ico("check",16):null),
+      h("button",{type:"button",class:"pstt",onclick:function(){S.panel["pstep:"+s.id]=!open;renderEvents();}},
+        h("b",{text:(i+1)+". "+(s.title||"Untitled step")}),
+        h("span",{class:"sub",text:(s.days?s.days+" day"+(s.days>1?"s":""):"No estimate")+" · "+(s.par?"starts with the step before · ":"")+"ends "+pShort(r.end)+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":"")})));
+    var li=h("li",{class:"pstep","data-s":r.done?"done":r.late?"late":""},top);
+    if(open){
+      var ti=h("input",{type:"text","aria-label":"Step","data-k":"pst-"+s.id,value:s.title});ti.addEventListener("input",function(){s.title=ti.value;save();});
+      var dy=h("input",{type:"number",min:"0",max:"365","aria-label":"Estimated days","data-k":"pdy-"+s.id,value:String(s.days||0)});dy.addEventListener("change",function(){s.days=Math.max(0,Math.round(Number(dy.value)||0));save(true);rerenderProj();});
+      var ow=h("select",{"aria-label":"Who does it"},h("option",{value:"",text:"Nobody yet"}),people.map(function(p){return h("option",{value:p.id,text:pname(p)});}));ow.value=s.owner||"";ow.addEventListener("change",function(){s.owner=ow.value;save(true);rerenderProj();});
+      var par=h("input",{type:"checkbox","aria-label":"Starts with the step before"});par.checked=!!s.par;par.addEventListener("change",function(){s.par=par.checked;save(true);rerenderProj();});
+      var nt=h("input",{type:"text","aria-label":"Note","data-k":"pnt-"+s.id,placeholder:"Note: what done looks like, who to ask",value:s.note||""});nt.addEventListener("input",function(){s.note=nt.value;save();});
+      li.append(h("div",{class:"psedit"},h("div",{class:"field"},h("label",{text:"Step"}),ti),
+        h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Estimated days"}),dy),h("div",{class:"field"},h("label",{text:"Who does it"}),ow)),
+        i>0?h("label",{class:"pcheck"},par," Starts with the step before (runs alongside it)"):null,
+        h("div",{class:"field"},h("label",{text:"Note"}),nt),
+        h("div",{class:"row"},
+          i>0?h("button",{type:"button",class:"btn small",text:"Move up",onclick:function(){var a=pr.steps;a.splice(i-1,0,a.splice(i,1)[0]);save(true);renderEvents();}}):null,
+          i<sc.rows.length-1?h("button",{type:"button",class:"btn small",text:"Move down",onclick:function(){var a=pr.steps;a.splice(i+1,0,a.splice(i,1)[0]);save(true);renderEvents();}}):null,
+          h("button",{type:"button",class:"btn link",text:"Remove step",onclick:function(){pr.steps=pr.steps.filter(function(x){return x!==s;});save(true);renderEvents();}}))));
+    }
+    list.append(li);
+  });
+  var dr=S.pdraft||(S.pdraft={t:"",d:""});
+  var nT=h("input",{type:"text","aria-label":"New step","data-k":"pnew",placeholder:"Next step, for example Register the business name"}),nD=h("input",{type:"number",min:"0",max:"365","aria-label":"Estimated days","data-k":"pnewd",placeholder:"Days"});
+  nT.value=dr.t;nD.value=dr.d;nT.addEventListener("input",function(){dr.t=nT.value;});nD.addEventListener("input",function(){dr.d=nD.value;});
+  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Steps"}),
+    st.steps?list:h("p",{class:"sub",text:"No steps yet. Add the first one below. Put an estimated number of days on each so the timeline and the finish date work."}),
+    h("div",{class:"two-col"},h("div",{class:"field"},nT),h("div",{class:"field"},nD)),
+    h("button",{type:"button",class:"btn go small",text:"Add step",onclick:function(){var t=clean(nT.value);if(!t){nT.focus();return;}
+      pr.steps.push({id:newId("s"),title:t,days:Math.max(0,Math.round(Number(nD.value)||0)),par:false,owner:"",done:null,doneAt:"",note:""});S.pdraft={t:"",d:""};save(true);renderEvents();}})));
+  // files and links
+  root.append(filesCard({id:pr.id,base:"projects/"+pr.id+"/files",files:(pr.files=pr.files||[]),save:function(){save(true);},rerender:renderEvents,inputId:"prPdfIn",hint:"Business plan, registration forms, contracts, and the link to your private Drive folder. Only admins see PDFs here. Anyone you give a step sees the links."},true));
+  var tf=teamFilesCard(pr);if(tf)root.append(tf);
+  var exSt=h("p",{class:"status",role:"status","aria-live":"polite"});
+  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Export"}),h("p",{class:"sub",style:"margin:0",text:"One zip with a summary of the project, every PDF (yours and the team's) and the list of links."}),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Export everything",onclick:function(){exportProject(pr,exSt);}})),exSt));
+  // edit and delete
+  var nm=h("input",{type:"text","aria-label":"Project name","data-k":"pn-name",value:pr.name||""});nm.addEventListener("input",function(){pr.name=nm.value;save();});
+  var ab=h("textarea",{rows:"4","aria-label":"What the project is about","data-k":"pn-about"});ab.value=pr.about||"";ab.addEventListener("input",function(){pr.about=ab.value;save();});
+  var sd=h("input",{type:"date","aria-label":"Start date","data-k":"pn-start",value:pr.start||""});sd.addEventListener("change",function(){pr.start=sd.value;save(true);rerenderProj();});
+  var td=h("input",{type:"date","aria-label":"Target date","data-k":"pn-target",value:pr.target||""});td.addEventListener("change",function(){pr.target=td.value;save(true);rerenderProj();});
+  root.append(h("details",{class:"more",open:S.panel["pr-edit"]?true:null,ontoggle:function(e){S.panel["pr-edit"]=e.currentTarget.open;}},h("summary",{text:"Edit project: name, about, dates"}),
+    h("div",{class:"field"},h("label",{text:"Project name"}),nm),h("div",{class:"field"},h("label",{text:"What it is about"}),ab),
+    h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Start date"}),sd),h("div",{class:"field"},h("label",{text:"Target date"}),td)),
+    h("button",{type:"button",class:"btn link",text:"Delete this project",onclick:function(e){var b=e.currentTarget;if(b.getAttribute("data-armed")!=="1"){b.setAttribute("data-armed","1");b.textContent="Tap again to delete the project and its files";return;}
+      (pr.files||[]).forEach(function(f){if(f.fid)dropChunks("projects/"+pr.id+"/files",f.fid,f.n);});
+      S.db.doc("projects/"+pr.id).delete().then(function(){S.projects=S.projects.filter(function(x){return x.id!==pr.id;});S.projOpen="";syncProjects();renderEvents();},function(){say($("projStatus"),"Could not delete.","warn");});}}),
+    h("p",{class:"status",id:"projStatus",role:"status","aria-live":"polite"})));
+}
+
+/* A person's own view of a project they have a step in */
+function drawMyProject(root){
+  var it=S.myProj&&S.myProj[S.projSel];if(!it){S.projSel="";return false;}
+  var u=S.projPub[S.projSel]||{pct:0,pace:""},tg=pDay(it.target);
+  root.append(h("button",{type:"button",class:"btn small",text:"← Events",onclick:function(){S.projSel="";renderPlan();window.scrollTo(0,0);}}),
+    h("h1",{class:"h-sum",text:it.name||"Project"}),
+    h("section",{class:"card hsec"},it.about?h("p",{class:"about",style:"margin:0",text:it.about}):null,
+      h("p",{class:"sub",style:"margin:0",text:(tg?"Target "+fmtDate(it.target)+" · "+daysTo(it.target):"No target date")}),
+      h("div",{class:"jbar"},h("i",{style:"width:"+(u.pct||0)+"%"})),h("p",{style:"margin:0"},h("b",{text:(u.pct||0)+"% done"+(u.pace?" · "+u.pace:"")}))));
+  var st=h("p",{class:"status",role:"status","aria-live":"polite"}),list=h("ol",{class:"psteps"});
+  (it.steps||[]).forEach(function(s){
+    var r=latestReply("p_"+S.projSel,s.id,S.uid),dn=r?r.done===true:!!s.done;
+    list.append(h("li",{class:"pstep","data-s":dn?"done":""},h("div",{class:"pstop"},
+      h("button",{type:"button",class:"pstick","aria-pressed":String(dn),"aria-label":(dn?"Mark not done: ":"Mark done: ")+s.title,onclick:function(){
+        if(!S.db){say(st,"This needs the live page.","warn");return;}
+        var rr={eid:"p_"+S.projSel,tid:s.id,pid:S.uid,done:!dn,at:nowIso()};
+        S.db.doc("replies/p_"+S.projSel+"__"+s.id+"__"+S.uid).set(rr).then(function(){S.replies=S.replies.filter(function(x){return !(x.eid===rr.eid&&x.tid===rr.tid&&x.pid===rr.pid);}).concat([rr]);renderPlan();},function(){say(st,"Could not save. Tell Hinda directly.","warn");});}},dn?ico("check",16):null),
+      h("span",{class:"pstt"},h("b",{text:s.title}),h("span",{class:"sub",text:(s.days?s.days+" day"+(s.days>1?"s":"")+" · ":"")+"by "+(pDay(s.end)?pShort(pDay(s.end)):"")+(dn?" · done":"")+(s.note?" · "+s.note:"")})))));
+  });
+  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Your steps"}),list,st));
+  root.append(addToProjectCard(S.projSel));
+  if((it.links||[]).length)root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Links"}),it.links.map(function(l){var uurl=safeUrl(l.url);return h("p",{style:"margin:0"},uurl?h("a",{href:uurl,target:"_blank",rel:"noopener",text:l.label||l.url}):h("b",{text:l.label||l.url}));})));
+  return true;
+}
+
 // Admin only, at the bottom of Events: the team total, then one row per event. Tap a row to open that event's whole plan.
 function overallPlan(root){
   if(!adminView())return;
@@ -4353,25 +4675,26 @@ function flyerField(ev){
 function briefLine(ev){var b=[];if(ev.client)b.push("Client: "+ev.client);if(ev.audience)b.push(ev.audience+" guests expected");if(ev.games)b.push("Games: "+ev.games);return b.length?h("p",{class:"sub brief",text:b.join(" · ")}):null;}
 // Files and links: anything the crew needs to open for this event. Admins add them, everyone on the event sees them.
 function filesCard(ev,admin){
-  var fl=ev.files||(ev.files=[]);if(!fl.length&&!admin)return null;
+  var host=ev.base?ev:{id:ev.id,base:"events/"+ev.id+"/files",files:ev.files||(ev.files=[]),save:function(){saveEvent(ev,true);},rerender:renderEvents,inputId:"evPdfIn",hint:"Brief, venue map, contract, Canva, Drive folder. Add anything the crew needs."};
+  var fl=host.files;if(!fl.length&&!admin)return null;
   var card=h("section",{class:"card hsec",id:"evFiles"},h("h3",{class:"q",text:"Files and links"})),fst=h("p",{class:"status",role:"status","aria-live":"polite"});
-  if(!fl.length)card.append(h("p",{class:"sub",text:"Brief, venue map, contract, Canva, Drive folder. Add anything the crew needs."}));
+  if(!fl.length)card.append(h("p",{class:"sub",text:host.hint}));
   fl.forEach(function(f,i){var u=safeUrl(f.url);
     card.append(h("div",{class:"cvline"},h("span",{class:"cv-t"},
       f.fid?h("b",{text:(f.label||f.name||"PDF")}):(u?h("a",{href:u,target:"_blank",rel:"noopener",text:f.label||f.url}):h("b",{text:f.label||f.url})),
       f.fid?h("span",{class:"sub",text:"PDF · "+sizeText(f.size)}):null),
-      h("span",{class:"cvbtns"},f.fid?h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf("events/"+ev.id+"/files",f.fid,f.n,f.name||f.label||"file.pdf",fst);}}):null,
-        admin?h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){if(f.fid)dropChunks("events/"+ev.id+"/files",f.fid,f.n);fl.splice(i,1);saveEvent(ev,true);renderEvents();}}):null)));});
+      h("span",{class:"cvbtns"},f.fid?h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf(host.base,f.fid,f.n,f.name||f.label||"file.pdf",fst);}}):null,
+        admin?h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){if(f.fid)dropChunks(host.base,f.fid,f.n);fl.splice(i,1);host.save();host.rerender();}}):null)));});
   card.append(fst);
-  if(admin){var lb=h("input",{type:"text","aria-label":"File or link name",placeholder:"Name, e.g. Venue map"}),ur=h("input",{type:"text","aria-label":"File or link address",placeholder:"Link, e.g. drive.google.com/..."}),st=h("span",{class:"status"}),fi=h("input",{type:"file",accept:"application/pdf,.pdf",id:"evPdfIn",class:"sr"});
+  if(admin){var lb=h("input",{type:"text","aria-label":"File or link name",placeholder:"Name, e.g. Venue map"}),ur=h("input",{type:"text","aria-label":"File or link address",placeholder:"Link, e.g. drive.google.com/..."}),st=h("span",{class:"status"}),fi=h("input",{type:"file",accept:"application/pdf,.pdf",id:host.inputId,class:"sr"});
     fi.addEventListener("change",function(){var file=fi.files&&fi.files[0];if(!file)return;say(st,"Uploading…");
       readPdf(file,function(err,b64,size){if(err){say(st,pdfProblem(err),"warn");return;}var fid="f"+Date.now().toString(36);
-        putChunks("events/"+ev.id+"/files",fid,b64,function(e2,n){if(e2){say(st,pdfProblem(e2),"warn");return;}
-          fl.push({label:clean(lb.value)||file.name.replace(/\.pdf$/i,""),url:"",fid:fid,name:file.name,size:size,n:n});saveEvent(ev,true);renderEvents();toast("PDF added.");});});});
+        putChunks(host.base,fid,b64,function(e2,n){if(e2){say(st,pdfProblem(e2),"warn");return;}
+          fl.push({label:clean(lb.value)||file.name.replace(/\.pdf$/i,""),url:"",fid:fid,name:file.name,size:size,n:n});host.save();host.rerender();toast("PDF added.");});});});
     card.append(h("div",{class:"two-col"},h("div",{class:"field"},lb),h("div",{class:"field"},ur)),fi,
       h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Add link",onclick:function(){
-        if(!safeUrl(ur.value)){say(st,"Add a full web link.","warn");return;}fl.push({label:clean(lb.value)||clean(ur.value),url:clean(ur.value)});saveEvent(ev,true);renderEvents();}}),
-        h("label",{for:"evPdfIn",class:"btn small"},"Upload a PDF (up to 1 MB)"),st));}
+        if(!safeUrl(ur.value)){say(st,"Add a full web link.","warn");return;}fl.push({label:clean(lb.value)||clean(ur.value),url:clean(ur.value)});host.save();host.rerender();}}),
+        h("label",{for:host.inputId,class:"btn small"},"Upload a PDF (up to 1 MB)"),st));}
   return card;
 }
 function drawMemberEvent(root,ev){
@@ -4570,7 +4893,9 @@ function drawPlan(root){
   if(loadingNow()){root.append(skeleton(3));return;}
   var mem=!S.isAdmin;
   root.append(h("h1",{class:"h-sum",text:mem?"Events":"The plan"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:mem?"What we are planning, nearest first.":"Where each event is, how ready it is, and where it is heading."}));
+  if(S.projSel&&!adminView()&&drawMyProject(root))return;
   planCards(root,renderPlan,mem);
+  projectsBlock(root);
 }
 // The event cards with their timelines. Used by the Events tab for everyone (admins and staff).
 function planCards(root,rerender,mem){
@@ -5060,9 +5385,22 @@ function initCaps(){
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
         openLinkedTask();
       },function(){S.eventsLoaded=true;refresh();});
+      // Projects: admins read the full projects; everyone reads progress only; each person reads their own steps.
+      S.db.collection("projectpub").onSnapshot(function(snap){S.projPub={};snap.docs.forEach(function(d){S.projPub[d.id]=thaw(d.data());});rerenderProj();},function(){});
+      S.db.doc("projectmine/"+S.uid).onSnapshot(function(snap){S.myProj=(snap.exists&&snap.data().items)?thaw(snap.data().items):{};rerenderProj();},function(){});
+      if(!(S.realAdmin||S.isAdmin))S.db.doc("projectup/"+S.uid).onSnapshot(function(snap){S.pup={};if(snap.exists)S.pup[S.uid]=thaw(snap.data());rerenderProj();},function(){});
+      if(S.realAdmin||S.isAdmin){
+        S.db.collection("projects").onSnapshot(function(snap){
+          S.projects=snap.docs.map(function(d){var mine=projById(d.id);if(projDirty[d.id]&&mine)return mine;var o=thaw(d.data());o.id=d.id;o.steps=Array.isArray(o.steps)?o.steps:[];o.files=Array.isArray(o.files)?o.files:[];
+            // An echo of what this screen already has keeps the same objects, so open forms and buttons keep pointing at live data.
+            if(mine&&pjKey(mine)===pjKey(o))return mine;return o;});
+          rerenderProj();syncProjects();},function(){});
+        S.db.collection("projectup").onSnapshot(function(snap){S.pup={};snap.docs.forEach(function(d){S.pup[d.id]=thaw(d.data());});rerenderProj();},function(){});
+        S.db.collection("projectmine").onSnapshot(function(snap){S.pmineAll={};snap.docs.forEach(function(d){S.pmineAll[d.id]={items:thaw(d.data()).items||{}};});},function(){});
+      }
       S.db.collection("replies").onSnapshot(function(snap){
         S.replies=snap.docs.map(function(d){return thaw(d.data());}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
-        applyClaims();
+        applyClaims();syncProjects();
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
       },function(){});
       S.db.collection("people").onSnapshot(function(snap){
