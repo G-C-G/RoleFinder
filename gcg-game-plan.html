@@ -526,6 +526,7 @@ body.has-nav{padding-bottom:104px}
 .hero-move .needed{background:rgba(255,255,255,.55)}
 .hero-move .btn.go{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn.chat{margin:4px 0 2px}
+.btn.wa{text-decoration:none;margin:4px 6px 2px 0}
 .credits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:15px}
 .trail-n{font-weight:800;color:var(--gold-ink)}
 .resume{border:2.5px dashed var(--edge);border-radius:14px;padding:10px 14px;background:var(--gold-soft);font-size:15px}
@@ -3052,6 +3053,7 @@ function drawEvents(root){
       h("div",{class:"row"},
         h("button",{type:"button",class:"btn small",text:"Due-soon message",onclick:function(){S.evMsgs={eid:ev.id,title:"Due soon (paste in the team group)",list:[{text:dueSoonText(ev)}]};renderEvents();}}),
         h("button",{type:"button",class:"btn small",text:"Run sheet",onclick:function(){S.run={eid:ev.id};renderEvents();}}),
+        ev.published===false?null:waButton(eventShareText(ev),"Share on WhatsApp"),
         h("button",{type:"button",class:"btn small",text:"Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
         h("button",{type:"button",class:"btn small",text:"Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}}),
         ev.published===false?null:h("button",{type:"button",class:"btn small",text:"Hide from the team (back to draft)",onclick:function(){ev.published=false;S.panel["cover:"+ev.id]=true;saveEvent(ev,true);renderEvents();}}))),
@@ -3207,6 +3209,7 @@ function adminTask(ev,t,cur){
       t.owner&&(st==="draft"||st==="offered")?h("button",{type:"button",class:"btn small",text:"Assign directly",title:"Give it to them without asking",onclick:function(){t.offered=true;t.ots=t.ots||nowIso();t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
       t.owner?h("button",{type:"button",class:"btn small",text:"Ping",onclick:function(){S.panel[pk]=!S.panel[pk];renderEvents();}}):null,
       h("button",{type:"button",class:"btn small",text:"Link",onclick:function(){copyText(taskLink(ev.id,t.id),lk,"Task link copied.");}}),lk,
+      waButton(taskShareText(ev,t),"WhatsApp"),
       st!=="done"?h("button",{type:"button",class:"btn small",text:S.panel["md"+t.id]?"Cancel":"Mark done",onclick:function(){S.panel["md"+t.id]=!S.panel["md"+t.id];renderEvents();}}):null,
       st==="done"&&t.manual==="done"?h("button",{type:"button",class:"btn link",text:"Undo done",onclick:function(){t.manual="";saveEvent(ev,true);renderEvents();}}):null,
       t.owner&&st!=="passed"&&st!=="open"&&st!=="done"?h("button",{type:"button",class:"btn link",text:"Mark can't do it",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null),
@@ -3371,8 +3374,23 @@ function writeReply(ev,t,patch,st){
 }
 /* ---------- Pings and links: Hinda nudges a person to a specific thing ---------- */
 S.ideas={};S.pings=[];S.acks={};S.allAcks={};S.names={};S.appUrl="";S.goTask=null;
-function taskLink(eid,tid){var base=S.appUrl||String(location.href).split("#")[0];return base+"#task="+eid+"."+tid;}
-function readHash(){var m=String(location.hash||"").match(/task=([^.&]+)\.([^&]+)/);if(m)S.goTask={eid:decodeURIComponent(m[1]),tid:decodeURIComponent(m[2])};}
+// The link people open: the one saved under Team (if any), else this published page.
+function appBase(){return S.appUrl||(location.protocol==="file:"?String(location.href).split("#")[0]:"https://claude.ai/artifact/P44iPoxS3QN5m5mc7zefuF");}
+function taskLink(eid,tid){return appBase()+"#task="+eid+"."+tid;}
+function eventLink(eid){return appBase()+"#event="+eid;}
+function readHash(){var h0=String(location.hash||""),m=h0.match(/task=([^.&]+)\.([^&]+)/),e=h0.match(/event=([^.&]+)/);if(m)S.goTask={eid:decodeURIComponent(m[1]),tid:decodeURIComponent(m[2])};else if(e)S.goTask={eid:decodeURIComponent(e[1]),tid:""};}
+// Share straight into WhatsApp: opens the app (or WhatsApp Web) with the message ready to send to a chat or group.
+function waButton(text,label){return h("a",{class:"btn small wa",href:"https://wa.me/?text="+encodeURIComponent(text),target:"_blank",rel:"noopener",text:label||"Share on WhatsApp"});}
+function eventShareText(ev){
+  var L=["New event: "+(ev.name||"GCG event"),fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+(ev.place?", "+ev.place:"")];
+  if(ev.about)L.push(ev.about);else if(ev.goal)L.push(ev.goal);
+  L.push("Details and your tasks in Game Plan: "+eventLink(ev.id));return L.join("\n");
+}
+function taskShareText(ev,t){
+  var due=taskDue(ev,t),st=taskState(ev,t);
+  var who=st==="done"?"Done":(t.owner?"With "+nameOf(t.owner):"Up for grabs");
+  return (st==="done"?"Task: ":"Task not done yet: ")+t.title+"\n"+(ev.name||"Event")+(due?", due "+fmtWhen(due):"")+" · "+who+"\nOpen it in Game Plan: "+taskLink(ev.id,t.id);
+}
 function openLinkedTask(){
   if(!S.goTask||!evById(S.goTask.eid))return;
   var g=S.goTask;S.goTask=null;
@@ -4265,6 +4283,7 @@ function drawMemberEvent(root,ev){
     ev.about?h("p",{class:"about",text:ev.about}):null,
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     briefLine(ev),filesCard(ev,false),
+    waButton(eventShareText(ev),"Share this event on WhatsApp"),
     safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
     h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
     crewDates(ev)||h("span"),
