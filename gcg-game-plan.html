@@ -861,7 +861,7 @@ button.chip.on{outline:2px solid var(--ink)}
 .steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;padding:2px 0}.cvline .cv-t{flex:1 1 100%}.cvline .cvbtns{flex:0 0 auto}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
-.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
+.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.pc2-photo{width:104px;height:104px;border-radius:24px;object-fit:cover;border:2px solid #F6B80F;background:#2A2218}.pc2-photo.empty{display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:34px;color:#FFE08A}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
@@ -2006,13 +2006,14 @@ function pdfWrap(text,size,maxW){
   return lines.length?lines:[""];
 }
 function buildPdf(blocks){
-  var W=595,H=842,M=48,pages=[],cur=[],y=H-M-14;
+  var W=595,H=842,M=48,pages=[],cur=[],y=H-M-14,imgData=null,imgPage=-1;
   function newPage(){pages.push(cur);cur=[];y=H-M;}
   function need(hh){if(y-hh<M){newPage();}}
   function text(font,size,x,yy,str,rgb){cur.push("BT /"+font+" "+size+" Tf "+(rgb||"0.08 0.07 0.05")+" rg "+x+" "+yy+" Td ("+pdfAscii(str)+") Tj ET");}
   y=H-M-14;
   blocks.forEach(function(b){
-    if(b.t==="title"){pdfWrap(b.text,22,W-2*M).forEach(function(l){need(28);text("F2",22,M,y-22,l);y-=28;});y-=2;}
+    if(b.t==="photo"){need(104);cur.push("q 92 0 0 92 "+M+" "+(y-92)+" cm /Im1 Do Q");imgData=b.data;imgPage=pages.length;y-=104;}
+    else if(b.t==="title"){pdfWrap(b.text,22,W-2*M).forEach(function(l){need(28);text("F2",22,M,y-22,l);y-=28;});y-=2;}
     else if(b.t==="sub"){pdfWrap(b.text,10,W-2*M).forEach(function(l){need(14);text("F1",10,M,y-10,l,"0.4 0.37 0.33");y-=14;});y-=6;}
     else if(b.t==="big"){pdfWrap(b.text,15,W-2*M).forEach(function(l){need(20);text("F2",15,M,y-15,l,"0.54 0.39 0");y-=20;});y-=4;}
     else if(b.t==="h"){need(34);y-=10;cur.push("0.965 0.722 0.059 rg "+M+" "+(y-4)+" 26 3 re f");text("F2",11,M,y-18,String(b.text).toUpperCase());y-=24;}
@@ -2030,8 +2031,9 @@ function buildPdf(blocks){
   pages.forEach(function(ops,i){
     var stream=ops.join("\n");
     add("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");
-    add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+W+" "+H+"] /Contents "+(5+i*2)+" 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> >>");
+    add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+W+" "+H+"] /Contents "+(5+i*2)+" 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >>"+(imgData&&i===imgPage?" /XObject << /Im1 "+(5+pages.length*2)+" 0 R >>":"")+" >> >>");
   });
+  if(imgData)add("<< /Type /XObject /Subtype /Image /Width 240 /Height 240 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+imgData.length+" >>\nstream\n"+imgData+"\nendstream");
   var out="%PDF-1.4\n",offs=[];
   objs.forEach(function(o,i){offs.push(out.length);out+=(i+1)+" 0 obj\n"+o+"\nendobj\n";});
   var xr=out.length;
@@ -2043,6 +2045,8 @@ function buildPdf(blocks){
 }
 function summaryBlocks(){
   var p=payload(),prof=profileOf(p),g=grouped(S),B=[];
+  var pj=cleanPhoto(S.photo).match(/^data:image\/jpeg;base64,(.+)$/);
+  if(pj){try{B.push({t:"photo",data:atob(pj[1])});}catch(e){}}
   B.push({t:"title",text:(p.name||"My")+" - Player card"});
   B.push({t:"sub",text:"Gold Coast Games. Made on "+new Date().toISOString().slice(0,10)+" from my own answers. A starting point, not a verdict."});
   var tts=S.uid?titlesOf(S.uid):[];if(tts.length)B.push({t:"big",text:"Title: "+tts.map(function(x){return x.name;}).join(", ")});
@@ -4305,9 +4309,12 @@ function finishExtra(){
 /* ---------- The player card: a reward you can screenshot ---------- */
 function playerCard(p,prof,opts){
   opts=opts||{};
-  var ph=cleanPhoto(p.photo),logo=ph?h("img",{class:"avatar card",src:ph,alt:""}):LOGO.indexOf("data:")===0?h("img",{class:"pc2-logo",src:LOGO,alt:""}):null,ts=S.uid?titlesOf(opts.pid||S.uid):[];
+  var ph=cleanPhoto(p.photo),mine=!opts.pid||opts.pid===S.uid;
+  var logo=ph?h("img",{class:"pc2-photo",src:ph,alt:(p.name||"Crew member")+" photo"}):h("div",{class:"pc2-photo empty","aria-hidden":"true",text:initials(p.name)||"?"});
+  var ts=S.uid?titlesOf(opts.pid||S.uid):[];
   return h("article",{class:"pcard pc2"+(opts.reveal?" reveal":""),"aria-label":(p.name||"Your")+" player card"},
     h("div",{class:"pc2-in"},logo,
+      !ph&&mine&&!opts.reveal?h("button",{type:"button",class:"btn small go",text:"Add your photo",onclick:function(){startExtra("photo");}}):null,
       h("p",{class:"pc-kick",text:"Gold Coast Games · Player card"}),
       h("p",{class:"pc2-name",text:p.name||"You"}),
       prof?h("p",{class:"pc2-type"},h("span",{text:"The "+prof.chips[0]}),h("br"),h("span",{class:"plus",text:"+ "+prof.chips[1]})):h("p",{class:"pc2-type",text:"Card coming soon"}),
@@ -4517,11 +4524,9 @@ function drawMe(root){
     prof.lines[0]?h("p",{class:"me-statement",text:prof.lines[0]}):null,
     h("p",{class:"me-count",text:counts}),
     h("div",{class:"row"},
-      h("button",{type:"button",class:"btn small","aria-expanded":String(!!S.panel.crewcard),text:S.panel.crewcard?"Hide crew card":"Crew card",onclick:function(){S.panel.crewcard=!S.panel.crewcard;renderProfile();}}),
-      h("button",{type:"button",class:"btn small",text:S.photo?"Change photo":"Add a photo",onclick:function(){startExtra("photo");}}))));
-  if(S.panel.crewcard)root.append(playerCard(p,prof,{counts:counts}),h("div",{class:"row center",style:"margin-top:12px"},
-    h("button",{type:"button",class:"btn small go",text:"Share my card",onclick:function(){downloadPdf(true,pst);}}),
-    h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false,pst);}})),pst);
+      h("button",{type:"button",class:"btn small go",text:"Share my card",onclick:function(){downloadPdf(true,pst);}}),
+      h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false,pst);}}),
+      h("button",{type:"button",class:"btn small",text:S.photo?"Change photo":"Add a photo",onclick:function(){startExtra("photo");}})),pst));
   var miss=EXTRA.filter(extraMissing).length;
   if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
   // Jobs: I like, I'm open to, Never offer. Tap any job to change your answer.
@@ -4553,7 +4558,7 @@ function drawMe(root){
   root.append(h("section",{class:"mrows"},
     mrow("exp","Experience",done.length?String(done.length):"",[line("What you have done",done.join("; ")),line("Proudest work",st.proud)]),
     mrow("skills","Skills and what I bring",brings.length?String(brings.length):"",[brings.length?h("div",{class:"chips"},brings.map(function(x){return h("span",{class:"chip",text:x});})):null]),
-    mrow("how","How I work","",[line("Works best",ws),h("div",{class:"stats"},prof.stats.map(function(x){return h("div",{class:"stat"},h("span",{text:x.label}),h("span",{class:"bar light","aria-hidden":"true"},h("i",{style:"width:"+Math.round(x.v*100)+"%"})));}))]),
+    mrow("how","How I work","",[line("Works best",ws)]),
     mrow("want","What I want from GCG","",[line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",st.future?M_FUTURE[st.future].label:"")]),
     mrow("proof","Proof of experience",clean(p.cv)?"CV added":"",[line("CV or link",clean(p.cv))])));
   root.append(h("p",{class:"sub accessline",text:"Hinda sees your answers too. The crew only sees what you chose to share, under Who sees what below."}));
