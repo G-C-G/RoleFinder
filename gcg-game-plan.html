@@ -585,6 +585,7 @@ body.has-nav{padding-bottom:104px}
 .pjthumb{width:44px;height:44px;border-radius:12px;object-fit:cover;border:1.5px solid var(--edge-soft)}
 .ovrow.haspic{grid-template-columns:44px 1fr auto}
 .plan-start{font-weight:800;font-size:15px;line-height:1.25}
+.pjlinks{align-items:center;gap:10px}
 .flyer-th.pj{object-fit:contain;background:#0d0a07}
 .pjdots{flex:1;min-width:0}
 .msd{list-style:none;margin:0;padding:0;display:flex;align-items:center;gap:0;width:100%}
@@ -2128,7 +2129,7 @@ function submit(){
   S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
   S.db.doc("responses/"+S.uid).set(p).then(function(){
     var first=!S.sentAt;S.sentAt=p.updated;say(st,"Saved. Opening your Game Plan…","ok");
-    setTimeout(function(){if(S.view==="flow")showView(homeView());if(first)toast("Welcome to your Game Plan");},900);
+    setTimeout(function(){if(S.view==="flow"&&!S.goProj)showView(homeView());if(first)toast("Welcome to your Game Plan");},900);
   },function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});
 }
 
@@ -3422,7 +3423,10 @@ function projectsBlock(root){
     var foot=h("div",{class:"tilefoot"},waButton(projectShareText(p),"Share this project"),
       p.ms?h("div",{class:"pjdots"},msDots(p.ms,p.msl?p.msl.map(function(m){return m.n;}):null,admin&&p.msl&&p.msl.length?function(){S.panel[key]=!open;renderEvents();}:null)):null);
     var card=h("section",{class:"card hsec plan-card"},top,foot,h("div",{class:"jbar sm","aria-label":p.pct+"% done"},h("i",{style:"width:"+p.pct+"%"})));
-    if(admin&&p.msl&&p.msl.length)card.append(h("button",{type:"button",class:"btn link",text:open?"Hide the milestones":"Show the milestones \u203A",onclick:function(){S.panel[key]=!open;renderEvents();}}));
+    var links=h("div",{class:"row pjlinks"},
+      tap?h("button",{type:"button",class:"btn small go",text:admin?"Open the plan \u203A":"Open your steps \u203A",onclick:function(){openIt();}}):h("span",{class:"sub",text:"You can follow the progress here."}),
+      admin&&p.msl&&p.msl.length?h("button",{type:"button",class:"btn link",text:open?"Hide the milestones":"See the milestones",onclick:function(){S.panel[key]=!open;renderEvents();}}):null);
+    card.append(links);
     if(admin&&open&&p.msl)card.append(h("ul",{class:"pjms"},p.msl.map(function(m){return h("li",null,h("button",{type:"button",class:"pjmrow",onclick:function(){openIt(m.n);}},
       h("span",{class:"msdot","data-s":m.state},m.state==="done"?ico("check",12):null),
       h("span",{class:"ovt"},h("b",{text:m.n}),h("span",{class:"sub",text:pShort(m.start)+" to "+pShort(m.end)+" · "+m.done+" of "+m.total+" done"+(m.late?" · behind":"")})),
@@ -3920,7 +3924,11 @@ S.ideas={};S.pings=[];S.acks={};S.allAcks={};S.names={};S.appUrl="";S.goTask=nul
 function appBase(){return S.appUrl||(location.protocol==="file:"?String(location.href).split("#")[0]:"https://claude.ai/artifact/P44iPoxS3QN5m5mc7zefuF");}
 function taskLink(eid,tid){return appBase()+"#task="+eid+"."+tid;}
 function eventLink(eid){return appBase()+"#event="+eid;}
-function readHash(){var h0=String(location.hash||""),m=h0.match(/task=([^.&]+)\.([^&]+)/),e=h0.match(/event=([^.&]+)/),pj=h0.match(/project=([^.&]+)/);if(pj)S.goProj=decodeURIComponent(pj[1]);if(m)S.goTask={eid:decodeURIComponent(m[1]),tid:decodeURIComponent(m[2])};else if(e)S.goTask={eid:decodeURIComponent(e[1]),tid:""};}
+// Where did the person's link point? Looks in the address (#...), the query (?...) and the window name, since hosts differ.
+function linkText(){var t="";try{t+=String(location.hash||"")+"&"+String(location.search||"")+"&"+String(window.name||"");}catch(e){}return t;}
+function readHash(){var h0=linkText(),m=h0.match(/task=([^.&#?]+)\.([^&#?]+)/),e=h0.match(/event=([^.&#?]+)/),pj=h0.match(/project=([^.&#?]+)/);
+  if(pj){S.goProj=decodeURIComponent(pj[1]);setTimeout(function(){if(S.goProj){S.goProj="";if(S.view==="flow"&&onboarded())showView(homeView());}},9000);}if(m)S.goTask={eid:decodeURIComponent(m[1]),tid:decodeURIComponent(m[2])};else if(e)S.goTask={eid:decodeURIComponent(e[1]),tid:""};}
+try{window.addEventListener("hashchange",function(){readHash();openLinkedProject();openLinkedTask();});}catch(e){}
 // Share straight into WhatsApp: opens the app (or WhatsApp Web) with the message ready to send to a chat or group.
 // One Share button: the phone's share sheet (WhatsApp is in it) when there is one, otherwise WhatsApp itself. The message carries the link.
 function waButton(text,label){
@@ -3952,7 +3960,7 @@ function taskShareText(ev,t){
 function openLinkedProject(){
   if(!S.goProj)return;var id=S.goProj;
   if(adminView()){if(!projById(id))return;S.goProj="";S.projOpen=id;showView("events");}
-  else{S.goProj="";if(S.myProj&&S.myProj[id])S.projSel=id;showView("plan");}
+  else{if(!S.myLoaded||!S.pubLoaded)return;S.goProj="";if(S.myProj&&S.myProj[id])S.projSel=id;showView("plan");}
 }
 function openLinkedTask(){
   if(!S.goTask||!evById(S.goTask.eid))return;
@@ -5118,7 +5126,7 @@ function planCards(root,rerender,mem){
           next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
           h("button",{type:"button",class:"btn link",text:"Close the timeline",onclick:function(){S.panel[key]=false;rerender();}})]
         :h("div",{class:"tlmini"},journey(ev,{compact:true,mine:true,onOpen:function(){S.panel[key]=true;rerender();}}),
-          h("button",{type:"button",class:"btn link",text:"Open the timeline ›",onclick:function(){S.panel[key]=true;rerender();}})));
+          h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:(adminView()||mineIds[ev.id]?"Open the event ›":"See the event ›"),onclick:openEv}),h("button",{type:"button",class:"btn link",text:"Open the timeline",onclick:function(){S.panel[key]=true;rerender();}}))));
     root.append(card);
   });
 }
@@ -5444,6 +5452,13 @@ function drawMe(root){
       :h("p",{class:"sub",text:"Everything you finish is recorded here, event by event, so your contribution is seen and remembered."})));
   root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"Who sees what"}),shareToggles(function(){saveResponse();})));
   root.append(appearanceBox());
+  if(S.realAdmin)root.append(h("details",{class:"more msec"},h("summary",{text:"Link check (for troubleshooting)"}),
+    h("p",{class:"sub",text:"If a shared link does not open the right place, open it, come here and send me a screenshot of this."}),
+    h("p",{class:"sub",style:"word-break:break-all"},h("b",{text:"Address the page sees: "}),String(location.href).slice(0,240)),
+    h("p",{class:"sub",style:"word-break:break-all"},h("b",{text:"After the # : "}),String(location.hash||"(nothing)")),
+    h("p",{class:"sub",style:"word-break:break-all"},h("b",{text:"After the ? : "}),String(location.search||"(nothing)")),
+    h("p",{class:"sub",style:"word-break:break-all"},h("b",{text:"Came from: "}),String(document.referrer||"(nothing)").slice(0,200)),
+    h("p",{class:"sub"},h("b",{text:"Pending link: "}),S.goProj?"project "+S.goProj:S.goTask?"event or task "+S.goTask.eid:"none")));
   var cv=cvOf(p,prof),cvSt=h("p",{class:"status",role:"status","aria-live":"polite"});
   root.append(h("details",{class:"more msec",open:S.panel["me-cv"]?true:null,ontoggle:function(e){S.panel["me-cv"]=e.currentTarget.open;}},h("summary",{text:"Strengths for my CV"}),
       cv.map(function(s){return h("div",{class:"cvsec"},h("h4",{text:s[0]}),h("ul",null,s[1].map(function(x){return h("li",{text:x});})));}),
@@ -5562,7 +5577,7 @@ function initCaps(){
           var d=thaw(snap.data()),draft=loadDraft();S.sentAt=d.updated||null;
           var draftNewer=draft&&draft.savedAt&&d.updated&&draft.savedAt>d.updated;
           if(!draftNewer){applyRecord(d);S.screen="profile";saveDraft();}
-          if(S.view==="flow"&&!S.goTask&&(S.screen==="profile"||S.screen==="intro"))showView(homeView());else renderNav();
+          if(S.view==="flow"&&!S.goTask&&!S.goProj&&(S.screen==="profile"||S.screen==="intro"))showView(homeView());else renderNav();
         }).catch(function(){});
       }else if(S.screen==="profile")render();
       S.db.doc("roles/final").onSnapshot(function(snap){
@@ -5585,8 +5600,8 @@ function initCaps(){
         openLinkedTask();openLinkedProject();
       },function(){S.eventsLoaded=true;refresh();});
       // Projects: admins read the full projects; everyone reads progress only; each person reads their own steps.
-      S.db.collection("projectpub").onSnapshot(function(snap){S.projPub={};snap.docs.forEach(function(d){S.projPub[d.id]=thaw(d.data());});rerenderProj();},function(){});
-      S.db.doc("projectmine/"+S.uid).onSnapshot(function(snap){S.myProj=(snap.exists&&snap.data().items)?thaw(snap.data().items):{};rerenderProj();},function(){});
+      S.db.collection("projectpub").onSnapshot(function(snap){S.projPub={};snap.docs.forEach(function(d){S.projPub[d.id]=thaw(d.data());});S.pubLoaded=true;rerenderProj();openLinkedProject();},function(){S.pubLoaded=true;});
+      S.db.doc("projectmine/"+S.uid).onSnapshot(function(snap){S.myProj=(snap.exists&&snap.data().items)?thaw(snap.data().items):{};S.myLoaded=true;rerenderProj();openLinkedProject();},function(){S.myLoaded=true;});
       if(!(S.realAdmin||S.isAdmin))S.db.doc("projectup/"+S.uid).onSnapshot(function(snap){S.pup={};if(snap.exists)S.pup[S.uid]=thaw(snap.data());rerenderProj();},function(){});
       if(S.realAdmin||S.isAdmin){
         S.db.collection("projects").onSnapshot(function(snap){
