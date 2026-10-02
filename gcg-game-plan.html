@@ -3340,7 +3340,7 @@ var FPLAN=[
   t:["Company information sheet","Founder information sheet","Organised legal folder","Organised financial folder","Organised IP folder","Company letterhead","Invoice template","Proposal/quotation template","NDA template","Document naming system","Signing/approval process"]},
  {n:"Operational Infrastructure",to:"2026-12-20",goal:"Goal by 20 Dec: The company can operate, not just exist on paper. Only build what is needed right now.",
   t:["Company email","Domain","Shared drive","Task/project management","Internal communication","Roles & responsibilities","Client/vendor records","Expense/purchasing process","Basic onboarding","SOP folder","Recurring admin routines"]},
- {n:"Final Foundation Audit",to:"2026-12-25",goal:"Goal by 25 Dec: Close everything. Do not start new major work in Christmas week.",
+ {n:"Final Foundation Audit",to:"2026-12-23",goal:"Goal by 23 Dec: Close everything. Do not start new major work in the last days.",
   t:["Check registration documents","Check founder agreements","Check tax/statutory status","Check bank setup","Check IP records","Check core documents","Check operational systems","Identify outstanding items","Assign owners for anything incomplete","Archive final documents","Mark project complete"]}
 ];
 var FPLAN_START="2026-10-05";
@@ -3634,7 +3634,7 @@ function drawProject(root){
   if(/found|coco/i.test(pr.name||"")&&!pr.packed){
     var nTasks=0;FPLAN.forEach(function(x){nTasks+=x.t.length;});
     function addPlan(){
-      pr.start=FPLAN_START;pr.target="2026-12-25";pr.secGoals=pr.secGoals||{};
+      pr.start=FPLAN_START;pr.target="2026-12-23";pr.secGoals=pr.secGoals||{};
       var prevEnd=pDay(FPLAN_START);
       FPLAN.forEach(function(sec){var end=pDay(sec.to),days=Math.max(1,Math.round((end-prevEnd)/864e5));pr.secGoals[sec.n]=sec.goal;
         sec.t.forEach(function(t,i){pr.steps.push({id:newId("s"),title:t,days:days,par:i>0,section:sec.n,due:sec.to,owner:"",done:null,doneAt:"",note:""});});
@@ -3642,7 +3642,7 @@ function drawProject(root){
       pr.packed=true;
     }
     root.append(h("details",{class:"more",open:S.panel["pr-pack"]?true:null,ontoggle:function(e){S.panel["pr-pack"]=e.currentTarget.open;}},h("summary",{text:"Your foundational setup plan: "+FPLAN.length+" sections, "+nTasks+" tasks"}),
-      h("p",{class:"sub",text:"This is your plan, section by section, with its date window. Adding it sets the project to 5 Oct to 25 Dec, puts every task under its section with that section's deadline, and shows each section goal. Nothing is assigned to anyone yet. You can edit, move or delete anything afterwards."}),
+      h("p",{class:"sub",text:"This is your plan, section by section, with its date window. Adding it sets the project to 5 Oct to 23 Dec, puts every task under its section with that section's deadline, and shows each section goal. Nothing is assigned to anyone yet. You can edit, move or delete anything afterwards."}),
       FPLAN.map(function(sec,i){return h("div",{class:"psecprev"},h("p",{class:"lab",text:sec.n+" · to "+pShort(pDay(sec.to))+" · "+sec.t.length+" tasks"}),h("p",{class:"sub",style:"margin:0",text:sec.goal}));}),
       h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Add all "+nTasks+" tasks",onclick:function(){addPlan();save(true);renderEvents();toast("Plan added. Give the tasks to people next.");}}),
         h("button",{type:"button",class:"btn link",text:"Not now, hide this",onclick:function(){pr.packed=true;save(true);renderEvents();}}))));
