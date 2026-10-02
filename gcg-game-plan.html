@@ -3712,8 +3712,15 @@ function navItems(){return S.isAdmin?NAV_ADMIN:NAV_MEMBER;}
 function setAsMember(on){
   if(!S.realAdmin)return;
   S.asMember=!!on;S.isAdmin=S.realAdmin&&!on;lsSet("gcg_asmember",on?"1":"0");
+  // Stay on the same page: the matching page of the other view, same event open, same scroll position.
+  var from=S.view,ev=S.evOpen||S.evSel,y=window.scrollY||0;
   S.events=visibleEvents(S.rawEvents||S.events);S.evOpen="";S.evSel="";S.panel.notesOpen=false;
-  showView(homeView());
+  var MAP=on?{today:"home",plan:"plan",events:"mevents",team:"crew",insights:"home",me:"me",flow:"flow"}:{home:"today",plan:"plan",mevents:"events",crew:"team",me:"me",flow:"flow"};
+  var to=MAP[from]||homeView();
+  if(ev&&(to==="mevents"||to==="events")){if(on)S.evSel=ev;else S.evOpen=ev;}
+  if(to==="team")S.teamTab="people";
+  showView(to);
+  if(to===from||to==="plan"||to==="me")try{window.scrollTo(0,y);}catch(e){}
 }
 function renderNav(){
   renderBell();
@@ -4764,7 +4771,8 @@ function drawCrew(root){
       playerCard({name:(c.name||"Someone")+(id===S.uid?" (you)":""),photo:c.photo},cp,{pid:id}),
       h("span",{class:"chev","aria-hidden":"true",text:open?"Show less −":"Show more +"}));
     var card=h("section",{class:"card crewcard"},head);
-    if(id===S.uid)card.append(h("p",{class:"sub",text:"This is how the crew sees you. Everything about you is under Me. Change what is shared in Me, Who sees what."}));
+    if(id===S.uid)card.append(h("p",{class:"sub",text:"This is how the crew sees you. Open your card to choose what they can see."}));
+    if(open&&id===S.uid)card.append(h("p",{class:"lab",text:"What the crew can see"}),shareToggles(function(){saveResponse();}));
     if(open){
       function sec(label,val){return val&&(!Array.isArray(val)||val.length)?h("div",{class:"crewsec"},h("p",{class:"lab",text:label}),Array.isArray(val)?h("div",{class:"chips"},val.map(function(v){return h("span",{class:"chip",text:v});})):h("p",{text:val})):null;}
       card.append(sec("Up for",secs.up),sec("Has done",secs.did),sec("Brings",secs.brings),sec("Proudest work",secs.proud),sec("Works best",secs.works),
