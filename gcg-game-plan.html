@@ -861,7 +861,14 @@ button.chip.on{outline:2px solid var(--ink)}
 .steps{margin:0;padding-left:20px;display:grid;gap:8px}.steps p{margin:2px 0 0}
 .cvrow{border-top:1px solid var(--line);padding:10px 0}.cvline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;padding:2px 0}.cvline .cv-t{flex:1 1 100%}.cvline .cvbtns{flex:0 0 auto}
 .cv-t{display:grid;gap:1px;flex:1;min-width:0}.covered-list{margin-top:8px}
-.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.pc2-photo{width:104px;height:104px;border-radius:24px;object-fit:cover;border:2px solid #F6B80F;background:#2A2218}.pc2-photo.empty{display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:34px;color:#FFE08A}.pc2-about{margin:6px 0 0;font-size:15px;line-height:1.5;max-width:34ch;opacity:.92;font-weight:400}.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
+.covered-line{margin:4px 0}.review{border-color:var(--gold)}.rvrow{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.rv-t,.rv-p{display:grid;gap:2px}.picker select{width:100%}.warnbox{border-color:var(--red)}.picker-count{margin:2px 0 6px}.brief{margin:2px 0 8px}.pc2-photo{width:104px;height:104px;border-radius:24px;object-fit:cover;border:2px solid #F6B80F;background:#2A2218}.pc2-photo.empty{display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:34px;color:#FFE08A}.pc2-about{margin:6px 0 0;font-size:15px;line-height:1.5;max-width:34ch;opacity:.92;font-weight:400}.evrow{display:flex;gap:14px;align-items:flex-start}.evtxt{display:grid;gap:4px;min-width:0;flex:1}.evrow .plan-head{flex:1;min-width:0}
+.flyer-th{width:64px;height:84px;flex:none;border-radius:12px;object-fit:cover;border:1.5px solid var(--edge-soft);background:var(--bg-2);display:block}
+.flyer-th.empty{display:grid;place-items:center;text-align:center;padding:4px;font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-style:dashed}
+.flyer-btn{display:block;width:100%;padding:0;margin:8px 0;border:0;background:none;cursor:pointer}
+.flyer-hero{display:block;width:100%;max-height:440px;object-fit:contain;border-radius:16px;background:var(--bg-2);border:1.5px solid var(--edge-soft)}
+.flyer-empty{display:grid;gap:6px;justify-items:start;padding:16px;margin:8px 0;border:1.5px dashed var(--edge-soft);border-radius:16px;background:var(--card)}
+.lightbox{position:fixed;inset:0;z-index:80;background:rgba(21,17,12,.94);display:grid;place-items:center;padding:16px;cursor:pointer}.lightbox img{max-width:100%;max-height:86vh;border-radius:12px}.lb-x{color:#FBF5E6;font-size:14px;margin:8px 0 0}
+.attendrow{margin:10px 0 2px}.attendrow .lab{margin:0 0 6px}.cvbtns{display:flex;gap:6px;flex-shrink:0}.avopen[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);border-color:var(--ink)}.avno[aria-pressed="true"]{background:var(--red);color:var(--on-red);border-color:var(--ink)}
 .viewsw{appearance:none;background:none;color:inherit;border:1px solid currentColor;border-radius:999px;padding:7px 12px;font:600 13px var(--font-body);cursor:pointer;margin-left:auto;opacity:.9;min-height:34px}
 .viewsw[hidden]{display:none}
 .viewsw:not([hidden])+.bellbtn{margin-left:4px}
@@ -2718,7 +2725,7 @@ function saveEvent(ev,now){
     ev=evById(ev.id)||ev;
     if(!S.db){evDirty[ev.id]=0;return;}
     var doc={name:clean(ev.name).slice(0,80),goal:clean(ev.goal).slice(0,200),type:ev.type||"",date:ev.date||"",start:ev.start||"18:30",place:clean(ev.place).slice(0,120),lead:ev.lead||"",
-      client:clean(ev.client).slice(0,80),audience:clean(ev.audience).slice(0,20),games:clean(ev.games).slice(0,160),
+      flyer:cleanFlyer(ev.flyer),client:clean(ev.client).slice(0,80),audience:clean(ev.audience).slice(0,20),games:clean(ev.games).slice(0,160),
       files:(ev.files||[]).slice(0,20).map(function(f){return {label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};}),
       crew:{extra:clean(ev.crew&&ev.crew.extra).slice(0,300),extraN:Math.max(0,Math.min(200,Number(ev.crew&&ev.crew.extraN)||0)),food:clean(ev.crew&&ev.crew.food).slice(0,300)},
       links:{luma:clean(ev.links&&ev.links.luma).slice(0,300),form:clean(ev.links&&ev.links.form).slice(0,300),group:clean(ev.links&&ev.links.group).slice(0,300)},
@@ -2988,6 +2995,7 @@ function drawEvents(root){
   var risk=atRisk(ev),pct=eventPct(ev);
   root.append(h("button",{type:"button",class:"btn small",text:"← All events",onclick:function(){S.evOpen="";S.evMsgs=null;S.run=null;renderEvents();}}),
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
+    flyerHero(ev,true),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):h("p",{class:"sub",text:"Add a one-line goal under Event details."}),
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     ev.squeezed?h("p",{class:"sub"},"This event is closer than the template assumes, so the timeline was tightened to fit."):null,
@@ -3016,6 +3024,7 @@ function drawEvents(root){
     h("details",{class:"more",id:"evDetails",open:S.panel.evdetails?true:null,ontoggle:function(e){S.panel.evdetails=e.currentTarget.open;}},h("summary",{text:"Edit event: name, date, time, place, lead"}),
       h("p",{class:"sub",text:"Change the date or the start time and every task deadline moves with it."}),
       field("Event name","text",ev.name,function(v){ev.name=v;},"name"),
+      flyerField(ev),
       field("Goal: what we are trying to make happen","text",ev.goal,function(v){ev.goal=v;},"goal"),
       h("div",{class:"two-col"},field("Date","date",ev.date,function(v){ev.date=v;},"date"),field("Start time (24-hour, 18:00 is 6 pm)","time",ev.start,function(v){ev.start=v;},"start")),
       h("div",{class:"two-col"},field("Client","text",ev.client,function(v){ev.client=v;},"client"),field("Expected guests","number",ev.audience,function(v){ev.audience=v;},"audience")),
@@ -3111,8 +3120,9 @@ function drawEventList(root){
   root.append(h("div",{class:"evlist"},list.map(function(e){
     var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
     return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
+      h("div",{class:"evrow"},flyerThumb(e),h("div",{class:"evtxt"},
       h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")+(TEMPLATES[e.type]?" · "+TEMPLATES[e.type].name:"")}),
-      h("span",{class:"evmeta",text:(e.published===false?"Draft, hidden from the team · ":"")+done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")}));
+      h("span",{class:"evmeta",text:(e.published===false?"Draft, hidden from the team · ":"")+done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")}))));
   })));
 }
 // Hinda can record that a task is done, for the person who did it. Only they or an admin can do this.
@@ -4006,14 +4016,40 @@ function drawMyEvents(root){
     var nxt=priorityList(e,S.uid).filter(function(x){return (x.t.offered||x.t.manual)&&isNow(e,x.t);})[0];
     open=open.filter(function(t){return isNow(e,t);});
     root.append(h("button",{type:"button",class:"card evcard2",onclick:function(){S.evSel=e.id;renderMyEvents();window.scrollTo(0,0);}},
-      h("div",{class:"evhead"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:fmtDate(e.date)+(daysTo(e.date)?" · "+daysTo(e.date):"")+" ›"})),
-      h("p",{class:"sub",text:(open.length?open.length+" to do now":"Nothing needed from you right now")+(nxt?" · next: "+nxt.t.title:"")})));
+      h("div",{class:"evrow"},flyerThumb(e),h("div",{class:"evtxt"},h("div",{class:"evhead"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:fmtDate(e.date)+(daysTo(e.date)?" · "+daysTo(e.date):"")+" ›"})),
+      h("p",{class:"sub",text:(open.length?open.length+" to do now":"Nothing needed from you right now")+(nxt?" · next: "+nxt.t.title:"")})))));
   });
   var grabs=upForGrabs();
   if(grabs.length){
     root.append(h("section",{class:"card",id:"grabs",style:"margin-top:14px"},h("h3",{class:"q",text:"Up for grabs"}),h("p",{class:"sub",text:"Nobody has these yet. First come, first served: tap to take one and it is yours."}),
       groupByEvent(grabs,"grabs:",grabRow,"open",{kinds:true})));
   }
+}
+// Event flyer: a picture for each event, shown in lists and big on the event page. No flyer shows a clear placeholder.
+function cleanFlyer(u){u=String(u||"");return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)&&u.length<110000?u:"";}
+function shrinkFlyer(file,cb){
+  var rd=new FileReader();
+  rd.onload=function(){var img=new Image();img.onload=function(){
+    try{var max=640,k=Math.min(1,max/Math.max(img.width,img.height)),w=Math.round(img.width*k),hh=Math.round(img.height*k),c=document.createElement("canvas");c.width=w;c.height=hh;
+      c.getContext("2d").drawImage(img,0,0,w,hh);var q=0.82,url=c.toDataURL("image/jpeg",q);while(url.length>95000&&q>0.3){q-=0.08;url=c.toDataURL("image/jpeg",q);}cb(url.length<110000?url:null);}catch(e){cb(null);}
+  };img.onerror=function(){cb(null);};img.src=rd.result;};
+  rd.onerror=function(){cb(null);};rd.readAsDataURL(file);
+}
+function lightbox(src,alt){var box=h("div",{class:"lightbox",role:"dialog","aria-label":alt||"Flyer",onclick:function(){box.remove();}},h("img",{src:src,alt:alt||"Flyer"}),h("p",{class:"lb-x",text:"Tap anywhere to close"}));document.body.append(box);}
+function flyerThumb(ev){var f=cleanFlyer(ev.flyer);return f?h("img",{class:"flyer-th",src:f,alt:(ev.name||"Event")+" flyer"}):h("div",{class:"flyer-th empty","aria-label":"No flyer yet",text:"No flyer yet"});}
+function flyerHero(ev,admin){
+  var f=cleanFlyer(ev.flyer);
+  if(f)return h("button",{type:"button",class:"flyer-btn","aria-label":"View the flyer full screen",onclick:function(){lightbox(f,(ev.name||"Event")+" flyer");}},h("img",{class:"flyer-hero",src:f,alt:(ev.name||"Event")+" flyer"}));
+  return h("div",{class:"flyer-empty"},h("b",{text:"No flyer yet"}),h("span",{class:"sub",text:admin?"Add the flyer so the crew can see it on the event and in the list.":"The flyer will show here once it's added."}),
+    admin?h("button",{type:"button",class:"btn small go",text:"Add a flyer",onclick:function(){S.panel.evdetails=true;renderEvents();var d=$("evDetails");if(d&&d.scrollIntoView)d.scrollIntoView({block:"start"});}}):null);
+}
+function flyerField(ev){
+  var st=h("p",{class:"status",role:"status","aria-live":"polite"}),file=h("input",{type:"file",accept:"image/*",id:"flyerIn",class:"sr"});
+  file.addEventListener("change",function(){var f=file.files&&file.files[0];if(!f)return;say(st,"Preparing the flyer…");
+    shrinkFlyer(f,function(url){if(!url){say(st,"That image could not be used or is too large. Try another.","warn");return;}ev.flyer=url;saveEvent(ev,true);renderEvents();toast("Flyer added.");});});
+  return h("div",{class:"field"},h("label",{text:"Flyer"}),cleanFlyer(ev.flyer)?h("img",{class:"flyer-th",src:cleanFlyer(ev.flyer),alt:"Current flyer"}):null,file,
+    h("div",{class:"row"},h("label",{for:"flyerIn",class:"btn small go"},cleanFlyer(ev.flyer)?"Change flyer":"Choose a flyer"),
+      cleanFlyer(ev.flyer)?h("button",{type:"button",class:"btn small",text:"Remove flyer",onclick:function(){ev.flyer="";saveEvent(ev,true);renderEvents();}}):null),st);
 }
 function briefLine(ev){var b=[];if(ev.client)b.push("Client: "+ev.client);if(ev.audience)b.push(ev.audience+" guests expected");if(ev.games)b.push("Games: "+ev.games);return b.length?h("p",{class:"sub brief",text:b.join(" · ")}):null;}
 // Files and links: anything the crew needs to open for this event. Admins add them, everyone on the event sees them.
@@ -4033,6 +4069,7 @@ function drawMemberEvent(root,ev){
   var mine=(ev.tasks||[]).filter(function(t){return t.owner===S.uid&&(t.offered||t.manual);}).sort(function(a,b){return (taskDue(ev,a)||Infinity)-(taskDue(ev,b)||Infinity);});
   root.append(h("button",{type:"button",class:"btn small",text:"← Your events",onclick:function(){S.evSel="";renderMyEvents();}}),
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
+    flyerHero(ev,false),
     ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
     h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
     briefLine(ev),filesCard(ev,false),
@@ -4250,7 +4287,7 @@ function drawPlan(root){
     var tk=ev.tasks||[],nDone=tk.filter(function(x){return taskState(ev,x)==="done";}).length,nOpen=tk.filter(function(x){return taskState(ev,x)==="open";}).length;
     var left=h("p",{class:"plan-left"},h("b",{text:(tk.length-nDone)+" tasks left"}),nDone?" · "+nDone+" done":"",nOpen?" · ":"",nOpen?h("span",{class:"plan-open",text:nOpen+" still need someone"}):null);
     var key="plan:"+ev.id,open=idx===0?S.panel[key]!==false:!!S.panel[key];
-    var card=h("section",{class:"card hsec plan-card"},head,left,
+    var card=h("section",{class:"card hsec plan-card"},h("div",{class:"evrow"},flyerThumb(ev),head),left,
       (adminView()&&eventWhy(ev).why.length)?h("p",{class:"sub",style:"margin:-4px 0 8px",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
       new Date((ev.date||"")+"T23:59:59")>=new Date()&&ev.published!==false?attendCard(ev,"row"):null,
       open?[journey(ev,{vertical:true,rerender:renderPlan}),
