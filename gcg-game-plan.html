@@ -553,6 +553,15 @@ body.has-nav{padding-bottom:104px}
 .evwrap.evtile{padding:14px;gap:0}
 .tlmini{margin-top:12px;border-top:1.5px solid var(--soft);padding-top:10px}
 .tlmini .btn.link{margin-top:2px}
+.overall{margin-top:18px}
+.ovlist{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.ovitem{border-top:1.5px solid var(--soft)}
+.ovrow{appearance:none;display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:12px 0;cursor:pointer;color:inherit;font:inherit}
+.ovrow .jbar{grid-column:1/-1}
+.ovbody{display:grid;gap:10px;padding:0 0 14px}
+.ovt{display:grid;gap:2px}
+.jbar.sm{height:6px}
+.ovwho{margin:0}
 .evhead2{gap:12px;padding:16px}
 .evhead2 .evmedia{display:flex;gap:14px;align-items:flex-start}
 .evhead2 .plan-head{flex:1;min-width:0}
@@ -3180,6 +3189,42 @@ function drawEventList(root){
       e.published=false;if(S.people&&S.people.length)suggestCore(e);S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
   planCards(root,renderEvents,false);
+  overallPlan(root);
+}
+// Admin only, at the bottom of Events: the team total, then one row per event. Tap a row to open that event's whole plan.
+function overallPlan(root){
+  if(!adminView())return;
+  var evs=activeEvents().filter(function(e){return e.published!==false;});
+  if(!evs.length)return;
+  var total=0,done=0;
+  evs.forEach(function(e){(e.tasks||[]).forEach(function(t){total++;if(taskState(e,t)==="done")done++;});});
+  var pct=total?Math.round(done/total*100):0;
+  var box=h("section",{class:"card hsec overall"},h("h3",{class:"q",text:"Overall plan"}),
+    h("p",{class:"sub",text:done+" of "+total+" tasks done across "+evs.length+" event"+(evs.length>1?"s":"")+". Tap an event for its full plan."}),
+    h("div",{class:"jbar","aria-label":pct+"% of tasks done"},h("i",{style:"width:"+pct+"%"})));
+  evs.forEach(function(e){
+    var p=eventPct(e),pace=eventPace(e),cur=stageData(e).filter(function(x){return x.cur;})[0],tk=e.tasks||[],nO=tk.filter(function(t){return taskState(e,t)==="open";}).length;
+    var key="ov:"+e.id,open=!!S.panel[key],late=[];
+    priorityList(e).forEach(function(x){if(x.t.owner&&(x.late||x.st==="stuck"))late.push(x);});
+    var byWho={};late.forEach(function(x){(byWho[x.t.owner]=byWho[x.t.owner]||[]).push(x);});
+    var row=h("button",{type:"button",class:"ovrow","aria-expanded":String(open),onclick:function(){S.panel[key]=!open;renderEvents();}},
+      h("span",{class:"ovt"},h("b",{text:e.name||"Event"}),h("span",{class:"sub",text:(cur?cur.name+" now · ":"")+(p===0?"Not started":p+"% ready")+" · "+pace+(late.length?" · "+late.length+" behind":"")})),
+      h("span",{class:"chev","aria-hidden":"true",text:open?"−":"+"}),
+      h("span",{class:"jbar sm"},h("i",{style:"width:"+p+"%"})));
+    var item=h("div",{class:"ovitem"},row);
+    if(open){
+      item.append(h("div",{class:"ovbody"},
+        h("p",{class:"sub",text:readyText(e)+(nO?" · "+nO+" task"+(nO>1?"s":"")+" still need someone":"")}),
+        journey(e,{vertical:true,rerender:renderEvents,me:S.uid}),
+        h("p",{class:"lab",text:"Who is behind"}),
+        Object.keys(byWho).length?h("ul",{class:"ovlist"},Object.keys(byWho).map(function(id){var L=byWho[id];
+          return h("li",null,h("p",{class:"ovwho"},h("b",{text:nameOf(id)}),h("span",{class:"sub",text:" · "+L.length+" task"+(L.length>1?"s":"")+" behind"})),
+            h("p",{class:"sub",style:"margin:0",text:L.slice(0,3).map(function(x){return x.t.title+(x.st==="stuck"?" (stuck)":"");}).join("; ")+(L.length>3?" and "+(L.length-3)+" more":"")}));})):h("p",{class:"sub",text:"Nobody is behind on this one."}),
+        h("button",{type:"button",class:"btn small",text:"Open the event",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}})));
+    }
+    box.append(item);
+  });
+  root.append(box);
 }
 // Hinda can record that a task is done, for the person who did it. Only they or an admin can do this.
 function doneForm(ev,t){
@@ -3931,7 +3976,7 @@ function eventPct(ev){
   return Math.round(ks.filter(function(k){return g[k].every(function(t){return taskState(ev,t)==="done";});}).length/ks.length*100);
 }
 function journey(ev,opts){
-  opts=opts||{};var st=stageData(ev),pct=eventPct(ev),mine=opts.me?(ev.tasks||[]).filter(function(t){return t.owner===opts.me;}):[];
+  opts=opts||{};var adm=adminView()&&!opts.mine;var st=stageData(ev),pct=eventPct(ev),mine=opts.me?(ev.tasks||[]).filter(function(t){return t.owner===opts.me;}):[];
   var row=h("ol",{class:opts.vertical?"jr jv":"jr","aria-label":"Event stages"});
   st.forEach(function(s,i){
     var state=s.done?"done":s.cur?"cur":s.late?"late":"";
@@ -3942,18 +3987,18 @@ function journey(ev,opts){
       "aria-label":s.name+": "+(s.done?"done":s.cur?"happening now":s.late?"behind":"to come"),
       onclick:opts.compact?(opts.onOpen||null):function(){S.tlOpen[key]=!open;(opts.rerender||function(){})();}},
       h("span",{class:"jpe","aria-hidden":"true"},ico(s.done?"check":s.emo,22)),h("span",{class:"jpn",text:s.name}),
-      opts.vertical?h("span",{class:"jpm",text:(s.done?"done":s.due?(s.late?"was due ":"due ")+fmtWhen(s.due):"")+(!adminView()&&mine.length?(function(){var n=mine.filter(function(t){return s.tasks.indexOf(t)>-1&&taskState(ev,t)!=="passed";}).length;return n?" · "+n+" for you":"";})():"")}):null,
+      opts.vertical?h("span",{class:"jpm",text:(s.done?"done":s.due?(s.late?"was due ":"due ")+fmtWhen(s.due):"")+(!adm&&mine.length?(function(){var n=mine.filter(function(t){return s.tasks.indexOf(t)>-1&&taskState(ev,t)!=="passed";}).length;return n?" · "+n+" for you":"";})():"")}):null,
       s.cur?h("span",{class:"jpnow",text:"NOW"}):null,you?h("span",{class:"jpyou",text:"YOU"}):null);
     row.append(h("li",null,b));
   });
-  var bar=adminView()?h("div",{class:"jbar","aria-label":pct+"% ready"},h("i",{style:"width:"+pct+"%"})):null;
+  var bar=adm?h("div",{class:"jbar","aria-label":pct+"% ready"},h("i",{style:"width:"+pct+"%"})):null;
   var box=h("div",{class:"journey"},opts.vertical?bar:null,row,opts.vertical?null:bar,
-    (!adminView()&&opts.vertical&&!opts.compact)?h("p",{class:"sub",text:"Tap a stage to see your tasks in it."}):null,
+    (!adm&&opts.vertical&&!opts.compact)?h("p",{class:"sub",text:"Tap a stage to see your tasks in it."}):null,
     h("p",{class:"jpct"},h("b",{text:readyText(ev)}),(function(){var c=st.filter(function(s){return s.cur;})[0];return c&&c.due&&!opts.compact?[" · "+c.name+" ",clockSpan(c.due)]:"";})()));
   if(!opts.compact){
     st.forEach(function(s){
       if(!S.tlOpen[ev.id+":"+s.key])return;
-      if(!adminView()){
+      if(!adm){
         var my=s.tasks.filter(function(t){return t.owner===S.uid&&(t.offered||t.manual)&&taskState(ev,t)!=="passed";});
         box.append(h("div",{class:"jdetail"},h("b",{text:s.name+": your tasks"}),my.length?h("ul",{class:"tl-who mytl"},my.map(function(t){var ts=taskState(ev,t),d=taskDue(ev,t);
           return h("li",{"data-s":ts},h("button",{type:"button",class:"mytl-b",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}},h("i",{class:"mk","data-s":ts==="done"?"done":""}),
@@ -4550,18 +4595,16 @@ function planCards(root,rerender,mem){
     var key="plan:"+ev.id,open=!!S.panel[key];
     var myTs=tk.filter(function(x){return x.owner===S.uid&&(x.offered||x.manual)&&taskState(ev,x)!=="passed";}),myDone=myTs.filter(function(x){return taskState(ev,x)==="done";}).length;
     var openEv=function(){if(S.isAdmin&&!S.asMember){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}};
-    var lines=[mineIds[ev.id]&&mem?h("span",{class:"chip good",style:"justify-self:start",text:"You are helping"}):null,
+    var lines=[mineIds[ev.id]?h("span",{class:"chip good",style:"justify-self:start",text:"You are helping"}):null,
       ev.published===false?h("span",{class:"phasepill",style:"justify-self:start",text:"Draft, hidden from the team"}):null,
-      mem&&mineIds[ev.id]?h("span",{class:"plan-left",text:"Your tasks: "+myDone+" of "+myTs.length+" done"}):null].filter(Boolean);
+      mineIds[ev.id]?h("span",{class:"plan-left",text:"Your tasks: "+myDone+" of "+myTs.length+" done"}):null].filter(Boolean);
     var card=h("section",{class:"card hsec plan-card"},evTile(ev,{open:openEv,lines:lines}),
-      adminView()?left:null,
-      (adminView()&&eventWhy(ev).why.length)?h("p",{class:"sub",style:"margin:-4px 0 8px",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
       // Every event shows its timeline: a row of stage dots, tap to open it out and see each stage.
-      open?[journey(ev,{vertical:true,rerender:rerender,me:S.uid}),
+      open?[journey(ev,{vertical:true,rerender:rerender,me:S.uid,mine:true}),
           line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
           next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
           h("button",{type:"button",class:"btn link",text:"Close the timeline",onclick:function(){S.panel[key]=false;rerender();}})]
-        :h("div",{class:"tlmini"},journey(ev,{compact:true,onOpen:function(){S.panel[key]=true;rerender();}}),
+        :h("div",{class:"tlmini"},journey(ev,{compact:true,mine:true,onOpen:function(){S.panel[key]=true;rerender();}}),
           h("button",{type:"button",class:"btn link",text:"Open the timeline ›",onclick:function(){S.panel[key]=true;rerender();}})));
     root.append(card);
   });
