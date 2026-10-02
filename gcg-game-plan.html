@@ -542,6 +542,10 @@ body.has-nav{padding-bottom:104px}
 .addev>summary::-webkit-details-marker{display:none}
 .addev[open]>summary{border-bottom:1.5px solid var(--soft)}
 .addev>:not(summary){margin-left:16px;margin-right:16px}
+.addev>input,.addev>textarea,.addev>select{width:calc(100% - 32px);max-width:calc(100% - 32px);min-width:0}
+.addev input,.addev select,.addev textarea{max-width:100%;min-width:0}
+.addev .two-col>*{min-width:0}
+.addev .field input{width:100%}
 .addev>*:last-child{margin-bottom:16px}
 .evwrap{margin:0}
 .evwrap .evcard{width:100%;box-sizing:border-box}
