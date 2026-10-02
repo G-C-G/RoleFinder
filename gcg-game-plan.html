@@ -558,6 +558,9 @@ body.has-nav{padding-bottom:104px}
 .tlmini{margin-top:12px;border-top:1.5px solid var(--soft);padding-top:10px}
 .tlmini .btn.link{margin-top:2px}
 .ovrow.noopen{cursor:default}
+.sharedwith{gap:10px}
+.shrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.shrow .ovt{flex:1 1 160px;min-width:0;display:grid;gap:2px}
 .pgantt{display:grid;gap:6px}
 .pgaxis{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:700}
 .pgrow{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:center}
@@ -3420,7 +3423,7 @@ function projectsBlock(root){
         h("span",{class:"plan-left"},h("b",{text:p.pct+"% done"}),(p.pace?" · "+p.pace:"")+(p.left?" · "+p.left+" step"+(p.left>1?"s":"")+" left":"")),
         admin&&p.over>0?h("span",{class:"sub",text:"The plan ends "+p.over+" day"+(p.over>1?"s":"")+" after the target."}):null,
         !admin&&p.mine?h("span",{class:"chip good",style:"justify-self:start",text:"You have a step"}):null)));
-    var foot=h("div",{class:"tilefoot"},waButton(projectShareText(p),"Share this project"),
+    var foot=h("div",{class:"tilefoot"},waButton(projectShareText(p),"Share this project",{kind:"project",id:p.id,name:p.name}),
       p.ms?h("div",{class:"pjdots"},msDots(p.ms,p.msl?p.msl.map(function(m){return m.n;}):null,admin&&p.msl&&p.msl.length?function(){S.panel[key]=!open;renderEvents();}:null)):null);
     var card=h("section",{class:"card hsec plan-card"},top,foot,h("div",{class:"jbar sm","aria-label":p.pct+"% done"},h("i",{style:"width:"+p.pct+"%"})));
     var links=h("div",{class:"row pjlinks"},
@@ -3533,7 +3536,7 @@ function drawProject(root){
         h("span",{class:"plan-when",text:tg0?"Done by "+pShort(tg0):"No target date"}),dd!=null?h("span",{class:"plan-days",text:dd>=0?dd+" days to go":(-dd)+" days past"}):null,
         h("span",{class:"plan-left"},h("b",{text:st.pct+"% done"}),(st.pace?" · "+st.pace:"")),
         h("span",{class:"sub",text:st.steps+" steps"+(ms0.length?" in "+ms0.length+" milestones":"")}))),
-      h("div",{class:"tilefoot"},waButton(projectShareText({id:pr.id,name:pr.name,pct:st.pct,pace:st.pace,start:pr.start,target:pr.target}),"Share this project"),ms0.length?h("div",{class:"pjdots"},msDots(msCodes(ms0),ms0.map(function(m){return m.n;}),null)):null)));})();
+      h("div",{class:"tilefoot"},waButton(projectShareText({id:pr.id,name:pr.name,pct:st.pct,pace:st.pace,start:pr.start,target:pr.target}),"Share this project",{kind:"project",id:pr.id,name:pr.name}),ms0.length?h("div",{class:"pjdots"},msDots(msCodes(ms0),ms0.map(function(m){return m.n;}),null)):null)));})();
   // the time frame: when it starts and when it has to be done
   var fin=sc.finish,sg=projSuggest(pr);
   var fitText=!st.steps?"Add steps with estimated days and the page works out the finish.":tg?(st.over>0?"The steps as estimated finish "+pShort(fin)+": "+st.over+" day"+(st.over>1?"s":"")+" after the date you need. Shorten a step, run two together, or move the date.":(st.over===0?"The steps as estimated finish on "+pShort(fin)+", right on the date you need. There is no buffer.":"The steps as estimated finish "+pShort(fin)+": "+(-st.over)+" day"+(st.over<-1?"s":"")+" before the date you need.")):"Set the date it has to be done by.";
@@ -3755,7 +3758,7 @@ function adminTask(ev,t,cur){
       t.msg?h("button",{type:"button",class:"btn small",text:"Draft guest message",onclick:function(){S.evMsgs={eid:ev.id,title:"Guest message (paste into Luma, WhatsApp or SMS)",list:[{text:guestMessage(ev,t.msg)}]};renderEvents();window.scrollTo(0,0);}}):null,
       t.owner&&(st==="draft"||st==="offered")?h("button",{type:"button",class:"btn small",text:"Assign directly",title:"Give it to them without asking",onclick:function(){t.offered=true;t.ots=t.ots||nowIso();t.manual="take";saveEvent(ev,true);renderEvents();}}):null,
       t.owner?h("button",{type:"button",class:"btn small",text:"Ping",onclick:function(){S.panel[pk]=!S.panel[pk];renderEvents();}}):null,
-      waButton(taskShareText(ev,t),"Share"),lk,
+      waButton(taskShareText(ev,t),"Share",{kind:"task",id:ev.id+"."+t.id,eid:ev.id,tid:t.id,name:t.title}),lk,
       st!=="done"?h("button",{type:"button",class:"btn small",text:S.panel["md"+t.id]?"Cancel":"Mark done",onclick:function(){S.panel["md"+t.id]=!S.panel["md"+t.id];renderEvents();}}):null,
       st==="done"&&t.manual==="done"?h("button",{type:"button",class:"btn link",text:"Undo done",onclick:function(){t.manual="";saveEvent(ev,true);renderEvents();}}):null,
       t.owner&&st!=="passed"&&st!=="open"&&st!=="done"?h("button",{type:"button",class:"btn link",text:"Mark can't do it",onclick:function(){t.manual="pass";saveEvent(ev,true);renderEvents();}}):null),
@@ -3929,12 +3932,42 @@ function linkText(){var t="";try{t+=String(location.hash||"")+"&"+String(locatio
 function readHash(){var h0=linkText(),m=h0.match(/task=([^.&#?]+)\.([^&#?]+)/),e=h0.match(/event=([^.&#?]+)/),pj=h0.match(/project=([^.&#?]+)/);
   if(pj){S.goProj=decodeURIComponent(pj[1]);setTimeout(function(){if(S.goProj){S.goProj="";if(S.view==="flow"&&onboarded())showView(homeView());}},9000);}if(m)S.goTask={eid:decodeURIComponent(m[1]),tid:decodeURIComponent(m[2])};else if(e)S.goTask={eid:decodeURIComponent(e[1]),tid:""};}
 try{window.addEventListener("hashchange",function(){readHash();openLinkedProject();openLinkedTask();});}catch(e){}
+/* A shared link can land anywhere (some hosts drop the part after the #), so every share is also written down.
+   Anyone who opens the page sees "Shared with you" at the top of Home or Today, one tap from the item. */
+S.shares={};
+function shareSeen(){try{return JSON.parse(localStorage.getItem("gcg_shr_seen")||"{}");}catch(e){return {};}}
+function shareMark(key,at){try{var m=shareSeen();m[key]=at;localStorage.setItem("gcg_shr_seen",JSON.stringify(m));}catch(e){}}
+function recordShare(meta){
+  if(!meta||!S.db||!S.uid||S.canWrite===false)return;
+  var key=meta.kind+"_"+String(meta.id).replace(/[^\w.-]+/g,"_").slice(0,80),doc={kind:meta.kind,id:String(meta.id).slice(0,80),name:clean(meta.name).slice(0,100),eid:meta.eid||"",tid:meta.tid||"",by:S.uid,byName:clean(S.name).slice(0,40)||"Someone",at:nowIso()};
+  S.shares[key]=doc;S.db.doc("shares/"+key).set(doc).catch(function(){});
+}
+function openShared(sh,key){
+  shareMark(key,sh.at);
+  if(sh.kind==="project"){S.goProj=sh.id;openLinkedProject();if(S.goProj){S.goProj="";showView(adminView()?"events":"plan");}}
+  else if(sh.kind==="task"){S.goTask={eid:sh.eid,tid:sh.tid};openLinkedTask();if(S.goTask){S.goTask=null;showView(adminView()?"events":"plan");}}
+  else{var ev=evById(sh.id);if(ev&&adminView()){S.evOpen=sh.id;showView("events");}else if(ev){S.evSel=sh.id;showView("mevents");}else showView(adminView()?"events":"plan");}
+}
+function sharedWithYou(root){
+  var seen=shareSeen(),cut=Date.now()-10*864e5,list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){
+    var t=Date.parse(x.s.at);return t>cut&&!(seen[x.k]&&seen[x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));}).slice(0,3);
+  if(!list.length)return;
+  var box=h("section",{class:"card hsec sharedwith"},h("h3",{class:"q",text:"Shared with you"}));
+  list.forEach(function(x){var sh=x.s,kind=sh.kind==="project"?"Project":sh.kind==="task"?"Task":"Event";
+    var nm=sh.kind==="project"&&S.projPub[sh.id]?S.projPub[sh.id].name:sh.kind==="event"&&evById(sh.id)?evById(sh.id).name:sh.name;
+    box.append(h("div",{class:"shrow"},h("span",{class:"ovt"},h("b",{text:nm||sh.name}),h("span",{class:"sub",text:kind+" · shared by "+(sh.by===S.uid?"you":sh.byName)+" · "+timeAgo(new Date(sh.at))})),
+      h("button",{type:"button",class:"btn small go",text:"View full breakdown \u203A",onclick:function(){openShared(sh,x.k);}}),
+      h("button",{type:"button",class:"btn link","aria-label":"Hide this",text:"Hide",onclick:function(){shareMark(x.k,sh.at);S.view==="today"?renderToday():renderHome();}})));
+  });
+  root.append(box);
+}
 // Share straight into WhatsApp: opens the app (or WhatsApp Web) with the message ready to send to a chat or group.
 // One Share button: the phone's share sheet (WhatsApp is in it) when there is one, otherwise WhatsApp itself. The message carries the link.
-function waButton(text,label){
+function waButton(text,label,meta){
   var wa="https://wa.me/?text="+encodeURIComponent(text);
   var lab=label||"Share";
   return h("a",{class:"iconbtn wa",href:wa,target:"_blank",rel:"noopener","aria-label":lab,title:lab,onclick:function(e){
+    recordShare(meta);
     if(!navigator.share)return;
     e.preventDefault();
     navigator.share({text:text}).catch(function(err){if(err&&err.name==="AbortError")return;window.open(wa,"_blank","noopener");});
@@ -4643,6 +4676,7 @@ function drawHome(root){
   var nm=clean(S.name)||"there";
   // Identity band: photo, name, one-line bio. Everything below it is the work.
   root.append(identityBand(nm,prof?prof.title:"Finish your profile to see your card"));
+  sharedWithYou(root);
   var firstRun=!S.isAdmin&&!items.length&&!myTasks().length&&!!prof;
   var top=items[0],topEv=top?top.ev:null,itemsTop=items.filter(function(x){return x.ev===topEv;}),otherEvs=[];
   items.forEach(function(x){if(x.ev!==topEv&&otherEvs.indexOf(x.ev)<0)otherEvs.push(x.ev);});
@@ -4837,7 +4871,7 @@ function evTile(ev,o){
       d?h("span",{class:"plan-days",text:d}):null,
       o.lines&&o.lines.length?o.lines:null)));
   var pub=ev.published!==false;
-  return [top,pub?h("div",{class:"tilefoot"},waButton(eventShareText(ev),"Share this event"),attendCard(ev,"tile")):null];
+  return [top,pub?h("div",{class:"tilefoot"},waButton(eventShareText(ev),"Share this event",{kind:"event",id:ev.id,name:ev.name}),attendCard(ev,"tile")):null];
 }
 // The top of an event page: flyer left, details right, then Share and "Are you coming", then goal and description. One layer at a time.
 function evHeader(ev,admin){
@@ -4850,7 +4884,7 @@ function evHeader(ev,admin){
       d?h("span",{class:"plan-days",text:d}):null,
       ev.place?h("span",{class:"plan-when",text:ev.place}):null,
       h("span",{class:"sub",text:(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}))),
-    upcoming?h("div",{class:"tilefoot"},waButton(eventShareText(ev),"Share this event"),attendCard(ev,"tile")):null,
+    upcoming?h("div",{class:"tilefoot"},waButton(eventShareText(ev),"Share this event",{kind:"event",id:ev.id,name:ev.name}),attendCard(ev,"tile")):null,
     ev.goal?h("p",{class:"goal",style:"margin:0"},h("b",{text:"Goal: "}),ev.goal):(admin?h("p",{class:"sub",style:"margin:0",text:"Add a one-line goal under Edit event."}):null),
     ev.about?h("p",{class:"about",style:"margin:0",text:ev.about}):(admin?h("p",{class:"sub",style:"margin:0",text:"Add a short description under Edit event, so the crew knows what it is about."}):null));
 }
@@ -4959,6 +4993,7 @@ function drawToday(root){
   root.append(identityBand(clean(S.name)||"Hinda","Admin"),h("h1",{class:"h-sum",text:"GCG today"}),
     h("div",{class:"tstats"},[[coming,coming===1?"event coming up":"events coming up","events"],[need.length,"need attention","needs"],[waiting,"waiting for an answer","events"],[gaps,"wings with 0–1 people","team"]].map(function(s){
       return h("button",{type:"button",class:"tstat"+(s[2]==="needs"&&s[0]?" bad":""),onclick:function(){if(s[2]==="needs"){var n=$("needsYou");if(n&&n.scrollIntoView)n.scrollIntoView({block:"start"});}else{showView(s[2]);if(s[2]==="team"){S.teamTab="coverage";renderTeam();}}}},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));})));
+  sharedWithYou(root);
   if(drafts)root.append(h("p",{class:"sub",style:"margin:8px 2px 0"},drafts+" draft event"+(drafts>1?"s":"")+" not yet shared with the team. ",h("button",{type:"button",class:"btn link",text:"Open Events ›",onclick:function(){showView("events");}})));
   var hasProfile=!!profileOf(Object.assign(payload(),{id:S.uid}));
   var teamJoined=Object.keys(S.crew||{}).some(function(id){return id!==S.uid;});
@@ -5612,6 +5647,7 @@ function initCaps(){
         S.db.collection("projectup").onSnapshot(function(snap){S.pup={};snap.docs.forEach(function(d){S.pup[d.id]=thaw(d.data());});rerenderProj();},function(){});
         S.db.collection("projectmine").onSnapshot(function(snap){S.pmineAll={};snap.docs.forEach(function(d){S.pmineAll[d.id]={items:thaw(d.data()).items||{}};});},function(){});
       }
+      S.db.collection("shares").onSnapshot(function(snap){S.shares={};snap.docs.forEach(function(d){S.shares[d.id]=thaw(d.data());});if(S.view==="home")renderHome();if(S.view==="today")renderToday();},function(){});
       S.db.collection("replies").onSnapshot(function(snap){
         S.replies=snap.docs.map(function(d){return thaw(d.data());}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
         applyClaims();syncProjects();
