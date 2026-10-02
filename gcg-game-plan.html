@@ -526,6 +526,7 @@ body.has-nav{padding-bottom:104px}
 .hero-move .needed{background:rgba(255,255,255,.55)}
 .hero-move .btn.go{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn.chat{margin:4px 0 2px}
+.crewsearch{width:100%;box-sizing:border-box;margin:0 0 12px;font-size:16px}
 .btn.wa{text-decoration:none;margin:4px 6px 2px 0}
 .credits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:15px}
 .trail-n{font-weight:800;color:var(--gold-ink)}
@@ -4871,11 +4872,18 @@ function renderCrew(){
 }
 function drawCrew(root){
   var ids=Object.keys(S.crew||{});
-  root.append(h("h1",{class:"h-sum",text:"The crew"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Everyone at GCG, and what they do. Tap a card to see what they have chosen to share."}));
-  var tts=S.titles.filter(function(x){return (x.holders||[]).length;});
-  if(tts.length)root.append(h("section",{class:"card hsec"},h("p",{class:"k",text:"Who does what"}),
-    tts.map(function(x){return h("div",{class:"crewtitle"},h("b",{text:x.name}),h("span",{class:"sub",text:(x.holders||[]).map(nameOf).join(", ")}),x.desc?h("span",{class:"sub",text:x.desc}):null);})));
+  root.append(h("h1",{class:"h-sum",text:"The crew"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:"Everyone at GCG. Search, or scroll, and tap a card to see what they have chosen to share."}));
   if(!ids.length){root.append(h("p",{class:"sub",text:"The crew shows up here as people finish their profiles."}));return;}
+  var q=h("input",{type:"search",class:"crewsearch","aria-label":"Search the crew","data-k":"crewq",placeholder:"Search by name, title or what they do, for example founder or marketing"});
+  q.value=S.crewQ||"";q.addEventListener("input",function(){S.crewQ=q.value;renderCrew();});
+  root.append(q);
+  var words=clean(S.crewQ).toLowerCase().split(/\s+/).filter(Boolean);
+  if(words.length){
+    ids=ids.filter(function(id){var c=S.crew[id]||{},sc=c.sections||{};
+      var hay=[c.name,c.type,(c.chips||[]).join(" "),(c.strengths||[]).join(" "),titlesOf(id).map(function(x){return x.name;}).join(" "),(sc.up||[]).join(" "),(sc.did||[]).join(" "),(sc.brings||[]).join(" "),sc.proud||"",sc.works||""].join(" ").toLowerCase();
+      return words.every(function(w){return hay.indexOf(w)>-1;});});
+    if(!ids.length){root.append(h("p",{class:"sub",text:"Nobody matches that yet. Try a title, a name or a job."}));return;}
+  }
   ids.sort(function(a,b){if(a===S.uid)return -1;if(b===S.uid)return 1;return String(S.crew[a].name).localeCompare(String(S.crew[b].name));});
   ids.forEach(function(id){
     var c=S.crew[id],key="crew:"+id,open=!!S.tlOpen[key],secs=c.sections||{},ts=titlesOf(id),n=Object.keys(secs).length;
