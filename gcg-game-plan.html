@@ -194,8 +194,6 @@ textarea{resize:vertical}
 
 /* player card */
 .pcard{position:relative;border:3px solid var(--edge);border-radius:24px;overflow:hidden;background:var(--night);color:var(--on-night);box-shadow:0 8px 0 var(--shadow)}
-.pcard .bands{display:grid;grid-template-rows:repeat(3,10px)}
-.pcard .bands i:nth-child(1){background:#D7263D}.pcard .bands i:nth-child(2){background:#F6B80F}.pcard .bands i:nth-child(3){background:#12894A}
 .pc-in{display:grid;gap:14px;padding:20px 18px 22px}
 .pc-top{display:flex;gap:14px;align-items:center}
 .pc-top img{width:64px;height:64px;border-radius:14px;border:2px solid #F6B80F;object-fit:cover;flex:none}
@@ -920,6 +918,43 @@ button.chip.on{outline:2px solid var(--ink)}
 .nrow .btn{flex:none;min-height:36px;padding:6px 14px}
 .band-more{appearance:none;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:11px;font:600 14px var(--font-body);color:var(--muted);cursor:pointer;min-height:44px}
 .ks-ico.k0{background:var(--red-soft)}.ks-ico.k1{background:var(--gold-soft)}.ks-ico.k2{background:var(--green-soft)}.ks-ico.k3{background:var(--soft)}
+
+/* ---------- Design pass: crew card profile, type scale, touch targets, motion ---------- */
+.mehero{display:grid;gap:12px;background:var(--card);border:1.5px solid var(--edge-soft);border-radius:20px;padding:20px;margin-top:12px}
+.me-top{display:flex;gap:16px;align-items:center}
+.me-photo{width:96px;height:96px;border-radius:22px;object-fit:cover;border:2px solid var(--ink);flex:none;background:var(--gold-soft)}
+.me-photo.empty{display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:32px;color:var(--ink)}
+.me-id{min-width:0}.me-kick{display:flex;align-items:center;gap:8px;margin:0;font-family:var(--font-display);font-weight:700;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.me-name{font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1.08;margin:4px 0 2px;overflow-wrap:anywhere}
+.me-role{margin:0;font-size:15px;color:var(--muted)}.me-statement{margin:0;font-size:15px;line-height:1.5}.me-count{margin:0;font-size:14px;color:var(--muted)}
+.mrows{margin:16px 0 4px;border:1.5px solid var(--edge-soft);border-radius:16px;background:var(--card);overflow:hidden}
+.mrow+.mrow{border-top:1px solid var(--line)}.mrow summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:0 16px;cursor:pointer;list-style:none}
+.mrow summary::-webkit-details-marker{display:none}.mr-t{font-family:var(--font-display);font-weight:600;font-size:16px}.mr-t{flex:1}.mr-n{font-size:14px;color:var(--muted)}.mrows{margin-bottom:12px}.mehero+.pcard{margin-top:12px}
+.mrow summary::after{content:"+";margin-left:10px;color:var(--muted);font-weight:700}.mrow[open] summary::after{content:"\2212"}.mr-b{padding:0 16px 16px;display:grid;gap:8px}.mr-b p{margin:0}
+.neverbox{margin:16px 0;padding:16px;border-radius:16px;border:1.5px solid var(--edge-soft);border-left:5px solid var(--red);background:var(--card)}
+.neverbox .lab{color:var(--warn);margin:0 0 4px}.neverbox .chip.no{border-color:var(--red)}
+/* colour means something: onboarding progress is gold, red is for overdue or blocked */
+.seg:nth-child(3n+1) i,.seg:nth-child(3n) i{background:var(--gold)}
+/* type scale */
+.h-sum{font-size:24px}.sub,.meta,.jhint{font-size:max(14px,1em)}.tstat .l{font-size:14px}
+/* touch targets: 44px minimum, 48px for the big primary actions */
+.btn.small,button.chip,.sb,.avopen,.avno,.chip.addchip{min-height:44px}.btn.big,.btn.wide{min-height:48px}
+.btn.small{display:inline-flex;align-items:center;justify-content:center}
+.btn.link{min-height:44px}
+/* motion: short and explanatory */
+.btn,.chip,.sb,.card,.tile,.pick,.choice,.trow{transition:transform .15s ease,background-color .2s ease,border-color .2s ease,box-shadow .2s ease}
+.btn:active,.sb:active,.chip:active,.tile:active,.pick:active,.choice:active,.trow:active{transform:scale(.97)}
+@keyframes tickpop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tick.on::before,.mk[data-s="done"]{animation:tickpop .25s ease}
+details>.mr-b,details[open]>.more-b{animation:fadeup .2s ease}
+@keyframes fadeup{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+/* skeletons: shown while the first data arrives, so nothing flashes empty */
+.skel{border-radius:16px;background:linear-gradient(90deg,var(--bg-2),var(--soft),var(--bg-2));background-size:200% 100%;animation:skel 1.2s ease-in-out infinite;height:84px;margin:12px 0}
+.skel.tall{height:140px}@keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
+.tier{display:inline-block;font-family:var(--font-display);font-weight:700;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1.5px solid var(--edge-soft)}
+.tier[data-t="top"]{background:var(--green-soft);border-color:var(--green)}.tier[data-t="strong"]{background:var(--gold-soft);border-color:var(--gold)}
+.emptystate{padding:24px 8px;text-align:center}.emptystate h3{font-family:var(--font-display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}.emptystate p{margin:0 0 12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 
 <div class="wrap" id="wrap">
@@ -1975,8 +2010,6 @@ function buildPdf(blocks){
   function newPage(){pages.push(cur);cur=[];y=H-M;}
   function need(hh){if(y-hh<M){newPage();}}
   function text(font,size,x,yy,str,rgb){cur.push("BT /"+font+" "+size+" Tf "+(rgb||"0.08 0.07 0.05")+" rg "+x+" "+yy+" Td ("+pdfAscii(str)+") Tj ET");}
-  var seg=[["0.843 0.149 0.239"],["0.965 0.722 0.059"],["0.071 0.537 0.290"]],sh=6;
-  seg.forEach(function(c,i){cur.push(c[0]+" rg 0 "+(H-(i+1)*sh)+" "+W+" "+sh+" re f");});
   y=H-M-14;
   blocks.forEach(function(b){
     if(b.t==="title"){pdfWrap(b.text,22,W-2*M).forEach(function(l){need(28);text("F2",22,M,y-22,l);y-=28;});y-=2;}
@@ -2766,7 +2799,7 @@ function clashes(ev,pid){var out=[];S.events.forEach(function(e){if(e.id===ev.id
 function personNotes(ev,pid){var n=[],a=attendOf(ev)[pid],c=clashes(ev,pid);if(a==="maybe")n.push("not sure they can come");if(c.length)n.push("also on "+c[0]+" that day");return n.length?" · "+n.join(" · "):"";}
 function personPicker(ev,t){
   var g=staffGroups(ev,t),owner=t.owner?personById(t.owner):null,key="ovr:"+t.id,box=h("div",{class:"picker"});
-  function lab(x){return pname(x.p)+(x.m&&x.m.why.length?" · "+(x.m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,2).map(whyText).join(" + ")||whyText(x.m.why[0])):"")+personNotes(ev,x.p.id)+(/^manual-/.test(x.p.id)?" (answers by message)":"");}
+  function lab(x){return pname(x.p)+(x.m&&x.m.why.length&&realWhy(x.m)?" · "+tierOf(x.m).t:"")+(x.m&&x.m.why.length?" · "+(x.m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,2).map(whyText).join(" + ")||whyText(x.m.why[0])):"")+personNotes(ev,x.p.id)+(/^manual-/.test(x.p.id)?" (answers by message)":"");}
   var sel=h("select",{"aria-label":"Who for "+t.title},h("option",{value:"",text:g.rec.length?"Choose someone…":"No one recommended yet"}));
   if(g.rec.length)sel.append(h("optgroup",{label:"Recommended, with why"},g.rec.map(function(x,i){return h("option",{value:x.p.id,text:lab(x)});})));
   if(g.mid.length)sel.append(h("optgroup",{label:"Nothing said about this work (no yes from them)"},g.mid.map(function(x){return h("option",{value:x.p.id,text:x.m.why.length?lab(x):pname(x.p)+" · nothing said about this work"+personNotes(ev,x.p.id)});})));
@@ -2786,6 +2819,8 @@ function personPicker(ev,t){
   return box;
 }
 // The review step: the first draft of the crew, checked by Hinda before anything is released.
+// Human labels instead of scores: top, strong or possible.
+function tierOf(m){var r=m.why.filter(function(w){return !/^Strong in/.test(w);}),yes=r.some(function(w){return /^Said yes/.test(w);});return yes&&r.length>=2?{k:"top",t:"Top match"}:(yes||r.length>=2)?{k:"strong",t:"Strong match"}:{k:"possible",t:"Possible match"};}
 function crewReview(ev){
   var list=unreviewed(ev);if(!list.length)return null;
   var open=(ev.tasks||[]).filter(function(t){return taskState(ev,t)==="open"&&!t.helper;}).length;
@@ -2796,7 +2831,7 @@ function crewReview(ev){
     list.map(function(t){var m=t.owner?taskMatch(personById(t.owner)||{id:t.owner,q:[],story:{}},t.job,ev.id):null,d=taskDue(ev,t),chg=!!S.panel["chg:"+t.id];
       return h("div",{class:"rvrow"},
         h("div",{class:"rv-t"},h("b",{text:t.title}),h("span",{class:"sub",text:(d?fmtWhen(d):"")+(t.pri==="must"?" · Essential":"")})),
-        h("div",{class:"rv-p"},h("b",{text:nameOf(t.owner)}),h("span",{class:"sub",text:(m&&m.why.length?m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,3).map(whyText).join(" · ")||m.why.map(whyText)[0]:"Suggested")+personNotes(ev,t.owner)})),
+        h("div",{class:"rv-p"},m?h("span",{class:"tier","data-t":tierOf(m).k,text:tierOf(m).t}):null,h("b",{text:nameOf(t.owner)}),h("span",{class:"sub",text:(m&&m.why.length?m.why.filter(function(w){return !/^Strong in/.test(w);}).slice(0,3).map(whyText).join(" · ")||m.why.map(whyText)[0]:"Suggested")+personNotes(ev,t.owner)})),
         h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Accept",onclick:function(){acceptTask(ev,t);saveEvent(ev,true);renderEvents();}}),
           h("button",{type:"button",class:"btn small",text:chg?"Close":"Change",onclick:function(){S.panel["chg:"+t.id]=!chg;renderEvents();}})),
         chg?personPicker(ev,t):null);}),
@@ -3068,7 +3103,7 @@ function drawEventList(root){
       e.published=false;if(S.people&&S.people.length)suggestCore(e);S.events.push(e);S.evOpen=e.id;S.panel.setup=true;saveEvent(e,true);renderEvents();window.scrollTo(0,0);}})),
     h("p",{class:"status",id:"evStatus",role:"status","aria-live":"polite"})));
   var list=S.events.slice().sort(function(a,b){return String(b.date||"~").localeCompare(String(a.date||"~"));});
-  if(!list.length)root.append(h("p",{class:"sub",style:"margin-top:14px",text:"No events yet."}));
+  if(!list.length)root.append(h("div",{class:"emptystate"},h("h3",{text:"No upcoming events"}),h("p",{text:"Nothing is scheduled yet. Your next event will appear here once it's created. Start with the form above."})));
   root.append(h("div",{class:"evlist"},list.map(function(e){
     var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
     return h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
@@ -3855,6 +3890,7 @@ function myProgressCard(){
     rows.length?h("div",{class:"prog-list"},rows):null);
 }
 function drawHome(root){
+  if(loadingNow()){root.append(identityBand(clean(S.name)||"there",""),skeleton(3));return;}
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),items=myOpenItems(),st=h("p",{class:"status",role:"status","aria-live":"polite"});
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
   var nEv=Object.keys(evCount).length,mp=prof?missingProfile():0;
@@ -3955,6 +3991,7 @@ function renderMyEvents(){
   try{drawMyEvents(root);}finally{focusRestore(root,keep);}
 }
 function drawMyEvents(root){
+  if(loadingNow()){root.append(skeleton(3));return;}
   var ev=S.evSel?evById(S.evSel):null;
   if(ev){drawMemberEvent(root,ev);return;}
   var evs=myEvents();
@@ -4175,11 +4212,14 @@ function renderInbox(){
 }
 
 /* ---------- Plan: where each event is, how ready it is, and where it is heading ---------- */
+function skeleton(n){var out=[];for(var i=0;i<(n||3);i++)out.push(h("div",{class:"skel"+(i===0?" tall":""),"aria-hidden":"true"}));return h("div",{role:"status","aria-label":"Loading"},out);}
+function loadingNow(){return !!S.db&&!S.eventsLoaded;}
 function renderPlan(){
   var root=$("planBody");if(!root)return;var keep=focusKeep(root);clear(root);
   try{drawPlan(root);}finally{focusRestore(root,keep);}
 }
 function drawPlan(root){
+  if(loadingNow()){root.append(skeleton(3));return;}
   var mem=!S.isAdmin;
   root.append(h("h1",{class:"h-sum",text:mem?"Events":"The plan"}),h("p",{class:"sub",style:"margin-top:-8px;margin-bottom:12px",text:mem?"What we are planning, nearest first.":"Where each event is, how ready it is, and where it is heading."}));
   // Everyone sees every event that is on, so the whole team knows what is coming and what is left.
@@ -4188,7 +4228,7 @@ function drawPlan(root){
   function dd(ev){var d=ev.date?new Date(ev.date+"T00:00:00"):null;return d&&!isNaN(d)?Math.round((d-today)/864e5):9999;}
   function grp(ev){var d=dd(ev);return d===0?0:d>0?1:2;}
   var evs=activeEvents().slice().sort(function(a,b){return (grp(a)-grp(b))||(grp(a)===2?dd(b)-dd(a):dd(a)-dd(b));});
-  if(!evs.length){root.append(h("p",{class:"sub",text:"No events yet. When one is planned, it shows here."}));return;}
+  if(!evs.length){root.append(h("div",{class:"emptystate"},h("h3",{text:"No upcoming events"}),h("p",{text:"Nothing is scheduled yet. Your next event will appear here once it's created."})));return;}
   var lastGrp=-1;
   evs.forEach(function(ev,idx){
     var g=grp(ev);
@@ -4267,7 +4307,6 @@ function playerCard(p,prof,opts){
   opts=opts||{};
   var ph=cleanPhoto(p.photo),logo=ph?h("img",{class:"avatar card",src:ph,alt:""}):LOGO.indexOf("data:")===0?h("img",{class:"pc2-logo",src:LOGO,alt:""}):null,ts=S.uid?titlesOf(opts.pid||S.uid):[];
   return h("article",{class:"pcard pc2"+(opts.reveal?" reveal":""),"aria-label":(p.name||"Your")+" player card"},
-    h("div",{class:"bands","aria-hidden":"true"},h("i"),h("i"),h("i")),
     h("div",{class:"pc2-in"},logo,
       h("p",{class:"pc-kick",text:"Gold Coast Games · Player card"}),
       h("p",{class:"pc2-name",text:p.name||"You"}),
@@ -4465,53 +4504,64 @@ function drawMe(root){
     return;
   }
   var hist=historyOf(S.uid),evc={};hist.forEach(function(x){evc[x.ev.id]=1;});
-  root.append(playerCard(p,prof,{counts:hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+Object.keys(evc).length+" event"+(Object.keys(evc).length===1?"":"s"):"New to the crew"}));
-  var pst=h("p",{class:"status",role:"status","aria-live":"polite"});
-  root.append(h("div",{class:"row center",style:"margin-top:12px"},
-    h("button",{type:"button",class:"btn small",text:"Share my card",onclick:function(){downloadPdf(true,pst);}}),
-    h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false,pst);}}),
-    h("button",{type:"button",class:"btn small",text:S.photo?"Change photo":"Add a photo",onclick:function(){startExtra("photo");}})),pst);
+  var evN=Object.keys(evc).length,counts=hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+evN+" event"+(evN===1?"":"s"):"New to the crew";
+  var role=ts.length?ts.map(function(x){return x.name;}).join(" · "):"The "+prof.chips[0]+" + "+prof.chips[1];
+  var ph=cleanPhoto(S.photo),pst=h("p",{class:"status",role:"status","aria-live":"polite"});
+  // The profile: a light crew card. The photo leads, then name, role, strengths and a line about you.
+  root.append(h("section",{class:"mehero"},
+    h("div",{class:"me-top"},
+      ph?h("img",{class:"me-photo",src:ph,alt:"Your photo"}):h("div",{class:"me-photo empty","aria-hidden":"true",text:initials(S.name)||"You"}),
+      h("div",{class:"me-id"},h("p",{class:"me-kick"},"GCG crew"),
+        h("h1",{class:"me-name",text:S.name||"You"}),h("p",{class:"me-role",text:role}))),
+    h("div",{class:"chips"},prof.top.map(function(t,i){return h("span",{class:"chip t"+i,text:TRAIT_LABEL[t]});})),
+    prof.lines[0]?h("p",{class:"me-statement",text:prof.lines[0]}):null,
+    h("p",{class:"me-count",text:counts}),
+    h("div",{class:"row"},
+      h("button",{type:"button",class:"btn small","aria-expanded":String(!!S.panel.crewcard),text:S.panel.crewcard?"Hide crew card":"Crew card",onclick:function(){S.panel.crewcard=!S.panel.crewcard;renderProfile();}}),
+      h("button",{type:"button",class:"btn small",text:S.photo?"Change photo":"Add a photo",onclick:function(){startExtra("photo");}}))));
+  if(S.panel.crewcard)root.append(playerCard(p,prof,{counts:counts}),h("div",{class:"row center",style:"margin-top:12px"},
+    h("button",{type:"button",class:"btn small go",text:"Share my card",onclick:function(){downloadPdf(true,pst);}}),
+    h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false,pst);}})),pst);
   var miss=EXTRA.filter(extraMissing).length;
   if(miss)root.append(h("button",{type:"button",class:"banner",onclick:startExtra},"Finish your profile: "+miss+" quick question"+(miss>1?"s":"")+" ›"));
-  root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"Who sees what"}),shareToggles(function(){saveResponse();})));
-  // Your summary: everything about you, in plain words. This is for you. The crew only sees what you chose to share (see Crew).
-  (function(){
-    var like=yes.concat(g.curious).map(function(i){return FN[i].name;}),no=g.no.map(function(i){return FN[i].name;}),ws=workStyle(st);
-    var done=maskLabels(EXP,p.q[NQ]),brings=labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]);
-    function line(label,val){return val?h("p",null,h("b",{text:label+": "}),val):null;}
-    root.append(h("section",{class:"card msec summary"},h("h3",{class:"msec-h",text:"You, in short"}),h("p",{class:"sub",text:"This is for you. Hinda sees your answers too. The crew only sees what you chose to share, and you can check that under Crew."}),
-      prof.lines.map(function(l){return h("p",{text:l});}),
-      line("Jobs you like",like.length?like.join(", "):"Nothing picked yet"),
-      line("Jobs that are not for you",no.length?no.join(", "):"None marked. You can add some below."),line("Would rather avoid, in your words",clean(p.avoid)),
-      line("How you work best",ws),line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",st.future?M_FUTURE[st.future].label:""),
-      line("What you have done",done.length?done.join("; "):""),line("What you bring",brings.join("; ")),line("Proudest work",st.proud),line("CV or link",clean(p.cv)),
-      h("div",{class:"stats"},prof.stats.map(function(x){return h("div",{class:"stat"},h("span",{text:x.label}),h("span",{class:"bar light","aria-hidden":"true"},h("i",{style:"width:"+Math.round(x.v*100)+"%"})));}))));
-  })();
-  root.append(appearanceBox());
-  // title
-  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"My title"}),
-    ts.length?ts.map(function(x){return h("div",{class:"box"},h("b",{text:x.name}),x.desc?h("p",{text:x.desc}):null,
-      h("details",{class:"more"},h("summary",{text:"What falls under it ("+sanitizeIds(x.jobs).length+")"}),h("ul",{class:"crew"},sanitizeIds(x.jobs).map(function(j){return h("li",null,h("b",{text:FN[j].name+": "}),FN[j].covers);}))));})
-      :h("p",{class:"sub",text:"For now you help across several jobs. When Hinda gives you a title, it shows here."})));
-  // likes: tap any job to change your answer
+  // Jobs: I like, I'm open to, Never offer. Tap any job to change your answer.
   function jobChips(list,cls){return h("div",{class:"chips"},list.map(function(i){var open=S.panel.lvl===i;
     return h("button",{type:"button",class:"chip "+cls+(open?" on":""),"aria-expanded":String(open),text:FN[i].name,onclick:function(){S.panel.lvl=open?"":i;renderProfile();}});}));}
   var picker=null;
   if(S.panel.lvl&&FN[S.panel.lvl]){var cur=S.levels[S.panel.lvl];
     picker=h("div",{class:"box lvlpick"},h("b",{text:FN[S.panel.lvl].name}),h("p",{class:"sub",text:FN[S.panel.lvl].covers}),
-      h("div",{class:"seg3"},[["good","I like it"],["curious","I might try"],["no","Not for me"]].map(function(o){
+      h("div",{class:"seg3"},[["good","I like it"],["curious","I'm open to it"],["no","Never offer"]].map(function(o){
         return h("button",{type:"button",class:"sb","data-c":o[0]==="no"?"no":"yes","aria-pressed":String(cur===o[0]),text:o[1],onclick:function(){S.levels[S.panel.lvl]=o[0];S.panel.lvl="";saveDraft();saveResponse();renderProfile();}});})));
   }
-  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"What I like and don't"}),h("p",{class:"sub",text:"Tap any job to change your answer."}),
-    yes.length?h("p",{class:"lab",text:"Jobs I like"}):null,yes.length?jobChips(yes,"good"):null,
-    g.curious.length?h("p",{class:"lab",text:"Jobs I might try"}):null,g.curious.length?jobChips(g.curious,"curious"):null,
-    h("p",{class:"lab",text:"Jobs that are not for me"}),g.no.length?jobChips(g.no,"no"):h("p",{class:"sub",text:"None marked yet. If some jobs are not for you, mark them below so we never offer them to you."}),
-    h("details",{class:"more",open:S.panel.avoidOpen?true:null,ontoggle:function(e){S.panel.avoidOpen=e.currentTarget.open;}},h("summary",{text:"Mark a job as not for me"}),h("p",{class:"sub",text:"Mark any job you never want to be offered, whether you have tried it or not. You can still pick it up yourself from Up for grabs."}),
+  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"What I like"}),h("p",{class:"sub",text:"Tap any job to change your answer."}),
+    yes.length?h("p",{class:"lab",text:"I like · "+yes.length}):null,yes.length?jobChips(yes,"good"):h("p",{class:"sub",text:"Nothing picked yet."}),
+    g.curious.length?h("p",{class:"lab",text:"I'm open to · "+g.curious.length}):null,g.curious.length?jobChips(g.curious,"curious"):null,
+    picker));
+  root.append(h("section",{class:"neverbox"},h("p",{class:"lab",text:"Never offer"+(g.no.length?" · "+g.no.length:"")}),
+    h("p",{class:"sub",text:"These roles won't be recommended to you. You can still pick any of them up yourself."}),
+    g.no.length?jobChips(g.no,"no"):h("p",{class:"sub",text:"Nothing marked."}),
+    clean(p.avoid)?h("p",{class:"sub"},h("b",{text:"In your words: "}),clean(p.avoid)):null,
+    h("details",{class:"more",open:S.panel.avoidOpen?true:null,ontoggle:function(e){S.panel.avoidOpen=e.currentTarget.open;}},h("summary",{text:"Mark a job as never offer"}),
       (function(){var t=h("textarea",{rows:"2",maxlength:"250","aria-label":"Anything else you would rather avoid, in your own words",placeholder:"Anything else you would rather avoid? Type it (optional)"});t.value=S.avoid||"";t.addEventListener("change",function(){S.avoid=t.value;saveDraft();saveResponse();});return h("div",{class:"field"},t);})(),
       AREAS.map(function(A){var js=FNS.filter(function(f){return f.area===A.id&&S.levels[f.id]!=="no";});if(!js.length)return null;
-        return h("div",null,h("p",{class:"lab",text:A.short}),h("div",{class:"chips"},js.map(function(f){return h("button",{type:"button",class:"chip",text:f.name,onclick:function(){S.levels[f.id]="no";saveDraft();saveResponse();renderProfile();}});})));})),
-    picker,
-    workStyle(st)?h("p",{class:"sub",text:"Works best: "+workStyle(st)}):null));
+        return h("div",null,h("p",{class:"lab",text:A.short}),h("div",{class:"chips"},js.map(function(f){return h("button",{type:"button",class:"chip",text:f.name,onclick:function(){S.levels[f.id]="no";saveDraft();saveResponse();renderProfile();}});})));}))));
+  // Folded sections, each with a count. Everything you told us is still here.
+  function mrow(key,title,count,kids){var kk=kids.filter(Boolean);if(!kk.length)return null;
+    return h("details",{class:"mrow",open:S.panel["mr-"+key]?true:null,ontoggle:function(e){S.panel["mr-"+key]=e.currentTarget.open;}},h("summary",null,h("span",{class:"mr-t",text:title}),count?h("span",{class:"mr-n",text:count}):null),h("div",{class:"mr-b"},kk));}
+  var done=maskLabels(EXP,p.q[NQ]),brings=labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]),ws=workStyle(st);
+  function line(label,val){return val?h("p",null,h("b",{text:label+": "}),val):null;}
+  root.append(h("section",{class:"mrows"},
+    mrow("exp","Experience",done.length?String(done.length):"",[line("What you have done",done.join("; ")),line("Proudest work",st.proud)]),
+    mrow("skills","Skills and what I bring",brings.length?String(brings.length):"",[brings.length?h("div",{class:"chips"},brings.map(function(x){return h("span",{class:"chip",text:x});})):null]),
+    mrow("how","How I work","",[line("Works best",ws),h("div",{class:"stats"},prof.stats.map(function(x){return h("div",{class:"stat"},h("span",{text:x.label}),h("span",{class:"bar light","aria-hidden":"true"},h("i",{style:"width:"+Math.round(x.v*100)+"%"})));}))]),
+    mrow("want","What I want from GCG","",[line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",st.future?M_FUTURE[st.future].label:"")]),
+    mrow("proof","Proof of experience",clean(p.cv)?"CV added":"",[line("CV or link",clean(p.cv))])));
+  root.append(h("p",{class:"sub accessline",text:"Hinda sees your answers too. The crew only sees what you chose to share, under Who sees what below."}));
+  // title
+  root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"My title"}),
+    ts.length?ts.map(function(x){return h("div",{class:"box"},h("b",{text:x.name}),x.desc?h("p",{text:x.desc}):null,
+      h("details",{class:"more"},h("summary",{text:"What falls under it ("+sanitizeIds(x.jobs).length+")"}),h("ul",{class:"crew"},sanitizeIds(x.jobs).map(function(j){return h("li",null,h("b",{text:FN[j].name+": "}),FN[j].covers);}))));})
+      :h("p",{class:"sub",text:"For now you help across several jobs. When Hinda gives you a title, it shows here."})));
   // the GCG trail: everything you've helped make happen
   var byEv={};hist.forEach(function(x){(byEv[x.ev.id]=byEv[x.ev.id]||{ev:x.ev,ts:[]}).ts.push(x.t.title);});
   var sz={S:0,M:0,L:0};hist.forEach(function(x){sz[x.t.size||"M"]++;});
@@ -4519,7 +4569,8 @@ function drawMe(root){
     hist.length?[h("p",{class:"trail-n",text:Object.keys(byEv).length+" event"+(Object.keys(byEv).length===1?"":"s")+" · "+hist.length+" task"+(hist.length===1?"":"s")+" · "+sz.L+" big, "+sz.M+" medium, "+sz.S+" small"}),
       h("ul",{class:"credits"},Object.keys(byEv).map(function(k){var g=byEv[k];return h("li",null,"You helped make ",h("b",{text:g.ev.name||"an event"})," happen: "+g.ts.slice(0,3).join(", ")+(g.ts.length>3?" and "+(g.ts.length-3)+" more":"")+".");}))]
       :h("p",{class:"sub",text:"Everything you finish is recorded here, event by event, so your contribution is seen and remembered."})));
-  // about + CV, quieter
+  root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"Who sees what"}),shareToggles(function(){saveResponse();})));
+  root.append(appearanceBox());
   var cv=cvOf(p,prof),cvSt=h("p",{class:"status",role:"status","aria-live":"polite"});
   root.append(h("details",{class:"more msec",open:S.panel["me-cv"]?true:null,ontoggle:function(e){S.panel["me-cv"]=e.currentTarget.open;}},h("summary",{text:"Strengths for my CV"}),
       cv.map(function(s){return h("div",{class:"cvsec"},h("h4",{text:s[0]}),h("ul",null,s[1].map(function(x){return h("li",{text:x});})));}),
@@ -4631,12 +4682,12 @@ function initCaps(){
         if(S.view==="team"){renderRoles();renderCov();}
       },function(){});
       S.db.collection("events").onSnapshot(function(snap){
-        S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
+        S.eventsLoaded=true;S.events=snap.docs.map(function(d){if(evDirty[d.id]){var mine=evById(d.id);if(mine)return mine;}var o=thaw(d.data());o.id=d.id;o.tasks=Array.isArray(o.tasks)?o.tasks:[];return o;})
           .concat((S.rawEvents||S.events).filter(function(e){return evDirty[e.id]&&!snap.docs.some(function(d){return d.id===e.id;});}));
         S.rawEvents=S.events;S.events=visibleEvents(S.rawEvents);applyClaims();
         if(S.view==="events")renderEvents();if(S.view==="insights")renderInsights();refresh();
         openLinkedTask();
-      },function(){});
+      },function(){S.eventsLoaded=true;refresh();});
       S.db.collection("replies").onSnapshot(function(snap){
         S.replies=snap.docs.map(function(d){return thaw(d.data());}).filter(function(r){return r&&r.eid&&r.tid&&r.pid;});
         applyClaims();
