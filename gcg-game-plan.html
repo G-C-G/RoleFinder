@@ -4961,22 +4961,14 @@ function drawCrew(root){
   });
 }
 
-/* ---------- Colour blocking: tone each section by what it is ---------- */
-var TONE_RULES=[[/^(your progress|your contributions|crew contributions|your gcg trail|crew on the day|who sees what)/,"sage"],
-  [/^(are you coming|will you be there|where it is heading|events?$|\+ add an event|up for grabs|your next steps)/,"gold"],
-  [/^(needs you|needs attention)/,"blush"],
-  [/^(files and links|ideas|my title|share an idea|add results|ping someone|all tasks|add a task|guests, links|debrief|more actions|edit event|what i like|crew$)/,"sand"]];
+/* ---------- Colour blocking, sparingly: colour only means "look here" ----------
+   Everything else stays on the plain card, and events keep their flyers as the colour. Gold = the one thing to do now (setup steps), red tint = a count that needs attention. */
 function colorBlock(){
   var root=document.getElementById("wrap");if(!root)return;
   root.querySelectorAll(".card, .tstat").forEach(function(el){
-    var tone=null;
-    if(el.classList.contains("tstat")){var all=[].slice.call(el.parentNode.children),i=all.indexOf(el);tone=el.classList.contains("bad")?"blush":["gold","sage","sand"][i%3];}
-    else if(el.classList.contains("evtile")||el.classList.contains("plan-card")||el.classList.contains("evhead2")||el.classList.contains("evstatus")){
-      var te=el.querySelector("[data-evid]"),id=te?te.getAttribute("data-evid"):(S.evOpen||S.evSel||""),n=0;for(var c=0;c<id.length;c++)n+=id.charCodeAt(c);
-      tone=["gold","sage","sand"][n%3];}
-    else if(el.classList.contains("attend"))tone="gold";
+    var tone=null,hd=el.querySelector(".q,summary,.k,h2,h3"),t=hd?hd.textContent.trim().toLowerCase():"";
+    if(el.classList.contains("tstat")){if(el.classList.contains("bad"))tone="blush";}
     else if(el.classList.contains("startcard"))tone="gold";
-    else{var hd=el.querySelector(".q,summary,.k,h2,h3"),t=hd?hd.textContent.trim().toLowerCase():"";for(var k=0;k<TONE_RULES.length;k++){if(TONE_RULES[k][0].test(t)){tone=TONE_RULES[k][1];break;}}}
     if(tone){if(el.getAttribute("data-tone")!==tone)el.setAttribute("data-tone",tone);}else if(el.hasAttribute("data-tone"))el.removeAttribute("data-tone");
   });
 }
