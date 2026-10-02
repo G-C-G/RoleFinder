@@ -551,6 +551,8 @@ body.has-nav{padding-bottom:104px}
 .seg3.small .sb{min-height:44px;font-size:13px;padding:0 4px}
 .attendtile .status{margin:4px 0 0}
 .evwrap.evtile{padding:14px;gap:0}
+.tlmini{margin-top:12px;border-top:1.5px solid var(--soft);padding-top:10px}
+.tlmini .btn.link{margin-top:2px}
 .evhead2{gap:12px;padding:16px}
 .evhead2 .evmedia{display:flex;gap:14px;align-items:flex-start}
 .evhead2 .plan-head{flex:1;min-width:0}
@@ -4557,10 +4559,13 @@ function drawPlan(root){
     var card=h("section",{class:"card hsec plan-card"},evTile(ev,{open:openEv,lines:lines}),
       adminView()?left:null,
       (adminView()&&eventWhy(ev).why.length)?h("p",{class:"sub",style:"margin:-4px 0 8px",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
-      adminView()?[open?[journey(ev,{vertical:true,rerender:renderPlan,me:S.uid}),
-        line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
-        next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null]:null,
-        h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:open?"Hide timeline":"Show timeline",onclick:function(){S.panel[key]=!open;renderPlan();}}))]:null);
+      // Every event shows its timeline: a row of stage dots, tap to open it out and see each stage.
+      open?[journey(ev,{vertical:true,rerender:renderPlan,me:S.uid}),
+          line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
+          next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null,
+          h("button",{type:"button",class:"btn link",text:"Close the timeline",onclick:function(){S.panel[key]=false;renderPlan();}})]
+        :h("div",{class:"tlmini"},journey(ev,{compact:true,onOpen:function(){S.panel[key]=true;renderPlan();}}),
+          h("button",{type:"button",class:"btn link",text:"Open the timeline ›",onclick:function(){S.panel[key]=true;renderPlan();}})));
     root.append(card);
   });
 }
