@@ -29,6 +29,17 @@
   --warn:#FF8A7F; --ok:#34B872;
   color-scheme:dark;
 }
+/* Colour blocking: each kind of section has its own soft tone so the screen can be skimmed. Sky = events and schedule, sage = progress and crew, blush = needs attention, lilac = files and extras, sand = quiet and secondary, gold = do this now. */
+:root{--t-sky:#DCEAF2;--t-sky-e:#B9D2E0;--t-sage:#DDEBDD;--t-sage-e:#B7D3B9;--t-blush:#F7DED6;--t-blush-e:#E8BFB2;--t-lilac:#E7E0F0;--t-lilac-e:#CBBEDD;--t-sand:#EFE6D2;--t-sand-e:#D9CDB2;--t-gold:#FBE8A8;--t-gold-e:#EBCB62}
+:root[data-gcg-theme="dark"],:root[data-theme="dark"]{--t-sky:#1E2F3A;--t-sky-e:#2F4756;--t-sage:#1F3225;--t-sage-e:#31503B;--t-blush:#3A2520;--t-blush-e:#58382F;--t-lilac:#2D2639;--t-lilac-e:#443A56;--t-sand:#2A2319;--t-sand-e:#40372A;--t-gold:#3B2F0F;--t-gold-e:#5C4A18}
+[data-tone]{border-width:1.5px}
+[data-tone="sky"]{background:var(--t-sky)!important;border-color:var(--t-sky-e)!important}
+[data-tone="sage"]{background:var(--t-sage)!important;border-color:var(--t-sage-e)!important}
+[data-tone="blush"]{background:var(--t-blush)!important;border-color:var(--t-blush-e)!important}
+[data-tone="lilac"]{background:var(--t-lilac)!important;border-color:var(--t-lilac-e)!important}
+[data-tone="sand"]{background:var(--t-sand)!important;border-color:var(--t-sand-e)!important}
+[data-tone="gold"]{background:var(--t-gold)!important;border-color:var(--t-gold-e)!important}
+[data-tone] .btn:not(.go):not(.green):not(.link),[data-tone] .sb,[data-tone] .iconbtn{background:var(--card)}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5;
@@ -537,6 +548,16 @@ body.has-nav{padding-bottom:104px}
 .evwrap{margin:0}
 .evwrap .evcard{width:100%;box-sizing:border-box}
 .evshare{margin:2px 0 0;padding-left:4px}
+.iconbtn{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;border:1.5px solid var(--edge-soft,var(--edge));background:var(--card);color:var(--ink);text-decoration:none;cursor:pointer;flex:none}
+.tilefoot{display:flex;align-items:center;gap:10px;margin-top:10px}.tilefoot .attendtile{flex:1;min-width:0}
+.seg3.small .sb{min-height:44px;font-size:13px;padding:0 4px}
+.attendtile .status{margin:4px 0 0}
+.evwrap.evtile{padding:14px;gap:0}
+.evhead2{gap:12px;padding:16px}
+.evhead2 .evmedia{display:flex;gap:14px;align-items:flex-start}
+.evhead2 .plan-head{flex:1;min-width:0}
+.evstatus{gap:8px;padding:14px 16px}
+.flyer-btn.thumb{width:auto;flex:none;appearance:none;border:0;background:none;padding:0;cursor:zoom-in}
 .btn.wa{text-decoration:none;margin:4px 6px 2px 0}
 .credits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:15px}
 .trail-n{font-weight:800;color:var(--gold-ink)}
@@ -3039,15 +3060,12 @@ function drawEvents(root){
   var risk=atRisk(ev),pct=eventPct(ev);
   root.append(h("button",{type:"button",class:"btn small",text:"← All events",onclick:function(){S.evOpen="";S.evMsgs=null;S.run=null;renderEvents();}}),
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
-    flyerHero(ev,true),
-    (ev.published!==false&&new Date((ev.date||"")+"T23:59:59")>=new Date())?attendCard(ev,"row"):null,
-    ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):h("p",{class:"sub",text:"Add a one-line goal under Event details."}),
-    ev.about?h("p",{class:"about",text:ev.about}):h("p",{class:"sub",text:"Add a short description of the event under Edit event, so the crew knows what it is about."}),
-    h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?" · "+ev.start:"")+(ev.place?" · "+ev.place:"")+" · "+(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Blank event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
-    ev.squeezed?h("p",{class:"sub"},"This event is closer than the template assumes, so the timeline was tightened to fit."):null,
-    h("p",{class:"sub"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
-    eventWhy(ev).why.length?h("p",{class:"sub",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
-    h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Edit event: name, date, time, place",onclick:function(){S.panel.evdetails=true;renderEvents();var d=$("evDetails");if(d&&d.scrollIntoView)d.scrollIntoView({block:"start"});}})),
+    evHeader(ev,true),
+    h("section",{class:"card hsec evstatus"},
+      h("p",{class:"sub",style:"margin:0"},readyText(ev)+" · ",h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}})),
+      ev.squeezed?h("p",{class:"sub",style:"margin:0",text:"This event is closer than the template assumes, so the timeline was tightened to fit."}):null,
+      eventWhy(ev).why.length?h("p",{class:"sub",style:"margin:0",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
+      h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Edit event: name, date, time, place",onclick:function(){S.panel.evdetails=true;renderEvents();var d=$("evDetails");if(d&&d.scrollIntoView)d.scrollIntoView({block:"start"});}}))),
     ev.published===false?setupCard(ev):null,
     ev.published===false?null:h("section",{class:"card hsec"},h("h3",{class:"q",text:risk.length?"Needs attention ("+risk.length+")":"Nothing needs attention"}),
       risk.length?h("ol",{class:"needs"},risk.map(function(x){var now=x.late||x.st==="stuck"||x.st==="passed";
@@ -3064,7 +3082,6 @@ function drawEvents(root){
       h("div",{class:"row"},
         h("button",{type:"button",class:"btn small",text:"Due-soon message",onclick:function(){S.evMsgs={eid:ev.id,title:"Due soon (paste in the team group)",list:[{text:dueSoonText(ev)}]};renderEvents();}}),
         h("button",{type:"button",class:"btn small",text:"Run sheet",onclick:function(){S.run={eid:ev.id};renderEvents();}}),
-        ev.published===false?null:waButton(eventShareText(ev),"Share"),
         h("button",{type:"button",class:"btn small",text:"Who is doing what",onclick:function(){crewPdf(ev,$("evStatus"));}}),
         h("button",{type:"button",class:"btn small",text:"Event report (PDF)",onclick:function(){reportPdf(ev,$("evStatus"));}}),
         ev.published===false?null:h("button",{type:"button",class:"btn small",text:"Hide from the team (back to draft)",onclick:function(){ev.published=false;S.panel["cover:"+ev.id]=true;saveEvent(ev,true);renderEvents();}}))),
@@ -3166,11 +3183,9 @@ function drawEventList(root){
   if(!list.length)root.append(h("div",{class:"emptystate"},h("h3",{text:"No upcoming events"}),h("p",{text:"Nothing is scheduled yet. Your next event will appear here once it's created. Tap Add an event to start."})));
   root.append(h("div",{class:"evlist"},list.map(function(e){
     var ts=e.tasks||[],done=ts.filter(function(t){return taskState(e,t)==="done";}).length,cur=currentCp(e),risk=atRisk(e).length;
-    return h("div",{class:"evwrap"},h("button",{type:"button",class:"evcard",onclick:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);}},
-      h("div",{class:"evmedia"},flyerThumb(e),h("div",{class:"evtxt"},
-      h("b",{text:e.name||"Untitled event"}),h("span",{class:"sub",text:fmtDate(e.date)+(e.place?" · "+e.place:"")+(TEMPLATES[e.type]?" · "+TEMPLATES[e.type].name:"")}),
-      h("span",{class:"evmeta",text:(e.published===false?"Draft, hidden from the team · ":"")+done+" of "+ts.length+" tasks done"+(e.cps&&e.cps[cur]?" · next: "+e.cps[cur].name:"")+(risk?" · "+risk+" at risk":"")})))),
-      e.published===false?null:h("div",{class:"evshare"},waButton(eventShareText(e),"Share")));
+    return h("div",{class:"evwrap card evtile"},evTile(e,{open:function(){S.evOpen=e.id;S.evMsgs=null;S.run=null;renderEvents();window.scrollTo(0,0);},
+      lines:[e.published===false?h("span",{class:"phasepill",style:"justify-self:start",text:"Draft, hidden from the team"}):null,
+        h("span",{class:"evmeta",text:done+" of "+ts.length+" tasks done"+(risk?" · "+risk+" at risk":"")})].filter(Boolean)}));
   })));
 }
 // Hinda can record that a task is done, for the person who did it. Only they or an admin can do this.
@@ -3394,11 +3409,12 @@ function readHash(){var h0=String(location.hash||""),m=h0.match(/task=([^.&]+)\.
 // One Share button: the phone's share sheet (WhatsApp is in it) when there is one, otherwise WhatsApp itself. The message carries the link.
 function waButton(text,label){
   var wa="https://wa.me/?text="+encodeURIComponent(text);
-  return h("a",{class:"btn small wa",href:wa,target:"_blank",rel:"noopener",text:label||"Share",onclick:function(e){
+  var lab=label||"Share";
+  return h("a",{class:"iconbtn wa",href:wa,target:"_blank",rel:"noopener","aria-label":lab,title:lab,onclick:function(e){
     if(!navigator.share)return;
     e.preventDefault();
     navigator.share({text:text}).catch(function(err){if(err&&err.name==="AbortError")return;window.open(wa,"_blank","noopener");});
-  }});
+  }},ico("share",20));
 }
 function eventShareText(ev){
   var L=["New event: "+(ev.name||"GCG event"),fmtDate(ev.date)+(ev.start?" at "+ev.start:"")+(ev.place?", "+ev.place:"")];
@@ -4254,6 +4270,34 @@ function shrinkFlyer(file,cb){
 }
 function lightbox(src,alt){var box=h("div",{class:"lightbox",role:"dialog","aria-label":alt||"Flyer",onclick:function(){box.remove();}},h("img",{src:src,alt:alt||"Flyer"}),h("p",{class:"lb-x",text:"Tap anywhere to close"}));document.body.append(box);}
 function flyerThumb(ev){var f=cleanFlyer(ev.flyer);return f?h("img",{class:"flyer-th",src:f,alt:(ev.name||"Event")+" flyer"}):h("div",{class:"flyer-th empty","aria-label":"No flyer yet",text:"No flyer yet"});}
+// One event as a tile: flyer left, details right (tap to open), then Share and "Are you coming" underneath, visible without opening.
+function evTile(ev,o){
+  o=o||{};
+  var d=daysTo(ev.date);
+  var top=h("button",{type:"button",class:"evlink","data-evid":ev.id,"aria-label":"Open "+(ev.name||"the event"),onclick:o.open},
+    h("div",{class:"evmedia"},flyerThumb(ev),h("div",{class:"plan-head"},h("b",{class:"plan-name",text:ev.name||"Event"}),
+      h("span",{class:"plan-when",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")}),
+      ev.place?h("span",{class:"plan-when",text:ev.place}):null,
+      d?h("span",{class:"plan-days",text:d}):null,
+      o.lines&&o.lines.length?o.lines:null)));
+  var pub=ev.published!==false;
+  return [top,pub?h("div",{class:"tilefoot"},waButton(eventShareText(ev),"Share this event"),attendCard(ev,"tile")):null];
+}
+// The top of an event page: flyer left, details right, then Share and "Are you coming", then goal and description. One layer at a time.
+function evHeader(ev,admin){
+  var f=cleanFlyer(ev.flyer),d=daysTo(ev.date);
+  var th=f?h("button",{type:"button",class:"flyer-btn thumb","aria-label":"View the flyer full screen",onclick:function(){lightbox(f,(ev.name||"Event")+" flyer");}},flyerThumb(ev)):flyerThumb(ev);
+  var upcoming=ev.published!==false&&new Date((ev.date||"")+"T23:59:59")>=new Date();
+  return h("section",{class:"card evhead2"},
+    h("div",{class:"evmedia"},th,h("div",{class:"plan-head"},
+      h("span",{class:"plan-when",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")}),
+      d?h("span",{class:"plan-days",text:d}):null,
+      ev.place?h("span",{class:"plan-when",text:ev.place}):null,
+      h("span",{class:"sub",text:(TEMPLATES[ev.type]?TEMPLATES[ev.type].name:"Event")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}))),
+    upcoming?h("div",{class:"tilefoot"},waButton(eventShareText(ev),"Share this event"),attendCard(ev,"tile")):null,
+    ev.goal?h("p",{class:"goal",style:"margin:0"},h("b",{text:"Goal: "}),ev.goal):(admin?h("p",{class:"sub",style:"margin:0",text:"Add a one-line goal under Edit event."}):null),
+    ev.about?h("p",{class:"about",style:"margin:0",text:ev.about}):(admin?h("p",{class:"sub",style:"margin:0",text:"Add a short description under Edit event, so the crew knows what it is about."}):null));
+}
 function flyerHero(ev,admin){
   var f=cleanFlyer(ev.flyer);
   if(f)return h("button",{type:"button",class:"flyer-btn","aria-label":"View the flyer full screen",onclick:function(){lightbox(f,(ev.name||"Event")+" flyer");}},h("img",{class:"flyer-hero",src:f,alt:(ev.name||"Event")+" flyer"}));
@@ -4297,17 +4341,12 @@ function drawMemberEvent(root,ev){
   var mine=(ev.tasks||[]).filter(function(t){return t.owner===S.uid&&(t.offered||t.manual);}).sort(function(a,b){return (taskDue(ev,a)||Infinity)-(taskDue(ev,b)||Infinity);});
   root.append(h("button",{type:"button",class:"btn small",text:"← Your events",onclick:function(){S.evSel="";renderMyEvents();}}),
     h("h1",{class:"h-sum",text:ev.name||"Event"}),
-    flyerHero(ev,false),
-    ev.goal?h("p",{class:"goal"},h("b",{text:"Goal: "}),ev.goal):null,
-    ev.about?h("p",{class:"about",text:ev.about}):null,
-    h("p",{class:"sub",text:fmtDate(ev.date)+(daysTo(ev.date)?" · "+daysTo(ev.date):"")+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+(ev.lead?" · Lead: "+nameOf(ev.lead):"")}),
+    evHeader(ev,false),
     briefLine(ev),filesCard(ev,false),
-    waButton(eventShareText(ev),"Share this event"),
     safeUrl(links.group)?h("a",{class:"btn small chat",href:safeUrl(links.group),target:"_blank",rel:"noopener",text:"Crew chat (WhatsApp) →"}):null,
-    h("button",{type:"button",class:"btn link",text:"See the timeline ›",onclick:function(){showView("plan");}}),
+    h("section",{class:"card hsec"},h("h3",{class:"q",text:"Where it is heading"}),journey(ev,{vertical:true,rerender:renderMyEvents,me:S.uid})),
     crewDates(ev)||h("span"),
     yourPart(ev,mine,me),
-    attendCard(ev,false),
     (ev.tasks||[]).some(function(t){return t.owner===S.uid&&(t.offered||t.manual);})?crewOnDay(ev,false):null,
     crewCredits(ev),
     h("div",{class:"row",style:"margin-top:12px"},
@@ -4509,25 +4548,21 @@ function drawPlan(root){
     var st=stageData(ev),pct=eventPct(ev),cur=st.filter(function(s){return s.cur;})[0],late=st.filter(function(s){return s.late;})[0];
     var next=cur?st[st.indexOf(cur)+1]:null;
     var line=late?late.name+" is behind: was due "+fmtWhen(late.due):pct>=100?"All stages complete":"";
-    var head=h("div",{class:"plan-head"},h("b",{class:"plan-name",text:ev.name||"Event"}),
-      h("span",{class:"plan-when",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")}),
-      h("span",{class:"plan-days",text:daysTo(ev.date)}),
-      mineIds[ev.id]&&mem?h("span",{class:"chip good",style:"justify-self:start",text:"You are helping with this one"}):null,
-      ev.published===false?h("span",{class:"phasepill",style:"justify-self:start",text:"Draft, hidden from the team"}):null);
     var tk=ev.tasks||[],nDone=tk.filter(function(x){return taskState(ev,x)==="done";}).length,nOpen=tk.filter(function(x){return taskState(ev,x)==="open";}).length;
     var left=h("p",{class:"plan-left"},h("b",{text:(tk.length-nDone)+" tasks left"}),nDone?" · "+nDone+" done":"",nOpen?" · ":"",nOpen?h("span",{class:"plan-open",text:nOpen+" still need someone"}):null);
-    var key="plan:"+ev.id,open=idx===0?S.panel[key]!==false:!!S.panel[key];
+    var key="plan:"+ev.id,open=!!S.panel[key];
     var myTs=tk.filter(function(x){return x.owner===S.uid&&(x.offered||x.manual)&&taskState(ev,x)!=="passed";}),myDone=myTs.filter(function(x){return taskState(ev,x)==="done";}).length;
-    var mine2=h("p",{class:"plan-left"},myTs.length?[h("b",{text:"Your tasks: "+myDone+" of "+myTs.length+" done"})]:"You have no tasks on this one yet.");
     var openEv=function(){if(S.isAdmin&&!S.asMember){S.evOpen=ev.id;showView("events");}else{S.evSel=ev.id;showView("mevents");}};
-    var card=h("section",{class:"card hsec plan-card"},h("button",{type:"button",class:"evlink","aria-label":"Open "+(ev.name||"the event"),onclick:openEv},h("div",{class:"evmedia"},flyerThumb(ev),head)),adminView()?left:mine2,
+    var lines=[mineIds[ev.id]&&mem?h("span",{class:"chip good",style:"justify-self:start",text:"You are helping"}):null,
+      ev.published===false?h("span",{class:"phasepill",style:"justify-self:start",text:"Draft, hidden from the team"}):null,
+      mem&&mineIds[ev.id]?h("span",{class:"plan-left",text:"Your tasks: "+myDone+" of "+myTs.length+" done"}):null].filter(Boolean);
+    var card=h("section",{class:"card hsec plan-card"},evTile(ev,{open:openEv,lines:lines}),
+      adminView()?left:null,
       (adminView()&&eventWhy(ev).why.length)?h("p",{class:"sub",style:"margin:-4px 0 8px",text:"Why: "+eventWhy(ev).why.join(" · ")}):null,
-      open?[journey(ev,{vertical:true,rerender:renderPlan,me:S.uid}),
+      adminView()?[open?[journey(ev,{vertical:true,rerender:renderPlan,me:S.uid}),
         line?h("p",{class:"plan-line","data-k":late?"bad":"",text:line}):null,
         next?h("p",{class:"sub",text:"Next after that: "+next.name+(next.due?", "+fmtWhen(next.due):"")}):null]:null,
-      h("div",{class:"row"},
-        h("button",{type:"button",class:"btn small",text:open?"Hide timeline":"Show timeline",onclick:function(){S.panel[key]=!open;renderPlan();}}),
-        S.isAdmin||mineIds[ev.id]?h("button",{type:"button",class:"btn small go",text:S.isAdmin&&!S.asMember?"Open event":"Open event and my tasks",onclick:openEv}):null));
+        h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:open?"Hide timeline":"Show timeline",onclick:function(){S.panel[key]=!open;renderPlan();}}))]:null);
     root.append(card);
   });
 }
@@ -4699,6 +4734,7 @@ function setAttend(ev,v,st){
 function attendCard(ev,compact){
   var cur=attendOf(ev)[S.uid]||"",st=h("p",{class:"status",role:"status","aria-live":"polite"});
   var btn=function(v,label){return h("button",{type:"button",class:"sb","data-c":v==="no"?"no":"yes","aria-pressed":String(cur===v),text:label,onclick:function(){setAttend(ev,v,st);}});};
+  if(compact==="tile")return h("div",{class:"attendtile"},h("div",{class:"seg3 small"},btn("yes","Coming"),btn("maybe","Maybe"),btn("no","Can't")),st);
   if(compact==="row")return h("div",{class:"attendrow"},h("p",{class:"lab",text:"Will you be there?"}),h("div",{class:"seg3"},btn("yes","Yes, I'm coming"),btn("maybe","Not sure yet"),btn("no","Can't make it")),st);
   return h("section",{class:"card hsec attend"},h("h3",{class:"q",text:compact?"Are you coming to "+(ev.name||"this event")+"?":"Will you be there?"}),
     compact?null:h("p",{class:"sub",text:fmtDate(ev.date)+(ev.start?", "+ev.start:"")+(ev.place?" · "+ev.place:"")+". We order crew food from this, so please answer early."}),
@@ -4806,7 +4842,7 @@ function drawMe(root){
     yes.length?h("p",{class:"lab",text:"I like · "+yes.length}):null,yes.length?jobChips(yes,"good"):h("p",{class:"sub",text:"Nothing picked yet."}),
     g.curious.length?h("p",{class:"lab",text:"I'm open to · "+g.curious.length}):null,g.curious.length?jobChips(g.curious,"curious"):null,
     picker));
-  root.append(h("section",{class:"neverbox"},h("p",{class:"lab",text:"Never offer"+(g.no.length?" · "+g.no.length:"")}),
+  var neverBox=(h("section",{class:"neverbox"},h("p",{class:"lab",text:"Never offer"+(g.no.length?" · "+g.no.length:"")}),
     h("p",{class:"sub",text:"These roles won't be recommended to you. You can still pick any of them up yourself."}),
     g.no.length?jobChips(g.no,"no"):h("p",{class:"sub",text:"Nothing marked."}),
     clean(p.avoid)?h("p",{class:"sub"},h("b",{text:"In your words: "}),clean(p.avoid)):null,
@@ -4845,6 +4881,9 @@ function drawMe(root){
       cv.map(function(s){return h("div",{class:"cvsec"},h("h4",{text:s[0]}),h("ul",null,s[1].map(function(x){return h("li",{text:x});})));}),
       h("button",{type:"button",class:"btn small",text:"Copy for my CV",onclick:function(){copyText(cvText(cv),cvSt,"Copied. Paste it into your CV or LinkedIn.");}}),cvSt),
     h("div",{class:"row",style:"margin-top:12px"},h("button",{type:"button",class:"btn link",text:"Update my answers",onclick:function(){S.screen="like";showView("flow");}})));
+  // Editing lives at the very bottom. Never offer is part of it, not a headline.
+  root.append(h("details",{class:"more msec",open:S.panel["me-edit"]?true:null,ontoggle:function(e){S.panel["me-edit"]=e.currentTarget.open;}},h("summary",{text:"Edit profile"}),
+    h("p",{class:"sub",text:"Change what you told us. Hinda sees this too, when matching tasks and giving titles."}),neverBox));
 }
 
 /* ---------- Sharing: everyone's About is visible to the crew; the rest is each person's choice ---------- */
@@ -4923,6 +4962,29 @@ function drawCrew(root){
     root.append(card);
   });
 }
+
+/* ---------- Colour blocking: tone each section by what it is ---------- */
+var TONE_RULES=[[/^(your progress|your contributions|crew contributions|your gcg trail|crew on the day|who sees what)/,"sage"],
+  [/^(are you coming|will you be there|where it is heading|events?$|\+ add an event)/,"sky"],
+  [/^(needs you|needs attention)/,"blush"],[/^(your next steps)/,"gold"],
+  [/^(up for grabs|files and links|ideas|my title|share an idea|add results|ping someone)/,"lilac"],
+  [/^(all tasks|add a task|guests, links|debrief|more actions|edit event|what i like|crew$)/,"sand"]];
+function colorBlock(){
+  var root=document.getElementById("wrap");if(!root)return;
+  root.querySelectorAll(".card, .tstat").forEach(function(el){
+    var tone=null;
+    if(el.classList.contains("tstat")){var all=[].slice.call(el.parentNode.children),i=all.indexOf(el);tone=el.classList.contains("bad")?"blush":["sky","lilac","sand","sage"][i%4];}
+    else if(el.classList.contains("evtile")||el.classList.contains("plan-card")||el.classList.contains("evhead2")||el.classList.contains("evstatus")){
+      var te=el.querySelector("[data-evid]"),id=te?te.getAttribute("data-evid"):(S.evOpen||S.evSel||""),n=0;for(var c=0;c<id.length;c++)n+=id.charCodeAt(c);
+      tone=["sky","lilac","sage","sand"][n%4];}
+    else if(el.classList.contains("attend"))tone="sky";
+    else if(el.classList.contains("startcard"))tone="gold";
+    else{var hd=el.querySelector(".q,summary,.k,h2,h3"),t=hd?hd.textContent.trim().toLowerCase():"";for(var k=0;k<TONE_RULES.length;k++){if(TONE_RULES[k][0].test(t)){tone=TONE_RULES[k][1];break;}}}
+    if(tone){if(el.getAttribute("data-tone")!==tone)el.setAttribute("data-tone",tone);}else if(el.hasAttribute("data-tone"))el.removeAttribute("data-tone");
+  });
+}
+(function(){var q=false,mo=null;function go(){if(q)return;q=true;(window.requestAnimationFrame||setTimeout)(function(){q=false;try{colorBlock();}catch(e){}});}
+  if(window.MutationObserver){mo=new MutationObserver(go);mo.observe(document.body,{childList:true,subtree:true});}go();})();
 
 /* ---------- Capabilities ---------- */
 function initCaps(){
