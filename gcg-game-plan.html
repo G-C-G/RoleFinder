@@ -558,9 +558,15 @@ body.has-nav{padding-bottom:104px}
 .tlmini{margin-top:12px;border-top:1.5px solid var(--soft);padding-top:10px}
 .tlmini .btn.link{margin-top:2px}
 .ovrow.noopen{cursor:default}
-.sharedwith{gap:10px}
-.shrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.shrow .ovt{flex:1 1 160px;min-width:0;display:grid;gap:2px}
+.welcome{margin:16px 0 4px}.welcome .k{margin:0 0 4px}
+.sharewrap{display:inline-block;flex:none}
+.sharemenu{position:fixed;left:12px;right:12px;bottom:84px;z-index:70;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:8px;box-shadow:0 12px 40px rgba(0,0,0,.28)}
+.sharemenu[hidden]{display:none}
+.sharemenu .sm-h{margin:0;font-weight:700}
+.tsec{font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin:22px 2px 8px;display:flex;justify-content:space-between;align-items:baseline}
+.tsec small{font:600 13px var(--font-body);color:var(--muted)}
+.band-h.ev{text-transform:none;letter-spacing:0;font-size:15px;gap:10px}.band-h.ev .evn{display:grid;gap:1px;min-width:0}.band-h.ev .evn span+span{font:500 12.5px var(--font-body);opacity:.85}
+.pill{display:inline-block;font:700 11px var(--font-body);letter-spacing:.04em;text-transform:uppercase;border-radius:99px;padding:2px 8px;margin-right:6px}.pill.p-red{background:var(--red-soft);color:var(--red)}.pill.p-gold{background:var(--gold-soft);color:var(--gold-ink)}.pill.p-soft{background:var(--bg-2);color:var(--muted)}
 .pgantt{display:grid;gap:6px}
 .pgaxis{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:700}
 .pgrow{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:center}
@@ -3935,13 +3941,13 @@ try{window.addEventListener("hashchange",function(){readHash();openLinkedProject
 S.shares={};
 function shareSeen(){try{return JSON.parse(localStorage.getItem("gcg_shr_seen")||"{}");}catch(e){return {};}}
 function shareMark(key,at){try{var m=shareSeen();m[key]=at;localStorage.setItem("gcg_shr_seen",JSON.stringify(m));}catch(e){}}
-function recordShare(meta){
+function recordShare(meta,quiet){
   if(!meta||!S.db||!S.uid||S.canWrite===false)return;
-  var key=meta.kind+"_"+String(meta.id).replace(/[^\w.-]+/g,"_").slice(0,80),doc={kind:meta.kind,id:String(meta.id).slice(0,80),name:clean(meta.name).slice(0,100),eid:meta.eid||"",tid:meta.tid||"",by:S.uid,byName:clean(S.name).slice(0,40)||"Someone",at:nowIso()};
+  var key=meta.kind+"_"+String(meta.id).replace(/[^\w.-]+/g,"_").slice(0,80),doc={kind:meta.kind,id:String(meta.id).slice(0,80),name:clean(meta.name).slice(0,100),eid:meta.eid||"",tid:meta.tid||"",by:S.uid,byName:clean(S.name).slice(0,40)||"Someone",at:nowIso(),quiet:!!quiet};
   S.shares[key]=doc;S.db.doc("shares/"+key).set(doc).catch(function(){});
 }
 function openShared(sh,key){
-  shareMark(key,sh.at);
+  shareMark(key,sh.at);if(S.uid)ackNote("share:"+key+":"+sh.at);
   if(sh.kind==="project"){S.goProj=sh.id;openLinkedProject();if(S.goProj){S.goProj="";showView(adminView()?"events":"plan");}}
   else if(sh.kind==="task"){S.goTask={eid:sh.eid,tid:sh.tid};openLinkedTask();if(S.goTask){S.goTask=null;showView(adminView()?"events":"plan");}}
   else{var ev=evById(sh.id);if(ev&&adminView()){S.evOpen=sh.id;showView("events");}else if(ev){S.evSel=sh.id;showView("mevents");}else showView(adminView()?"events":"plan");}
@@ -3960,30 +3966,30 @@ function startAutoShare(){
     if(list.length)openShared(list[0].s,list[0].k);
   },700);
 }
-function sharedWithYou(root){
-  var seen=shareSeen(),cut=Date.now()-10*864e5,list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){
-    var t=Date.parse(x.s.at);return t>cut&&!(seen["h:"+x.k]&&seen["h:"+x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));}).slice(0,3);
-  if(!list.length)return;
-  var box=h("section",{class:"card hsec sharedwith"},h("h3",{class:"q",text:"Shared with you"}));
-  list.forEach(function(x){var sh=x.s,kind=sh.kind==="project"?"Project":sh.kind==="task"?"Task":"Event";
-    var nm=sh.kind==="project"&&S.projPub[sh.id]?S.projPub[sh.id].name:sh.kind==="event"&&evById(sh.id)?evById(sh.id).name:sh.name;
-    box.append(h("div",{class:"shrow"},h("span",{class:"ovt"},h("b",{text:nm||sh.name}),h("span",{class:"sub",text:kind+" · shared by "+(sh.by===S.uid?"you":sh.byName)+" · "+timeAgo(new Date(sh.at))+(seen[x.k]&&seen[x.k]>=sh.at?" · opened":"")})),
-      h("button",{type:"button",class:"btn small go",text:"View full breakdown \u203A",onclick:function(){openShared(sh,x.k);}}),
-      h("button",{type:"button",class:"btn link","aria-label":"Hide this",text:"Hide",onclick:function(){shareMark("h:"+x.k,sh.at);S.view==="today"?renderToday():renderHome();}})));
-  });
-  root.append(box);
-}
 // Share straight into WhatsApp: opens the app (or WhatsApp Web) with the message ready to send to a chat or group.
 // One Share button: the phone's share sheet (WhatsApp is in it) when there is one, otherwise WhatsApp itself. The message carries the link.
 function waButton(text,label,meta){
-  var wa="https://wa.me/?text="+encodeURIComponent(text);
-  var lab=label||"Share";
-  return h("a",{class:"iconbtn wa",href:wa,target:"_blank",rel:"noopener","aria-label":lab,title:lab,onclick:function(e){
-    recordShare(meta);
-    if(!navigator.share)return;
-    e.preventDefault();
-    navigator.share({text:text}).catch(function(err){if(err&&err.name==="AbortError")return;window.open(wa,"_blank","noopener");});
-  }},ico("share",20));
+  var wa="https://wa.me/?text="+encodeURIComponent(text),lab=label||"Share";
+  var menu=h("div",{class:"sharemenu",hidden:true,role:"menu"});
+  var btn=h("button",{type:"button",class:"iconbtn wa","aria-label":lab,title:lab,"aria-haspopup":"true","aria-expanded":"false"},ico("share",20));
+  function close(){menu.hidden=true;btn.setAttribute("aria-expanded","false");}
+  function outside(){
+    recordShare(meta,true);close();
+    if(navigator.share){navigator.share({text:text}).catch(function(err){if(err&&err.name==="AbortError")return;window.open(wa,"_blank","noopener");});}
+    else window.open(wa,"_blank","noopener");
+  }
+  btn.addEventListener("click",function(e){
+    e.stopPropagation();
+    if(!menu.hidden){close();return;}
+    clear(menu);
+    menu.append(h("p",{class:"sub sm-h",text:lab}));
+    if(meta&&S.realAdmin&&S.canWrite!==false)menu.append(h("button",{type:"button",class:"btn go",role:"menuitem",text:"Send to the team in Game Plan",onclick:function(){recordShare(meta,false);close();toast("Sent. The team will see it under their bell.");}}));
+    menu.append(h("button",{type:"button",class:"btn",role:"menuitem",text:"Send somewhere else (WhatsApp, Instagram\u2026)",onclick:outside}),
+      h("button",{type:"button",class:"btn link",text:"Cancel",onclick:close}));
+    menu.hidden=false;btn.setAttribute("aria-expanded","true");
+  });
+  document.addEventListener("click",function(e){if(!menu.hidden&&!(e.composedPath?e.composedPath():[]).some(function(n){return n===menu;}))close();});
+  return h("span",{class:"sharewrap"},btn,menu);
 }
 // A closing nudge when something is close: "Please open this as soon as you can."
 function soonNote(dateStr){var d=pDay(dateStr);if(!d)return "";var n=Math.round((d-pToday())/864e5);return n<=7?"Please open this as soon as you can.":"";}
@@ -4040,8 +4046,19 @@ function ackNote(id,after){
   if(after)after();
   refresh();
 }
+function shareNotes(){
+  var out=[],cut=Date.now()-10*864e5;
+  Object.keys(S.shares||{}).forEach(function(k){
+    var sh=S.shares[k],id="share:"+k+":"+(sh&&sh.at);
+    if(!sh||sh.quiet||sh.by===S.uid||!(Date.parse(sh.at)>cut)||(S.acks&&S.acks[id]))return;
+    var kind=sh.kind==="project"?"Project":sh.kind==="task"?"Task":"Event";
+    var nm=sh.kind==="project"&&S.projPub[sh.id]?S.projPub[sh.id].name:sh.kind==="event"&&evById(sh.id)?evById(sh.id).name:sh.name;
+    out.push({id:id,kind:"Shared with you",title:nm||sh.name||kind,sub:kind+" \u00b7 from "+(sh.byName||"someone")+" \u00b7 "+timeAgo(new Date(sh.at)),act:{label:"Open it",fn:function(){openShared(sh,k);}}});
+  });
+  return out.sort(function(a,b){return 0;});
+}
 function adminNotes(){
-  var out=[];
+  var out=shareNotes();
   Object.keys(S.ideas||{}).forEach(function(uid){ideaItems(uid).forEach(function(i){if(i.status!=="new")return;
     out.push({id:"",kind:kindName(i.kind),title:nameOf(uid)+": "+i.text.slice(0,90),act:{label:"Open inbox",fn:function(){S.teamTab="ideas";showView("team");}}});});});
   S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(tk){
@@ -4061,7 +4078,7 @@ function adminNotes(){
 }
 function myNotes(){
   if(S.isAdmin)return adminNotes();
-  var out=[];
+  var out=shareNotes();
   myPings().forEach(function(p){
     var ev=p.eid?evById(p.eid):null,t=ev?(ev.tasks||[]).filter(function(x){return x.id===p.tid;})[0]:null;
     out.push({id:p.id,kind:"From Hinda",title:p.text||"",sub:t?(ev.name||"")+" · "+t.title:"",
@@ -4688,7 +4705,6 @@ function drawHome(root){
   var nm=clean(S.name)||"there";
   // Identity band: photo, name, one-line bio. Everything below it is the work.
   root.append(identityBand(nm,prof?prof.title:"Finish your profile to see your card"));
-  sharedWithYou(root);
   var firstRun=!S.isAdmin&&!items.length&&!myTasks().length&&!!prof;
   var top=items[0],topEv=top?top.ev:null,itemsTop=items.filter(function(x){return x.ev===topEv;}),otherEvs=[];
   items.forEach(function(x){if(x.ev!==topEv&&otherEvs.indexOf(x.ev)<0)otherEvs.push(x.ev);});
@@ -4997,16 +5013,18 @@ function drawToday(root){
     if(ev.published===false)return;
     atRisk(ev).forEach(function(x){if(claimsOf(ev,x.t).length)return;need.push({sev:x.late||x.st==="stuck"||x.st==="passed"?"now":"soon",ev:ev,t:x.t,st:x.st,due:x.due,why:riskWhy(x)});});
   });
-  need.sort(function(a,b){return (a.sev==="now"?0:1)-(b.sev==="now"?0:1)||((a.due||Infinity)-(b.due||Infinity));});
+  function rank(n){return (n.sev==="now"?0:1)*1e15+(n.due||9e14);}
+  need.sort(function(a,b){return rank(a)-rank(b);});
   var waiting=0;evs.forEach(function(ev){(ev.tasks||[]).forEach(function(t){if(taskState(ev,t)==="offered")waiting++;});});
   var gaps=coverage().filter(function(c){return c.level==="none"||c.level==="thin";}).length;
   var mineItems=myOpenItems();
   var coming=evs.filter(function(e){return e.published!==false;}).length,drafts=evs.length-coming;
-  root.append(identityBand(clean(S.name)||"Hinda","Admin"),h("h1",{class:"h-sum",text:"GCG today"}),
-    h("div",{class:"tstats"},[[coming,coming===1?"event coming up":"events coming up","events"],[need.length,"need attention","needs"],[waiting,"waiting for an answer","events"],[gaps,"wings with 0–1 people","team"]].map(function(s){
-      return h("button",{type:"button",class:"tstat"+(s[2]==="needs"&&s[0]?" bad":""),onclick:function(){if(s[2]==="needs"){var n=$("needsYou");if(n&&n.scrollIntoView)n.scrollIntoView({block:"start"});}else{showView(s[2]);if(s[2]==="team"){S.teamTab="coverage";renderTeam();}}}},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));})));
-  sharedWithYou(root);
-  if(drafts)root.append(h("p",{class:"sub",style:"margin:8px 2px 0"},drafts+" draft event"+(drafts>1?"s":"")+" not yet shared with the team. ",h("button",{type:"button",class:"btn link",text:"Open Events ›",onclick:function(){showView("events");}})));
+  // Welcome: who, what day, and the one-line state of things
+  var hr=new Date().getHours(),greet=hr<12?"Good morning":hr<18?"Good afternoon":"Good evening",first=(clean(S.name)||"Hinda").split(" ")[0];
+  var nNow=need.filter(function(n){return n.sev==="now";}).length,evIds={};need.forEach(function(n){evIds[n.ev.id]=1;});var nEv=Object.keys(evIds).length;
+  var line=need.length?(nNow?nNow+" behind or stuck. ":"")+need.length+" thing"+(need.length>1?"s need":" needs")+" you across "+nEv+" event"+(nEv>1?"s":"")+".":"Nothing needs you right now.";
+  root.append(h("div",{class:"welcome"},h("p",{class:"k",text:new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}),
+    h("h1",{class:"h-sum",text:greet+", "+first}),h("p",{class:"sub",style:"margin:-6px 0 0",text:line})));
   var hasProfile=!!profileOf(Object.assign(payload(),{id:S.uid}));
   var teamJoined=Object.keys(S.crew||{}).some(function(id){return id!==S.uid;});
   var anyEvent=S.events.length>0,anyPublished=S.events.some(function(e){return e.published!==false;});
@@ -5028,29 +5046,39 @@ function drawToday(root){
       return h("li",{"data-s":st},h("span",{class:"gk","aria-hidden":"true"},x.done?ico("check",16):String(i+1)),
         h("div",{class:"gt"},h("b",{text:x.t}),i===cur?h("p",{class:"sub",text:x.d}):null,
           i===cur?h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:x.act.l,onclick:x.act.fn}),gst2):null));}))));
-  // Colour blocks: behind or stuck (red), due this week (gold), coming up (neutral). Kind of work shows as an icon.
-  var evIds={};need.forEach(function(n){evIds[n.ev.id]=1;});var multiNeed=Object.keys(evIds).length>1;
-  var bandDefs=[{k:"red",t:"Behind or stuck",f:function(n){return n.sev==="now";}},
-    {k:"gold",t:"Due this week",f:function(n){return n.sev!=="now"&&n.due&&n.due-Date.now()<7*864e5;}},
-    {k:"soft",t:"Coming up",f:function(n){return n.sev!=="now"&&!(n.due&&n.due-Date.now()<7*864e5);}}];
+  // Your own tasks first
+  if(mineItems.length){
+    root.append(h("h2",{class:"tsec"},h("span",{text:"Your tasks"}),h("small",{text:mineItems.length+" open"})));
+    var st=h("p",{class:"status"});root.append(nextMoveCard(mineItems[0],st,true));
+    if(mineItems.length>1)root.append(h("p",{class:"sub",style:"margin:8px 2px 0"},"And "+(mineItems.length-1)+" more. ",h("button",{type:"button",class:"btn link",text:"See them in Events \u203A",onclick:function(){showView("events");}})));
+  }
+  // What needs you, one card per event, most urgent event first, most urgent task first inside it
+  var bandOf=function(n){return n.sev==="now"?"red":(n.due&&n.due-Date.now()<7*864e5)?"gold":"soft";};
+  var PILL={red:"Behind",gold:"This week",soft:"Later"};
   function needRow(n){
-    var ki=Math.max(0,KINDS.indexOf(kindOf(n.t.job)))%4;
+    var ki=Math.max(0,KINDS.indexOf(kindOf(n.t.job)))%4,b=bandOf(n);
     var who=n.t.owner?"With "+nameOf(n.t.owner):"No one yet";
-    var sub=[multiNeed?(n.ev.name||""):"",who,n.why&&!/^(overdue|not taken|no one yet)$/.test(n.why)?n.why:""].filter(Boolean).join(" · ");
+    var sub=[who,n.why&&!/^(overdue|not taken|no one yet)$/.test(n.why)?n.why:""].filter(Boolean).join(" \u00b7 ");
     var act=n.st==="passed"?h("button",{type:"button",class:"btn small go",text:"Offer to next best",onclick:function(){nextBest(n.ev,n.t);renderToday();}})
       :h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){S.evOpen=n.ev.id;S.goTask={eid:n.ev.id,tid:n.t.id};showView("events");openLinkedTask();}});
     return h("div",{class:"nrow"},h("span",{class:"ks-ico k"+ki,"aria-hidden":"true"},ico(KIND_ICON[kindOf(n.t.job)]||"list",18)),
-      h("div",{class:"nr-t"},h("b",{class:"gr-title",text:n.t.title}),h("span",{class:"sub",text:sub}),n.due?clockSpan(n.due):null),act);
+      h("div",{class:"nr-t"},h("span",null,h("span",{class:"pill p-"+b,text:PILL[b]}),h("b",{class:"gr-title",text:n.t.title})),h("span",{class:"sub",text:sub}),n.due?clockSpan(n.due):null),act);
   }
-  var needBody=need.length?bandDefs.map(function(bd){
-    var list=need.filter(bd.f);if(!list.length)return null;
-    var key="needmore:"+bd.k,all=!!S.panel[key],shown=all?list:list.slice(0,4);
-    return h("div",{class:"band b-"+bd.k},h("div",{class:"band-h"},h("span",{text:bd.t}),h("span",{class:"band-n",text:String(list.length)})),
+  var groups=[];evs.forEach(function(ev){var l=need.filter(function(n){return n.ev===ev;});if(l.length)groups.push({ev:ev,list:l});});
+  groups.sort(function(a,b){return rank(a.list[0])-rank(b.list[0]);});
+  var needsWrap=h("div",{id:"needsYou"});
+  needsWrap.append(h("h2",{class:"tsec"},h("span",{text:"Needs you"}),h("small",{text:need.length?need.length+" in order of priority":""})));
+  if(!groups.length)needsWrap.append(h("p",{class:"sub",text:"Nothing needs you right now."}));
+  groups.forEach(function(g,gi){
+    var key="needmore:"+g.ev.id,all=!!S.panel[key],shown=all?g.list:g.list.slice(0,4),worst=bandOf(g.list[0]);
+    var d=g.ev.date?Math.round((new Date(g.ev.date+"T00:00:00")-new Date(new Date().setHours(0,0,0,0)))/864e5):null;
+    var when=g.ev.date?fmtDate(g.ev.date)+(d===0?" \u00b7 today":d>0?" \u00b7 in "+d+" day"+(d>1?"s":""):""):"No date yet";
+    needsWrap.append(h("div",{class:"band b-"+worst},
+      h("div",{class:"band-h ev"},h("span",{class:"evn"},h("span",{text:(gi+1)+". "+(g.ev.name||"Event")}),h("span",{text:when})),h("span",{class:"band-n",text:String(g.list.length)})),
       shown.map(needRow),
-      list.length>4?h("button",{type:"button",class:"band-more",text:all?"Show fewer":"Show "+(list.length-4)+" more",onclick:function(){S.panel[key]=!all;renderToday();}}):null);
-  }):h("p",{class:"sub",text:"Nothing needs you right now. "});
-  root.append(h("section",{class:"card hsec",id:"needsYou"},h("h3",{class:"q",text:need.length?"Needs you · "+need.length:"Needs you"}),needBody));
-  if(mineItems.length){var st=h("p",{class:"status"});var nm=nextMoveCard(mineItems[0],st,true);nm.style.marginTop="14px";root.append(nm);}
+      g.list.length>4?h("button",{type:"button",class:"band-more",text:all?"Show fewer":"Show "+(g.list.length-4)+" more",onclick:function(){S.panel[key]=!all;renderToday();}}):null));
+  });
+  root.append(needsWrap);
   var gr=upForGrabs();
   if(gr.length){
     var gst=h("span",{class:"status"});
@@ -5059,6 +5087,11 @@ function drawToday(root){
       groupByEvent(gr,"agrab:",grabRow,"open",{kinds:true}),gst);
     gd.open=!!S.panel.adminGrabs;gd.addEventListener("toggle",function(){S.panel.adminGrabs=gd.open;});root.append(gd);
   }
+  // At a glance, kept quiet at the bottom
+  root.append(h("h2",{class:"tsec"},h("span",{text:"At a glance"})),
+    h("div",{class:"tstats"},[[coming,coming===1?"event coming up":"events coming up","events"],[waiting,"waiting for an answer","events"],[gaps,"wings with 0\u20131 people","team"]].map(function(s){
+      return h("button",{type:"button",class:"tstat",onclick:function(){showView(s[2]);if(s[2]==="team"){S.teamTab="coverage";renderTeam();}}},h("div",{class:"v",text:String(s[0])}),h("div",{class:"l",text:s[1]}));})));
+  if(drafts)root.append(h("p",{class:"sub",style:"margin:8px 2px 0"},drafts+" draft event"+(drafts>1?"s":"")+" not yet shared with the team. ",h("button",{type:"button",class:"btn link",text:"Open Events \u203A",onclick:function(){showView("events");}})));
   renderBell();
 }
 
