@@ -558,6 +558,7 @@ body.has-nav{padding-bottom:104px}
 .tlmini{margin-top:12px;border-top:1.5px solid var(--soft);padding-top:10px}
 .tlmini .btn.link{margin-top:2px}
 .ovrow.noopen{cursor:default}
+.fcrow{border-top:1px solid var(--line);padding:10px 0}.fcrow:first-of-type{border-top:0}
 .welcome{margin:16px 0 4px}.welcome .k{margin:0 0 4px}
 .sharewrap{display:inline-block;flex:none}
 .sharemenu{position:fixed;left:12px;right:12px;bottom:84px;z-index:70;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:8px;box-shadow:0 12px 40px rgba(0,0,0,.28)}
@@ -1149,6 +1150,7 @@ details>.mr-b,details[open]>.more-b{animation:fadeup .2s ease}
     </div>
     <div id="team-ideas" hidden><div id="ideasInbox"></div></div>
     <div id="team-people">
+    <div class="sect" id="t-find"></div>
     <div class="tstats" id="t-stats"></div>
     <div class="row" style="margin-top:14px">
       <button class="btn small" id="t-csv">Export everyone (CSV)</button>
@@ -2264,7 +2266,7 @@ function renderTeam(){
   if(!S.isAdmin)return;
   ["people","coverage","titles","ideas"].forEach(function(k){$("team-"+k).hidden=(S.teamTab!==k);});
   document.querySelectorAll("#teamtabs .subtab").forEach(function(b){b.setAttribute("aria-selected",String(b.getAttribute("data-t")===S.teamTab));});
-  if(S.teamTab==="people"){renderStats();renderPings();renderPeople();}
+  if(S.teamTab==="people"){renderFind();renderStats();renderPings();renderPeople();}
   if(S.teamTab==="coverage"){drawCoverage();renderMap();renderCov();renderRoles();}
   if(S.teamTab==="titles")renderTitles();
   if(S.teamTab==="ideas")renderInbox();
@@ -2311,7 +2313,7 @@ function renderPeople(){
       S.db.doc("responses/"+p.id).delete().catch(function(){say($("t-exportStatus"),"Could not remove that entry.","warn");});
     });
     var key="adm:"+p.id,open=!!S.tlOpen[key];
-    var box=h("div",{class:"person"},h("button",{type:"button",class:"crewhead pc-tap","aria-expanded":String(open),"aria-label":pname(p)+": show "+(open?"less":"more"),onclick:function(){S.tlOpen[key]=!open;renderPeople();}},
+    var box=h("div",{class:"person",id:"pp-"+p.id},h("button",{type:"button",class:"crewhead pc-tap","aria-expanded":String(open),"aria-label":pname(p)+": show "+(open?"less":"more"),onclick:function(){S.tlOpen[key]=!open;renderPeople();}},
       playerCard(p,prof,{pid:p.id}),h("span",{class:"chev","aria-hidden":"true",text:open?"Show less −":"Show more +"})));
     if(open)[prof?null:h("p",{class:"meta",text:"Situations not answered."}),
       h("p",{class:"meta",text:[p.source==="pasted"?"Added by paste":"Sent from the page",p.confirm?"Card: "+CONFIRM[p.confirm]:"Card not checked"].join(" · ")}),
@@ -2332,6 +2334,68 @@ function renderPeople(){
     root.append(box);
   });
 }
+/* ---------- Find someone: by name, skill, title, or what an event needs ---------- */
+var FIND_STOP={of:1,the:1,a:1,an:1,for:1,and:1,to:1,someone:1,people:1,person:1,who:1,can:1,help:1,with:1,need:1,needs:1,cover:1,in:1};
+function findWords(q){return clean(q).toLowerCase().split(/[^a-z0-9]+/).filter(function(w){return w&&!FIND_STOP[w];});}
+function hasW(hay,w){return (" "+String(hay).toLowerCase().replace(/[^a-z0-9]+/g," ")).indexOf(" "+w)>-1;}
+function areaName(f){var a=AREAS.filter(function(x){return x.id===f.area;})[0];return a?a.name:"";}
+function personFind(p,words){
+  var prof=profileOf(p),ts=titlesOf(p.id).map(function(x){return x.name;}),yes=yesOf(p).filter(function(i){return FN[i];}),may=(p.curious||[]).filter(function(i){return FN[i];});
+  function jt(i){var f=FN[i];return f.name+" "+f.covers+" "+areaName(f);}
+  var hay=[pname(p),ts.join(" "),yes.map(jt).join(" "),may.map(jt).join(" "),p.extra||"",prof?prof.title+" "+prof.chips.join(" "):"",maskLabels(EXP,p.q&&p.q[NQ]).join(" ")].join(" ").toLowerCase();
+  if(!words.every(function(w){return hasW(hay,w);}))return null;
+  var nameHit=words.some(function(w){return hasW(pname(p),w);});
+  function hits(list){return list.filter(function(i){return words.some(function(w){return hasW(jt(i),w);});});}
+  var yh=hits(yes),mh=hits(may),th=ts.filter(function(t){return words.some(function(w){return hasW(t,w);});});
+  var why=[];if(th.length)why.push("Title: "+th.join(", "));if(yh.length)why.push("Said yes to "+yh.slice(0,3).map(function(i){return FN[i].name;}).join(", ")+(yh.length>3?" +"+(yh.length-3):""));
+  if(mh.length)why.push("Maybe: "+mh.slice(0,2).map(function(i){return FN[i].name;}).join(", "));
+  if(!why.length&&p.extra&&words.some(function(w){return hasW(p.extra,w);}))why.push("Also good at: "+p.extra.slice(0,80));
+  if(!why.length&&!nameHit)why.push("Matches their profile");
+  return {p:p,score:(nameHit?10:0)+th.length*4+yh.length*3+mh.length,why:why};
+}
+function openTasksFor(words){
+  var out=[];
+  activeEvents().forEach(function(ev){if(ev.published===false)return;var seen={};(ev.tasks||[]).forEach(function(t){
+    if(t.owner||t.all||!FN[t.job]||seen[t.title])return;
+    var hay=t.title+" "+FN[t.job].name+" "+(ev.name||"");
+    if(!words.length||words.every(function(w){return hasW(hay,w);})){seen[t.title]=1;out.push({ev:ev,t:t});}});});
+  return out;
+}
+function renderFind(){
+  var root=$("t-find");if(!root)return;var keep=focusKeep(root);clear(root);
+  var words=findWords(S.findQ),qs=h("input",{type:"search",class:"crewsearch","aria-label":"Find someone","data-k":"findq",placeholder:"Find someone: a name, a skill, or what you need, for example welcome or logistics"});
+  qs.value=S.findQ||"";qs.addEventListener("input",function(){S.findQ=qs.value;renderFind();});
+  root.append(h("h2",{text:"Find someone"}),h("p",{class:"sub",text:"By name, title, skill, or what an event needs. It looks at what people said yes to, their titles and their profile."}),qs);
+  var wings=h("div",{class:"chips"},AREAS.filter(function(a){return a.short;}).map(function(a){return h("button",{type:"button",class:"chip","aria-pressed":String(words.join(" ")===a.short.toLowerCase()),text:a.short,onclick:function(){S.findQ=(S.findQ&&clean(S.findQ).toLowerCase()===a.short.toLowerCase())?"":a.short;renderFind();}});}));
+  root.append(wings);
+  var tasks=openTasksFor(words);
+  function cand(x){
+    var key="fc:"+x.ev.id+":"+x.t.id,open=!!S.tlOpen[key],list=open?rankFor(x.ev,x.t,eventLoad(x.ev,x.t)).slice(0,6):[];
+    return h("div",{class:"fcrow"},h("button",{type:"button",class:"crewhead","aria-expanded":String(open),onclick:function(){S.tlOpen[key]=!open;renderFind();}},
+      h("b",{text:x.t.title}),h("span",{class:"sub",text:(x.ev.name||"Event")+(x.ev.date?" \u00b7 "+fmtDate(x.ev.date):"")+" \u00b7 no one yet"}),h("span",{class:"chev","aria-hidden":"true",text:open?"Hide who could cover it \u2212":"Who could cover it +"})),
+      open?(list.length?h("ul",{class:"crew"},list.map(function(r){return h("li",null,h("b",{text:pname(r.p)}),h("span",{class:"sub",text:" "+(r.m.why.slice(0,2).join(" \u00b7 ")||"Possible fit")}));}))
+        :h("p",{class:"sub",text:"Nobody matches yet from what people have said."})):null,
+      open?h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Open the task",onclick:function(){S.evOpen=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("events");openLinkedTask();}})):null);
+  }
+  if(words.length||S.findOpen){
+    if(tasks.length)root.append(h("p",{class:"lab",text:"Open tasks that match ("+tasks.length+")"}),tasks.slice(0,8).map(cand));
+    var res=words.length?S.people.map(function(p){return personFind(p,words);}).filter(Boolean).sort(function(a,b){return b.score-a.score||pname(a.p).localeCompare(pname(b.p));}):[];
+    if(words.length){
+      root.append(h("p",{class:"lab",text:res.length?"People ("+res.length+")":"People"}));
+      if(!res.length)root.append(h("p",{class:"sub",text:"Nobody matches that yet. Try a different word, a wing name or a title."}));
+      res.slice(0,12).forEach(function(r){
+        root.append(h("div",{class:"fcrow"},h("div",{class:"row",style:"justify-content:space-between;align-items:flex-start"},h("div",null,h("b",{text:pname(r.p)}),r.why.map(function(w){return h("p",{class:"sub",style:"margin:2px 0 0",text:w});})),
+          h("button",{type:"button",class:"btn small",text:"Full card",onclick:function(){S.tlOpen["adm:"+r.p.id]=true;renderPeople();var el=$("pp-"+r.p.id);if(el&&el.scrollIntoView)el.scrollIntoView({block:"start"});}}))));
+      });
+      if(res.length>12)root.append(h("p",{class:"sub",text:"And "+(res.length-12)+" more. Add another word to narrow it."}));
+    }
+  }else{
+    var all=openTasksFor([]);
+    if(all.length)root.append(h("details",{class:"more",open:S.panel.findTasks?true:null,ontoggle:function(e){S.panel.findTasks=e.currentTarget.open;}},h("summary",{text:"Who could cover an open task? ("+all.length+")"}),all.slice(0,12).map(cand)));
+  }
+  focusRestore(root,keep);
+}
+
 function personNotes(p){
   var prof=profileOf(p),L=["Notes: "+pname(p)];
   if(prof)L.push(prof.title+". Strongest: "+prof.chips.join(", ")+".");
