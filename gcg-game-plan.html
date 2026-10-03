@@ -3947,7 +3947,7 @@ function openShared(sh,key){
   else{var ev=evById(sh.id);if(ev&&adminView()){S.evOpen=sh.id;showView("events");}else if(ev){S.evSel=sh.id;showView("mevents");}else showView(adminView()?"events":"plan");}
 }
 // The link cannot carry its target (the viewer drops everything after the address), so the share record does the job:
-// if someone else shared something in the last 3 days (or you did, in the last 30 minutes) and this person has not opened it yet,
+// if someone else shared something in the last 3 days and this person has not opened it yet,
 // take them straight into it, after their profile is saved if they are new. Older shares wait as a card on Home or Today.
 function startAutoShare(){
   var tries=0,iv=setInterval(function(){
@@ -3956,20 +3956,20 @@ function startAutoShare(){
     clearInterval(iv);
     if(S.goProj||S.goTask)return;
     var seen=shareSeen(),now=Date.now();
-    var list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){return Date.parse(x.s.at)>now-(x.s.by===S.uid?30*60*1000:3*864e5)&&!(seen[x.k]&&seen[x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));});
+    var list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){return Date.parse(x.s.at)>now-3*864e5&&!(seen[x.k]&&seen[x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));});
     if(list.length)openShared(list[0].s,list[0].k);
   },700);
 }
 function sharedWithYou(root){
   var seen=shareSeen(),cut=Date.now()-10*864e5,list=Object.keys(S.shares||{}).map(function(k){return {k:k,s:S.shares[k]};}).filter(function(x){
-    var t=Date.parse(x.s.at);return t>cut&&!(seen[x.k]&&seen[x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));}).slice(0,3);
+    var t=Date.parse(x.s.at);return t>cut&&!(seen["h:"+x.k]&&seen["h:"+x.k]>=x.s.at);}).sort(function(a,b){return String(b.s.at).localeCompare(String(a.s.at));}).slice(0,3);
   if(!list.length)return;
   var box=h("section",{class:"card hsec sharedwith"},h("h3",{class:"q",text:"Shared with you"}));
   list.forEach(function(x){var sh=x.s,kind=sh.kind==="project"?"Project":sh.kind==="task"?"Task":"Event";
     var nm=sh.kind==="project"&&S.projPub[sh.id]?S.projPub[sh.id].name:sh.kind==="event"&&evById(sh.id)?evById(sh.id).name:sh.name;
-    box.append(h("div",{class:"shrow"},h("span",{class:"ovt"},h("b",{text:nm||sh.name}),h("span",{class:"sub",text:kind+" · shared by "+(sh.by===S.uid?"you":sh.byName)+" · "+timeAgo(new Date(sh.at))})),
+    box.append(h("div",{class:"shrow"},h("span",{class:"ovt"},h("b",{text:nm||sh.name}),h("span",{class:"sub",text:kind+" · shared by "+(sh.by===S.uid?"you":sh.byName)+" · "+timeAgo(new Date(sh.at))+(seen[x.k]&&seen[x.k]>=sh.at?" · opened":"")})),
       h("button",{type:"button",class:"btn small go",text:"View full breakdown \u203A",onclick:function(){openShared(sh,x.k);}}),
-      h("button",{type:"button",class:"btn link","aria-label":"Hide this",text:"Hide",onclick:function(){shareMark(x.k,sh.at);S.view==="today"?renderToday():renderHome();}})));
+      h("button",{type:"button",class:"btn link","aria-label":"Hide this",text:"Hide",onclick:function(){shareMark("h:"+x.k,sh.at);S.view==="today"?renderToday():renderHome();}})));
   });
   root.append(box);
 }
