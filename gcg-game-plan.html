@@ -2133,7 +2133,7 @@ var BUILD={
     card.append(h("div",{class:"box"},h("h3",{text:"Does this sound like you?"}),cb,noteField));
     var st=h("p",{class:"status",id:"submitStatus",role:"status","aria-live":"polite"});
     var canSend=!!(S.db&&S.uid&&S.canWrite!==false);
-    card.append(!canSend?h("button",{type:"button",class:"btn go big wide",text:"Next: build my profile →",onclick:function(){go("done");}}):canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile →",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});}})
+    card.append(!canSend?h("button",{type:"button",class:"btn go big wide",text:"Next: build my profile →",onclick:function(){go("done");}}):canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile →",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"Your profile was not saved. This usually means your access is View or Comment only. Ask Hinda to change you to Contributor in the Share menu, then tap Save again. Until then, tap Copy my results and send it to Hinda.","warn");});}})
         :null,st,
       h("p",{class:"sub center",text:canSend?"Hinda sees your answers. The crew sees your About; you choose the rest.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
       h("details",{class:"more"},h("summary",{text:"More: share, PDF, all jobs"}),
@@ -2173,7 +2173,7 @@ function cleanPhoto(u){u=String(u||"");return /^data:image\/(jpeg|png|webp);base
 function submit(){
   var st=$("submitStatus"),p=payload();
   if(!p.name){say(st,"Add your name first. Go back to the start.","warn");return;}
-  if(!S.db||!S.uid){say(st,"Sending is not set up for you here. Use Copy my results and send it to Hinda.","warn");return;}
+  if(!S.db||!S.uid){say(st,"Your profile could not be saved because you are not signed in to Claude here, or you only have view access. Sign in, and ask Hinda to set you to Contributor. Until then, tap Copy my results and send it to Hinda.","warn");return;}
   say(st,"Sending…");
   S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
   S.db.doc("responses/"+S.uid).set(p).then(function(){
