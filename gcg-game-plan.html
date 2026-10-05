@@ -49,6 +49,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 [tabindex="-1"]:focus{outline:none}
 [hidden]{display:none!important}
+body,button{-webkit-user-select:text;user-select:text}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* top brand bar */
@@ -6516,4 +6517,19 @@ function boot(){
 }
 boot();
 })();
+
+/* Copy gives plain text only: no page styling, no hidden screen-reader text */
+document.addEventListener("copy",function(e){
+  try{
+    var sel=window.getSelection();if(!sel||sel.isCollapsed||!e.clipboardData)return;
+    var box=document.createElement("div");
+    for(var i=0;i<sel.rangeCount;i++)box.appendChild(sel.getRangeAt(i).cloneContents());
+    var hid=box.querySelectorAll(".sr,[hidden],script,style,svg");
+    for(var j=0;j<hid.length;j++)hid[j].parentNode.removeChild(hid[j]);
+    var t=(box.innerText||box.textContent||"").replace(/\u00a0/g," ").replace(/\n{3,}/g,"\n\n").trim();
+    if(!t)return;
+    e.clipboardData.setData("text/plain",t);
+    e.preventDefault();
+  }catch(x){}
+});
 </script>
