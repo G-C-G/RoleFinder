@@ -5999,11 +5999,32 @@ function saveResponse(done,fail){
     },function(e){if(fail)fail("could not read it back: "+errText(e));});
   },function(e){if(fail)fail("refused: "+errText(e));});
 }
+function saveFailText(why){
+  why=String(why||"unknown");
+  if(/not signed in/i.test(why))return "You are not signed in to Claude on this page. Open the link inside Claude, sign in, then try again.";
+  if(/permission|denied|refused|not_writer|not_granted|forbidden/i.test(why))return "The page refused to store your profile. This almost always means your access is View or Comment only. Ask Hinda to set you to Contributor in the Share menu, then try again.";
+  if(/too large|size|limit|exceed|payload|quota/i.test(why))return "Your profile is too big to store. The most likely cause is the photo. Remove the photo, then try again.";
+  if(/did not keep|empty/i.test(why))return "The page said OK but nothing was stored. Try once more. If it happens again, tell Hinda.";
+  if(/read it back/i.test(why))return "The profile may have saved, but I could not confirm it. Try once more, then open Me and tap Check my saving.";
+  return "The save did not go through. Try once more. If it fails again, tell Hinda what the grey line below says.";
+}
 function finishOnboarding(){
   saveDraft();
-  function failed(why){S.screen="profile";saveDraft();render();setTimeout(function(){var msg="Your answers are safe on this device, but they did not save to the shared page ("+(why||"unknown reason")+"). Tap Save my card to try again. If it keeps failing, tap Copy my results below and send it to Hinda, and ask her to check you are a Contributor. Under Me there is also Check my saving.",el=$("submitStatus");if(el)say(el,msg,"warn");else warn(msg);},80);}
-  if(!S.db||!S.uid){failed("you are not signed in to Claude here");return;}
-  saveResponse(function(){S.screen="profile";saveDraft();showView(homeView());toast("Welcome to your Game Plan");},failed);
+  function failed(why){S.screen="profile";saveDraft();render();setTimeout(function(){
+    var host=$("flow");if(!host)return;var old=$("saveFailBox");if(old)old.remove();
+    var st=h("p",{class:"status",style:"margin:6px 0 0"});
+    var box=h("section",{class:"card",id:"saveFailBox",role:"alert",style:"border-color:var(--red,#b3261e);border-width:2px;margin:0 0 12px"},
+      h("h3",{class:"q",text:"Your profile did not save"}),
+      h("p",{text:saveFailText(why)}),
+      h("p",{class:"sub",text:"Your answers are safe on this device. Nothing is lost."}),
+      h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Try again",onclick:function(){var o=$("saveFailBox");if(o)o.remove();finishOnboarding();}}),
+        h("button",{type:"button",class:"btn small",text:"Copy my results for Hinda",onclick:function(){copyText(shareText(),st,"Copied. Send it to Hinda.");}})),
+      st,h("p",{class:"sub",style:"margin:6px 0 0",text:"Technical detail: "+String(why||"unknown").slice(0,160)}));
+    host.insertBefore(box,host.firstChild);
+    try{window.scrollTo({top:0,behavior:"auto"});}catch(e){window.scrollTo(0,0);}
+  },80);}
+  if(!S.db||!S.uid){failed("not signed in");return;}
+  saveResponse(function(){var o=$("saveFailBox");if(o)o.remove();S.screen="profile";saveDraft();showView(homeView());toast("Welcome to your Game Plan");},failed);
 }
 function finishExtra(){
   S.extraMode=false;
@@ -6519,7 +6540,7 @@ function boot(){
   $("pasteBtn").addEventListener("click",addPasted);
   readHash();
   render();
-  window.__gcg={S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
+  window.__gcg={finishOnboarding:finishOnboarding,S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
     suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,setSlots:setSlots,slotsOf:slotsOf,setAsMember:setAsMember,noAutoOn:noAutoOn,toggleNoAuto:toggleNoAuto,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
   startAutoShare();
