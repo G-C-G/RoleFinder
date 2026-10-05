@@ -2189,14 +2189,15 @@ function submit(){
 /* ---------- PDF: a small hand-built PDF, no library, works offline ---------- */
 function errText(e){return e?String(e.code||e.message||e).slice(0,120):"unknown";}
 // A plain check anyone can run and screenshot: who the page thinks you are, whether it can write, and whether your profile is on the server.
-function savingCheck(st){
-  var lines=["Signed in as: "+(S.uid||"nobody"),"Database: "+(S.db?"connected":"not connected"),"Allowed to save: "+(S.canWrite===null?"not reported":S.canWrite?"yes":"no"),"Profile found on this page: "+(S.sentAt?"yes ("+String(S.sentAt).slice(0,10)+")":"no")];
-  if(!S.db||!S.uid){say(st,lines.join(" \u00b7 ")+". Nothing can be saved from here. Open the link in Claude and sign in.","warn");return;}
-  say(st,"Checking\u2026");
+function savingCheck(st0){
+  function say2(el,t,k){S.saveChkMsg={t:t,k:k};say(el,t,k);var cur=document.getElementById("saveChkOut");if(cur&&cur!==el)say(cur,t,k);}
+  var st=st0,lines=["Signed in as: "+(S.uid||"nobody"),"Database: "+(S.db?"connected":"not connected"),"Allowed to save: "+(S.canWrite===null?"not reported":S.canWrite?"yes":"no"),"Profile found on this page: "+(S.sentAt?"yes ("+String(S.sentAt).slice(0,10)+")":"no")];
+  if(!S.db||!S.uid){say2(st,lines.join(" \u00b7 ")+". Nothing can be saved from here. Open the link in Claude and sign in.","warn");return;}
+  say2(st,"Checking\u2026");
   var tag="data/users/"+S.uid;
   S.db.doc("responses/"+S.uid).get().then(function(snap){lines.push("Profile on the server: "+(snap.exists?"found":"not found"));},function(e){lines.push("Reading your profile failed: "+errText(e));})
     .then(function(){return S.db.doc(tag+"/check").set({at:nowIso()}).then(function(){lines.push("Write test: worked");return S.db.doc(tag+"/check").get();},function(e){lines.push("Write test failed: "+errText(e));return null;});})
-    .then(function(snap){if(snap)lines.push("Read-back: "+(snap.exists?"worked":"empty"));var t=lines.join(" \u00b7 ");say(st,t,/failed|not found|empty|: no\b/.test(t)?"warn":"ok");},function(e){lines.push("Check stopped: "+errText(e));say(st,lines.join(" \u00b7 "),"warn");});
+    .then(function(snap){if(snap)lines.push("Read-back: "+(snap.exists?"worked":"empty"));var t=lines.join(" \u00b7 ");say2(st,t,/failed|not found|empty|: no\b/.test(t)?"warn":"ok");},function(e){lines.push("Check stopped: "+errText(e));say2(st,lines.join(" \u00b7 "),"warn");});
 }
 function pdfAscii(t){
   t=String(t==null?"":t).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/•/g,"-").replace(/…/g,"...").replace(/\s+/g," ");
@@ -6171,7 +6172,8 @@ function appearanceBox(){
     h("p",{class:"sub",text:"Light is the default. Your choice is saved on this phone."}));
 }
 function savingCheckBox(){
-  var chk=h("p",{class:"status",role:"status","aria-live":"polite"});
+  var chk=h("p",{class:"status",id:"saveChkOut",role:"status","aria-live":"polite"});
+  if(S.saveChkMsg)say(chk,S.saveChkMsg.t,S.saveChkMsg.k);
   return h("details",{class:"more msec",open:S.panel.saveChk?true:null,ontoggle:function(e){S.panel.saveChk=e.currentTarget.open;}},h("summary",{text:"Check my saving (if your profile is not saving)"}),
     h("p",{class:"sub",text:"This checks who the page thinks you are and whether it can save for you. If something is wrong, send Hinda a screenshot."}),
     h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Check my saving",onclick:function(){savingCheck(chk);}})),chk);
