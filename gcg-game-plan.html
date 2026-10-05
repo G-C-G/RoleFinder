@@ -567,6 +567,7 @@ body.has-nav{padding-bottom:104px}
 .dayblock .tsec{margin:2px 2px 6px}
 .est{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;padding:10px 14px;border-radius:14px;background:var(--bg-2);font:600 14px var(--font-body);color:var(--muted)}.est b{font-size:1.15rem;color:var(--ink)}
 .pill.p-hol{background:var(--gold-soft);color:var(--gold-ink);border:1px solid var(--gold)}
+.wrow{padding:8px 0;border-top:1px solid var(--line)}.wtop{display:flex;align-items:center;gap:10px}.wmark{width:22px;text-align:center;font-weight:700;color:var(--muted)}.wdone .wmark{color:var(--green)}
 .fubrief{margin:8px 0;padding:10px;border-radius:12px;background:var(--bg-2)}.fubrief[hidden]{display:none}
 .holbanner{background:var(--gold-soft);border:1px solid var(--gold)}
 .calc.holwork::after{content:"\2605";position:absolute;top:2px;right:4px;font-size:10px;color:var(--red)}.calc{position:relative}
@@ -3440,9 +3441,11 @@ function pAddWork(d,n){var x=new Date(d.getTime()),k=Math.round(n);while(k>0){x.
 function pWorkDays(a,b){var n=0,x=new Date(a.getTime());while(x<b){if(!pOff(x))n++;x.setDate(x.getDate()+1);}return n;}
 function pToday(){var t=new Date();t.setHours(0,0,0,0);return t;}
 function fmtDur(h){var m=Math.round((Number(h)||0)*60);if(m<=0)return "";if(m<60)return m+" min";var hh=Math.floor(m/60),r=m%60;return r?hh+" hr "+r+" min":hh+(hh===1?" hr":" hrs");}
+function cleanReview(r){r=r||{};return (r.state==="ok"||r.state==="changes")?{state:r.state,note:clean(r.note).slice(0,300),by:clean(r.by).slice(0,60),at:clean(r.at).slice(0,40)}:null;}
+function memberDone(x,q){var dn=q?q.done===true:!!x.done;if(x.rev&&x.rev.state==="changes"&&(!q||String(x.rev.at)>String(q.at)))dn=false;return dn;}
 function cleanBrief(b){b=b||{};var o={why:clean(b.why).slice(0,300),done:clean(b.done).slice(0,200),watch:clean(b.watch).slice(0,300)};return (o.why||o.done||o.watch)?o:null;}
 function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,200).map(function(s){
-  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*100)/100)),spent:Math.max(0,Math.min(99999,Math.round(Number(s.spent)||0))),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),status:({working:1,paused:1,blocked:1})[s.status]?s.status:"",statusAt:clean(s.statusAt).slice(0,40),how:clean(s.how).slice(0,320),offDay:!!s.offDay,parent:clean(s.parent).slice(0,24),addedBy:clean(s.addedBy).slice(0,60),addedAt:clean(s.addedAt).slice(0,40),grab:!!s.grab,brief:cleanBrief(s.brief),claimedBy:clean(s.claimedBy).slice(0,60),claimedAt:clean(s.claimedAt).slice(0,40),note:clean(s.note).slice(0,300)};});}
+  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*100)/100)),spent:Math.max(0,Math.min(99999,Math.round(Number(s.spent)||0))),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),status:({working:1,paused:1,blocked:1})[s.status]?s.status:"",statusAt:clean(s.statusAt).slice(0,40),how:clean(s.how).slice(0,320),offDay:!!s.offDay,parent:clean(s.parent).slice(0,24),addedBy:clean(s.addedBy).slice(0,60),addedAt:clean(s.addedAt).slice(0,40),grab:!!s.grab,brief:cleanBrief(s.brief),review:cleanReview(s.review),claimedBy:clean(s.claimedBy).slice(0,60),claimedAt:clean(s.claimedAt).slice(0,40),note:clean(s.note).slice(0,300)};});}
 function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),flyer:cleanFlyer(pr.flyer),thumb:cleanThumb(pr.thumb),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),noWeekends:!!pr.noWeekends,packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
   files:(pr.files||[]).slice(0,30).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
   created:pr.created||nowIso(),updated:nowIso()};}
@@ -3511,7 +3514,7 @@ function mineOf(pr,uid){
   var sc=projSchedule(pr),mySteps=sc.rows.filter(function(r){return r.s.owner===uid;});if(!mySteps.length)return null;
   return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),target:pr.target||"",
     links:(pr.files||[]).filter(function(f){return !f.fid&&safeUrl(f.url);}).slice(0,20).map(function(f){return {label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};}),
-    steps:mySteps.map(function(r){return {id:r.s.id,title:r.s.title,days:r.s.days||0,start:r.fixed?pIso(r.start):"",hours:r.s.hours||0,end:pIso(r.due||r.end),done:r.done,note:r.s.note||"",how:r.s.how||"",offDay:!!r.s.offDay,brief:r.s.brief||null,addedBy:r.s.addedBy||"",parent:r.s.parent||"",parentTitle:(function(){var q=r.s.parent&&pr.steps.filter(function(x){return x.id===r.s.parent;})[0];return q?q.title:"";})()};})};
+    steps:mySteps.map(function(r){return {id:r.s.id,title:r.s.title,days:r.s.days||0,start:r.fixed?pIso(r.start):"",hours:r.s.hours||0,end:pIso(r.due||r.end),done:r.done,note:r.s.note||"",how:r.s.how||"",offDay:!!r.s.offDay,brief:r.s.brief||null,rev:r.s.review||null,addedBy:r.s.addedBy||"",parent:r.s.parent||"",parentTitle:(function(){var q=r.s.parent&&pr.steps.filter(function(x){return x.id===r.s.parent;})[0];return q?q.title:"";})()};})};
 }
 // Admin only: keep the progress-only docs and each person's own docs in step with the full project.
 var projSyncT=null;
@@ -3566,7 +3569,8 @@ function projectsBlock(root){
     var card=h("section",{class:"card hsec plan-card"},top,foot,h("div",{class:"jbar sm","aria-label":p.pct+"% done"},h("i",{style:"width:"+p.pct+"%"})));
     var links=h("div",{class:"row pjlinks"},
       tap?h("button",{type:"button",class:"btn small go",text:admin?"Open the plan \u203A":"Open your steps \u203A",onclick:function(){openIt();}}):h("span",{class:"sub",text:"You can follow the progress here."}),
-      admin&&p.msl&&p.msl.length?h("button",{type:"button",class:"btn link",text:open?"Hide the milestones":"See the milestones",onclick:function(){S.panel[key]=!open;renderEvents();}}):null);
+      admin&&p.msl&&p.msl.length?h("button",{type:"button",class:"btn link",text:open?"Hide the milestones":"See the milestones",onclick:function(){S.panel[key]=!open;renderEvents();}}):null,
+      admin?h("button",{type:"button",class:"btn link",text:"Who did what",onclick:function(){S.projOpen=p.id;S.evOpen="";S.panel["pr-work"]=true;renderEvents();window.scrollTo(0,0);}}):null);
     card.append(links);
     if(admin&&open&&p.msl)card.append(h("ul",{class:"pjms"},p.msl.map(function(m){return h("li",null,h("button",{type:"button",class:"pjmrow",onclick:function(){openIt(m.n);}},
       h("span",{class:"msdot","data-s":m.state},m.state==="done"?ico("check",12):null),
@@ -3728,6 +3732,7 @@ function drawProject(root){
       h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Set these as deadlines",onclick:function(){sg.rows.forEach(function(x){x.s.due=pIso(x.end);});save(true);rerenderProj();toast("Deadlines set. You can change any step.");}}),
         sg.over>0?h("button",{type:"button",class:"btn small",text:"Also shorten my estimates to fit",onclick:function(){sg.rows.forEach(function(x){x.s.days=x.sug;x.s.due=pIso(x.end);});save(true);rerenderProj();}}):null,
         h("button",{type:"button",class:"btn link",text:"Clear all deadlines",onclick:function(){pr.steps.forEach(function(x){x.due="";});save(true);rerenderProj();}}))):null);
+  root.append(workDoneCard(pr));
   var hcard=holidayCard(pr,save,rerenderProj);if(hcard)root.append(hcard);
   var acard=addedCard(pr);if(acard)root.append(acard);
   root.append(pr.about?h("section",{class:"card hsec"},h("p",{class:"about",style:"margin:0",text:pr.about})):h("p",{class:"sub",text:"Say what this project is about, under Edit project."}));
@@ -3859,7 +3864,7 @@ function drawMyProject(root){
       h("div",{class:"jbar"},h("i",{style:"width:"+(u.pct||0)+"%"})),h("p",{style:"margin:0"},h("b",{text:(u.pct||0)+"% done"+(u.pace?" · "+u.pace:"")}))));
   var st=h("p",{class:"status",role:"status","aria-live":"polite"}),list=h("ol",{class:"psteps"});
   (it.steps||[]).forEach(function(s){
-    var r=latestReply("p_"+S.projSel,s.id,S.uid),dn=r?r.done===true:!!s.done;
+    var r=latestReply("p_"+S.projSel,s.id,S.uid),dn=memberDone(s,r);
     list.append(h("li",{class:"pstep","data-s":dn?"done":""},h("div",{class:"pstop"},
       h("button",{type:"button",class:"pstick","aria-pressed":String(dn),"aria-label":(dn?"Mark not done: ":"Mark done: ")+s.title,onclick:function(){
         if(!S.db){say(st,"This needs the live page.","warn");return;}
@@ -3882,6 +3887,7 @@ function eventFullPlan(e){
     h("p",{class:"sub",style:"margin:0",text:readyText(e)+(nO?" · "+nO+" task"+(nO>1?"s":"")+" still need someone":"")}),
     h("div",{class:"jbar","aria-label":eventPct(e)+"% ready"},h("i",{style:"width:"+eventPct(e)+"%"})),
     journey(e,{vertical:true,rerender:renderEvents,me:S.uid}),
+    h("p",{class:"lab",text:"Who did what so far"}),eventWorkDone(e),
     h("p",{class:"lab",text:"Who is behind"}),
     Object.keys(byWho).length?h("ul",{class:"ovlist"},Object.keys(byWho).map(function(id){var L=byWho[id];
       return h("li",null,h("p",{class:"ovwho"},h("b",{text:nameOf(id)}),h("span",{class:"sub",text:" · "+L.length+" task"+(L.length>1?"s":"")+" behind"})),
@@ -4258,9 +4264,16 @@ function adminNotes(){
       act:{label:"Open event",fn:function(){S.evOpen=ev.id;S.panel.alltasks=true;showView("events");}}});});
   return out;
 }
+function reviewNotes(){
+  var out=[];
+  Object.keys(S.myProj||{}).forEach(function(pid){(S.myProj[pid].steps||[]).forEach(function(x){
+    var rv=x.rev;if(!rv||rv.state!=="changes")return;var id="rev:"+pid+":"+x.id+":"+rv.at;if(S.acks&&S.acks[id])return;
+    out.push({id:id,kind:"Needs more",title:nameOf(rv.by)+" asked for more on "+(x.title||"a step"),sub:rv.note||"",act:{label:"Open it",fn:function(){S.stepOpen={pid:pid,sid:x.id};showView("home");renderHome();}}});});});
+  return out;
+}
 function myNotes(){
   if(S.isAdmin)return adminNotes();
-  var out=shareNotes();
+  var out=reviewNotes().concat(shareNotes());
   myPings().forEach(function(p){
     var ev=p.eid?evById(p.eid):null,t=ev?(ev.tasks||[]).filter(function(x){return x.id===p.tid;})[0]:null;
     out.push({id:p.id,kind:"From Hinda",title:p.text||"",sub:t?(ev.name||"")+" · "+t.title:"",
@@ -5200,7 +5213,7 @@ function stepInfo(pid,sid){
     var pr=projById(pid);if(!pr)return null;
     var rows=projSchedule(pr).rows,r=rows.filter(function(x){return x.s.id===sid;})[0];if(!r)return null;
     var rp=r.s.owner?latestReply("p_"+pid,sid,r.s.owner):null;
-    return {pid:pid,sid:sid,pname:pr.name,title:r.s.title,how:r.s.how||"",brief:r.s.brief||null,addedBy:r.s.addedBy||"",note:r.s.note||"",hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.due||r.end,parentTitle:(function(){var q=r.s.parent&&pr.steps.filter(function(x){return x.id===r.s.parent;})[0];return q?q.title:"";})(),done:r.done,spent:r.s.spent||0,offDay:!!r.s.offDay,mark:markOf(r.start,r.due||r.end,r.s.offDay),status:stepStatusOf(r.done,r.s.status,rp),target:pr.target};
+    return {pid:pid,sid:sid,pname:pr.name,title:r.s.title,how:r.s.how||"",review:r.s.review||null,brief:r.s.brief||null,addedBy:r.s.addedBy||"",note:r.s.note||"",hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.due||r.end,parentTitle:(function(){var q=r.s.parent&&pr.steps.filter(function(x){return x.id===r.s.parent;})[0];return q?q.title:"";})(),done:r.done,spent:r.s.spent||0,offDay:!!r.s.offDay,mark:markOf(r.start,r.due||r.end,r.s.offDay),status:stepStatusOf(r.done,r.s.status,rp),target:pr.target};
   }
   var it=S.myProj&&S.myProj[pid],pt=pupTasks(S.uid).filter(function(t){return t.pid===pid&&t.id===sid;})[0];
   var x=it&&(it.steps||[]).filter(function(y){return y.id===sid;})[0];
@@ -5209,8 +5222,8 @@ function stepInfo(pid,sid){
     return {pid:pid,sid:sid,pname:(it&&it.name)||(S.projPub[pid]&&S.projPub[pid].name)||"Project",title:pt.title,how:"",brief:pt.brief||null,addedBy:S.uid,note:pt.note||"",hours:pt.hours,owner:S.uid,start:dd,end:dd,done:!!pt.done,spent:0,offDay:false,mark:markOf(dd,dd,false),parentTitle:pp?pp.title:"",status:pt.done?"done":(pt.status||"todo"),target:it&&it.target,pending:true};
   }
   if(!x)return null;
-  var q=latestReply("p_"+pid,sid,S.uid),dn=q?q.done===true:!!x.done;
-  return {pid:pid,sid:sid,pname:it.name,title:x.title,how:x.how||"",brief:x.brief||null,addedBy:x.addedBy||"",note:x.note||"",hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),parentTitle:x.parentTitle||"",done:dn,spent:(q&&q.spent)||0,offDay:!!x.offDay,mark:markOf(x.start?pDay(x.start):null,pDay(x.end),x.offDay),status:stepStatusOf(dn,"",q),target:it.target};
+  var q=latestReply("p_"+pid,sid,S.uid),dn=memberDone(x,q);
+  return {pid:pid,sid:sid,pname:it.name,title:x.title,how:x.how||"",review:x.rev||null,brief:x.brief||null,addedBy:x.addedBy||"",note:x.note||"",hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),parentTitle:x.parentTitle||"",done:dn,spent:(q&&q.spent)||0,offDay:!!x.offDay,mark:markOf(x.start?pDay(x.start):null,pDay(x.end),x.offDay),status:stepStatusOf(dn,"",q),target:it.target};
 }
 // status: todo | working | paused | blocked | done
 function setStepStatus(pid,sid,status){
@@ -5307,6 +5320,7 @@ function drawStepDetail(root){
   if(g.status==="blocked")box.append(h("p",{class:"sub",style:"margin:6px 0 0",text:"To get a hand, tap Ask for help. You will brief the person first, so they know what you need."}));
   root.append(box);
   root.append(stepProofCard(g,re));
+  var rvc=reviewCard(g,re);if(rvc)root.append(rvc);
   root.append(followUpCard(g,re));
   // what comes next
   var b=projectDayBuckets(),list=b.behind.concat(b.today).filter(function(o){return !(o.kind==="project"&&o.pid===g.pid&&o.sid===g.sid)&&!o.done;});
@@ -5325,7 +5339,7 @@ function calSources(cb){
     (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){if(r.done||(!S.isAdmin&&r.s.owner!==S.uid))return;cb({kind:"project",mark:markOf(r.start,r.end,r.s.offDay),pid:pr.id,sid:r.s.id,title:r.s.title||"Step",pname:pr.name||"Project",hours:r.s.hours,start:r.start,end:r.end});});});
   }else{
     Object.keys(S.myProj||{}).forEach(function(pid){var it=S.myProj[pid];(it.steps||[]).forEach(function(x){
-      var q=latestReply("p_"+pid,x.id,S.uid),dn=q?q.done===true:!!x.done,e=pDay(x.end);if(dn||!e)return;
+      var q=latestReply("p_"+pid,x.id,S.uid),dn=memberDone(x,q),e=pDay(x.end);if(dn||!e)return;
       cb({kind:"project",mark:markOf(x.start?pDay(x.start):e,e,x.offDay),pid:pid,sid:x.id,title:x.title||"Step",pname:it.name||"Project",hours:x.hours,start:x.start?pDay(x.start):e,end:e});});});
     pupTasks(S.uid).forEach(function(t){var e2=pDay(t.date);if(t.owner!==S.uid||t.done||!e2||(S.myProj&&S.myProj[t.pid]&&(S.myProj[t.pid].steps||[]).some(function(y){return y.id===t.id;})))return;
       cb({kind:"project",mark:markOf(e2,e2,false),pid:t.pid,sid:t.id,title:t.title,pname:(S.myProj&&S.myProj[t.pid]&&S.myProj[t.pid].name)||"Project",hours:t.hours,start:e2,end:e2});});
@@ -5561,6 +5575,74 @@ function projectGrabsCard(){
           var rr={eid:"p_"+x.pid,tid:x.id,pid:S.uid,claim:true,done:false,state:"",at:nowIso()};
           S.db.doc("replies/p_"+x.pid+"__"+x.id+"__"+S.uid).set(rr).then(function(){S.replies=S.replies.filter(function(y){return !(y.eid===rr.eid&&y.tid===rr.tid&&y.pid===rr.pid);}).concat([rr]);toast("Asked for it. You will see it in Today once it is confirmed.");S.isAdmin?renderToday():renderHome();},function(){say(st,"Could not save.","warn");});}}));}),st);
 }
+/* ---------- Who did what: the work done on a project, in detail, with proof and review ---------- */
+function projWork(pr){
+  var rows=[],people={};
+  projSchedule(pr).rows.forEach(function(r){
+    var s0=r.s,rp=s0.owner?latestReply("p_"+pr.id,s0.id,s0.owner):null,dr=(rp&&rp.done===true)?rp:null;
+    var by=s0.owner||"",at=r.done?(s0.doneAt||(dr&&dr.at)||""):"",spent=s0.spent||(dr&&dr.spent)||0,proofs=[];
+    Object.keys(S.pup||{}).forEach(function(uid){pupItems(uid,pr.id).forEach(function(f){if(f.sid===s0.id)proofs.push({uid:uid,f:f});});});
+    var kids=(pr.steps||[]).filter(function(x){return x.parent===s0.id;});
+    rows.push({r:r,s:s0,done:r.done,by:by,at:at,spent:spent,proofs:proofs,kids:kids,status:stepStatusOf(r.done,s0.status,rp)});
+    if(r.done){var k=by||"admin";people[k]=people[k]||{n:0,est:0,spent:0};people[k].n++;people[k].est+=s0.hours||0;people[k].spent+=spent;}
+  });
+  return {rows:rows,people:people};
+}
+function whenText(iso){if(!iso)return "";var d=new Date(iso);return isNaN(d)?"":d.toLocaleDateString(undefined,{day:"numeric",month:"short"})+", "+fmtClock(d);}
+function reviewChip(rv){return rv?h("span",{class:"pill "+(rv.state==="ok"?"p-ok":"p-red"),text:rv.state==="ok"?"Reviewed":"Sent back"}):null;}
+function openProof(x,st){var f=x.f,base="projectup/"+x.uid+"/files",u=safeUrl(f.url);
+  if(f.fid)return h("button",{type:"button",class:"btn small",text:(f.img?"Screenshot: ":"PDF: ")+(f.label||f.name||"file"),onclick:function(){if(f.img)getImg(base,f.fid,f.n,st,function(src){lightbox(src,f.label||"Screenshot");});else getPdf(base,f.fid,f.n,f.name||f.label||"file.pdf",st);}});
+  return u?h("a",{class:"btn small",href:u,target:"_blank",rel:"noopener",text:"Link: "+(f.label||f.url).slice(0,40)}):null;}
+function workDoneCard(pr){
+  var w=projWork(pr),done=w.rows.filter(function(x){return x.done;}).length,total=w.rows.length,st=h("p",{class:"status",role:"status","aria-live":"polite"});
+  var det=h("details",{class:"card hsec workcard",open:S.panel["pr-work"]?true:null,ontoggle:function(e){S.panel["pr-work"]=e.currentTarget.open;}},h("summary",{class:"fold-h",text:"Who did what ("+done+" of "+total+" steps done)"}));
+  var ppl=Object.keys(w.people).sort(function(a,b){return w.people[b].n-w.people[a].n;});
+  det.append(ppl.length?h("div",{class:"chips"},ppl.map(function(u){var q=w.people[u];return h("span",{class:"chip good",text:(u==="admin"?"Admin":nameOf(u))+" · "+q.n+" step"+(q.n>1?"s":"")+(q.spent?" · "+fmtDur(q.spent/60):"")});})):h("p",{class:"sub",style:"margin:0",text:"Nothing is finished yet."}));
+  var order=[],groups={};w.rows.forEach(function(x){var n=x.s.section||"Other steps";if(!groups[n]){groups[n]=[];order.push(n);}groups[n].push(x);});
+  order.forEach(function(n){
+    var L=groups[n],dn=L.filter(function(x){return x.done;}).length,key="pw:"+n,active=L.some(function(x){return x.done||x.status!=="todo";});
+    var body=h("div",null);
+    L.slice().sort(function(a,b){return (b.done-a.done)||String(a.at).localeCompare(String(b.at));}).forEach(function(x){
+      var s0=x.s,line;
+      if(x.done)line="Done by "+(x.by?nameOf(x.by):"an admin")+(x.at?" · "+whenText(x.at):"")+(x.spent?" · took "+fmtDur(x.spent/60)+(s0.hours?" (estimated "+fmtDur(s0.hours)+")":""):"");
+      else if(x.status==="working")line=(x.by?nameOf(x.by):"Someone")+" is working on it";
+      else if(x.status==="paused")line="Paused"+(x.by?" · "+nameOf(x.by):"");
+      else if(x.status==="blocked")line="Stuck, needs help"+(x.by?" · "+nameOf(x.by):"");
+      else line=(x.by?"With "+nameOf(x.by):"No one yet")+(x.r.due||x.r.end?" · due "+pShort(x.r.due||x.r.end):"");
+      var proofRow=x.proofs.length?h("div",{class:"row"},x.proofs.map(function(pf){return openProof(pf,st);})):null;
+      var kidRow=x.kids.length?h("p",{class:"sub",style:"margin:4px 0 0",text:"Follow-ups: "+x.kids.map(function(k){return k.title+(k.owner?" ("+nameOf(k.owner)+")":" (open)")+(k.done?" done":"");}).join("; ")}):null;
+      body.append(h("div",{class:"wrow"+(x.done?" wdone":"")},h("div",{class:"wtop"},h("span",{class:"wmark","aria-hidden":"true",text:x.done?"✓":x.status==="todo"?"○":"●"}),
+        h("div",{class:"nr-t"},h("b",{class:"gr-title",text:s0.title||"Step"}),h("span",{class:"sub",text:line})),
+        reviewChip(s0.review),h("button",{type:"button",class:"btn small",text:x.done?"Review":"Open",onclick:function(){S.stepOpen={pid:pr.id,sid:s0.id};showView("today");renderToday();window.scrollTo(0,0);}})),
+        s0.review&&s0.review.note?h("p",{class:"sub",style:"margin:4px 0 0",text:"Review note: "+s0.review.note}):null,proofRow,kidRow));
+    });
+    det.append(h("details",{class:"more",open:(S.panel[key]!=null?S.panel[key]:active)?true:null,ontoggle:function(e){S.panel[key]=e.currentTarget.open;}},h("summary",{text:n+" · "+dn+" of "+L.length+" done"}),body));
+  });
+  det.append(st);
+  return det;
+}
+// Admin: look at what someone did (the proof shows above), then accept it or send it back with a note.
+function reviewCard(g,re){
+  if(!S.isAdmin||(g.status!=="done"&&!g.review))return null;
+  var pr=projById(g.pid),stp=pr&&pr.steps.filter(function(x){return x.id===g.sid;})[0];if(!stp)return null;
+  var rv=stp.review,nt=h("input",{type:"text",maxlength:"300","aria-label":"Review note","data-k":"rv-n",placeholder:"A note for them (needed if you send it back)"});
+  var box=h("section",{class:"card hsec"},h("h3",{class:"q",text:"Review"}));
+  box.append(h("p",{class:"sub",style:"margin:0 0 8px",text:rv?("Last review by "+nameOf(rv.by)+" on "+whenText(rv.at)+": "+(rv.state==="ok"?"looks good":"sent back")+(rv.note?". "+rv.note:"")):"Look through what they added above, then say if it is fine."}),nt,
+    h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Looks good",onclick:function(){stp.review={state:"ok",note:clean(nt.value),by:S.uid,at:nowIso()};saveProject(pr,true);toast("Marked as reviewed.");re();}}),
+      h("button",{type:"button",class:"btn small",text:"Needs more",onclick:function(){var note=clean(nt.value);if(!note){toast("Say what is missing, so they know what to add.");nt.focus();return;}
+        stp.review={state:"changes",note:note,by:S.uid,at:nowIso()};stp.done=false;stp.doneAt="";stp.status="";saveProject(pr,true);toast("Sent back with your note.");re();}})));
+  return box;
+}
+// Events: what has been done, by whom and when, by stage
+function eventWorkDone(e){
+  var done=(e.tasks||[]).filter(function(t){return taskState(e,t)==="done";});
+  if(!done.length)return h("p",{class:"sub",style:"margin:0",text:"Nothing is done yet."});
+  var by={},groups={},order=[];
+  done.forEach(function(t){var cp=(t.cp!=null&&e.cps&&e.cps[t.cp])?e.cps[t.cp].name:"Other",d=doneAt(e,t);if(!groups[cp]){groups[cp]=[];order.push(cp);}groups[cp].push({t:t,d:d});if(t.owner)by[t.owner]=(by[t.owner]||0)+1;});
+  return h("div",null,h("div",{class:"chips"},Object.keys(by).sort(function(a,b){return by[b]-by[a];}).map(function(u){return h("span",{class:"chip good",text:nameOf(u)+" · "+by[u]+" task"+(by[u]>1?"s":"")});})),
+    order.map(function(n){return h("details",{class:"more",open:true},h("summary",{text:n+" · "+groups[n].length+" done"}),
+      h("ul",{class:"ovlist"},groups[n].map(function(x){return h("li",null,h("p",{class:"ovwho"},h("b",{text:x.t.title}),h("span",{class:"sub",text:" · "+(x.t.owner?nameOf(x.t.owner):"someone")+(x.d?" · "+whenText(x.d.toISOString()):"")})));})));}));
+}
 /* ---------- Today and this week: the dated steps of projects ---------- */
 function projectDayBuckets(){
   var t0=pToday().getTime(),wk=t0+7*864e5,out={behind:[],today:[],week:[],any:false};
@@ -5587,7 +5669,7 @@ function projectDayBuckets(){
       add({kind:"project",parentTitle:(function(){var q=r.s.parent&&pr.steps.filter(function(x){return x.id===r.s.parent;})[0];return q?q.title:"";})(),mark:markOf(r.start,r.end,r.s.offDay),pid:pr.id,pname:pr.name,sid:r.s.id,title:r.s.title,hours:r.s.hours,owner:S.uid,start:r.start,end:r.end,done:r.done,status:stepStatusOf(r.done,r.s.status,latestReply("p_"+pr.id,r.s.id,S.uid))});});});
   }else{
     Object.keys(S.myProj||{}).forEach(function(pid){var it=S.myProj[pid];(it.steps||[]).forEach(function(x){
-      var rp=latestReply("p_"+pid,x.id,S.uid),dn=rp?rp.done===true:!!x.done;
+      var rp=latestReply("p_"+pid,x.id,S.uid),dn=memberDone(x,rp);
       add({kind:"project",parentTitle:x.parentTitle||"",mark:markOf(x.start?pDay(x.start):null,pDay(x.end),x.offDay),pid:pid,pname:it.name,sid:x.id,title:x.title,hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,status:stepStatusOf(dn,"",rp)});});});
     // jobs this person added from their own side, until they show up in the project itself
     pupTasks(S.uid).forEach(function(t){
