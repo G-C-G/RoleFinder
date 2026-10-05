@@ -1657,7 +1657,7 @@ var TEAM_PHRASE={solo:"on your own, then sharing the result",pair:"with one or t
 var STRUCT_PHRASE={clear:"a clear brief and a checklist",guided:"a goal and some guidance",free:"a goal and the freedom to find your own way"};
 function profileOf(r){
   var rt=rankedTraits(r.q),ts=rt.ts,ks=rt.ks;
-  if(ks.length<6)return null;
+  if(ks.length<4)return null;
   var top=ks.slice(0,3),low=ks[ks.length-1],st=sanitizeStory(r.story),L=[];
   var a1=ARCH[top[0]],a2=ARCH[top[1]],a3=ARCH[top[2]];
   L.push("You "+a1[1]+", and you "+a2[1]+". There is some "+a3[0]+" in you too.");
