@@ -559,6 +559,7 @@ body.has-nav{padding-bottom:104px}
 .tlmini .btn.link{margin-top:2px}
 .ovrow.noopen{cursor:default}
 .fcrow{border-top:1px solid var(--line);padding:10px 0}.fcrow:first-of-type{border-top:0}
+.dsub{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;font:700 12.5px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.dsub .dn{min-width:22px;height:20px;border-radius:99px;display:grid;place-items:center;padding:0 7px;background:var(--bg-2);color:var(--ink)}
 .pill.p-ok{background:#e1f2e4;color:#1d6b34}
 .pill.kindtag{background:transparent;border:1px solid var(--line);color:var(--muted)}
 .welcome{margin:16px 0 4px}.welcome .k{margin:0 0 4px}
@@ -5213,21 +5214,25 @@ function projectDayBuckets(){
 function projectDaySections(root,b){
   if(!b.any)return;
   function row(o,kind){
-    var admin=S.isAdmin,isEv=o.kind==="event",pill=kind==="behind"?["p-red","Behind"]:kind==="today"?["p-gold","Today"]:["p-soft",pShort(o.start||o.end)];
+    var admin=S.isAdmin,isEv=o.kind==="event",pill=kind==="behind"?["p-red","Behind"]:kind==="today"?null:["p-soft",pShort(o.start||o.end)];
     var sub=[o.pname||(isEv?"Event":"Project"),isEv&&o.when&&kind!=="week"?fmtClock(o.when):"",o.hours?o.hours+(o.hours===1?" hr":" hrs"):"",admin?(o.owner?"With "+nameOf(o.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ");
     var go=h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){
       if(isEv){S.evOpen=o.pid;S.goTask={eid:o.pid,tid:o.sid};showView("events");openLinkedTask();}
       else{S.stepOpen={pid:o.pid,sid:o.sid};admin?renderToday():renderHome();}window.scrollTo(0,0);}});
     var tick=(admin&&!isEv)?h("button",{type:"button",class:"tick","aria-label":"Mark done: "+o.title,onclick:function(){var pr=projById(o.pid),stp=pr&&pr.steps.filter(function(x){return x.id===o.sid;})[0];if(!stp)return;stp.done=true;stp.doneAt=nowIso();saveProject(pr,true);renderToday();}}):
       (admin?h("span",{class:"ks-ico k1","aria-hidden":"true"},ico("flag",18)):null);
-    return h("div",{class:"nrow"},tick,h("div",{class:"nr-t"},h("span",null,h("span",{class:"pill "+pill[0],text:pill[1]}),h("span",{class:"pill kindtag "+(isEv?"k-ev":"k-pj"),text:isEv?"Event":"Project"}),(o.status&&o.status!=="todo"&&o.status!=="done")?h("span",{class:"pill "+({working:"p-ok",paused:"p-gold",blocked:"p-red"}[o.status]),text:({working:"Working",paused:"Paused",blocked:"Blocked"}[o.status])}):null,h("b",{class:"gr-title",text:o.title||"Step"})),h("span",{class:"sub",text:sub})),go);
+    return h("div",{class:"nrow"},tick,h("div",{class:"nr-t"},h("span",null,pill?h("span",{class:"pill "+pill[0],text:pill[1]}):null,(o.status&&o.status!=="todo"&&o.status!=="done")?h("span",{class:"pill "+({working:"p-ok",paused:"p-gold",blocked:"p-red"}[o.status]),text:({working:"Working",paused:"Paused",blocked:"Blocked"}[o.status])}):null,h("b",{class:"gr-title",text:o.title||"Step"})),h("span",{class:"sub",text:sub})),go);
   }
   function block(title,small,list,key,empty){
-    var all=!!S.panel[key],shown=all?list:list.slice(0,6);
     root.append(h("h2",{class:"tsec"},h("span",{text:title}),h("small",{text:small})));
     if(!list.length){root.append(h("p",{class:"sub",style:"margin:0 2px",text:empty}));return;}
-    root.append(h("div",{class:"band b-soft"},shown.map(function(x){return row(x.o,x.k);}),
-      list.length>6?h("button",{type:"button",class:"band-more",text:all?"Show fewer":"Show "+(list.length-6)+" more",onclick:function(){S.panel[key]=!all;S.isAdmin?renderToday():renderHome();}}):null));
+    [["project","Projects"],["event","Events"]].forEach(function(g){
+      var items=list.filter(function(x){return x.o.kind===g[0];});if(!items.length)return;
+      var k2=key+g[0],all=!!S.panel[k2],shown=all?items:items.slice(0,6);
+      root.append(h("p",{class:"dsub"},h("span",{text:g[1]}),h("span",{class:"dn",text:String(items.length)})),
+        h("div",{class:"band b-soft"},shown.map(function(x){return row(x.o,x.k);}),
+          items.length>6?h("button",{type:"button",class:"band-more",text:all?"Show fewer":"Show "+(items.length-6)+" more",onclick:function(){S.panel[k2]=!all;S.isAdmin?renderToday():renderHome();}}):null));
+    });
   }
   var td=b.behind.map(function(o){return {o:o,k:"behind"};}).concat(b.today.map(function(o){return {o:o,k:"today"};}));
   block("Today",td.length?td.length+" to do":"",td,"dayT","Nothing is scheduled for today.");
