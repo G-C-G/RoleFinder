@@ -566,6 +566,9 @@ body.has-nav{padding-bottom:104px}
 .dayblock.t-week{background:var(--bg-2);border:1px solid var(--line)}
 .dayblock .tsec{margin:2px 2px 6px}
 .est{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;padding:10px 14px;border-radius:14px;background:var(--bg-2);font:600 14px var(--font-body);color:var(--muted)}.est b{font-size:1.15rem;color:var(--ink)}
+.pill.p-hol{background:var(--gold-soft);color:var(--gold-ink);border:1px solid var(--gold)}
+.holbanner{background:var(--gold-soft);border:1px solid var(--gold)}
+.calc.holwork::after{content:"\2605";position:absolute;top:2px;right:4px;font-size:10px;color:var(--red)}.calc{position:relative}
 .t-more{background:var(--card);border:1px solid var(--line);margin-top:12px}
 .t-cal{background:var(--card);border:1px solid var(--line);margin-top:12px}
 .calnav{display:flex;align-items:center;gap:8px;margin:8px 0}.calnav b{flex:1;text-align:center}
@@ -3424,6 +3427,8 @@ function holidayName(d){
   return ghHolidays(d.getFullYear())[k]||"";
 }
 function holidaysIn(a,b){var out=[],x=new Date(a.getTime());while(x<=b){var n=holidayName(x);if(n)out.push({d:new Date(x.getTime()),n:n});x.setDate(x.getDate()+1);}return out;}
+// "Holiday work: Farmers' Day" or "Weekend work": a step or task that is on purpose on a non-working day.
+function markOf(a,b,off,ev){var n=(b&&holidayName(b))||(a&&holidayName(a));if(n)return (off||ev)?"Holiday work: "+n:"On a public holiday: "+n;if(off&&b&&(b.getDay()===0||b.getDay()===6))return "Weekend work";return "";}
 function pOff(d){var w=d.getDay();return w===0||w===6||!!holidayName(d);}
 function offWhy(d){var n=holidayName(d);return n?"a public holiday ("+n+")":"a weekend";}
 function pWeekend(d){var w=d.getDay();return w===0||w===6;}
@@ -3435,7 +3440,7 @@ function pWorkDays(a,b){var n=0,x=new Date(a.getTime());while(x<b){if(!pOff(x))n
 function pToday(){var t=new Date();t.setHours(0,0,0,0);return t;}
 function fmtDur(h){var m=Math.round((Number(h)||0)*60);if(m<=0)return "";if(m<60)return m+" min";var hh=Math.floor(m/60),r=m%60;return r?hh+" hr "+r+" min":hh+(hh===1?" hr":" hrs");}
 function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,200).map(function(s){
-  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*100)/100)),spent:Math.max(0,Math.min(99999,Math.round(Number(s.spent)||0))),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),status:({working:1,paused:1,blocked:1})[s.status]?s.status:"",statusAt:clean(s.statusAt).slice(0,40),how:clean(s.how).slice(0,320),note:clean(s.note).slice(0,300)};});}
+  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*100)/100)),spent:Math.max(0,Math.min(99999,Math.round(Number(s.spent)||0))),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),status:({working:1,paused:1,blocked:1})[s.status]?s.status:"",statusAt:clean(s.statusAt).slice(0,40),how:clean(s.how).slice(0,320),offDay:!!s.offDay,note:clean(s.note).slice(0,300)};});}
 function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),flyer:cleanFlyer(pr.flyer),thumb:cleanThumb(pr.thumb),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),noWeekends:!!pr.noWeekends,packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
   files:(pr.files||[]).slice(0,30).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
   created:pr.created||nowIso(),updated:nowIso()};}
@@ -3504,7 +3509,7 @@ function mineOf(pr,uid){
   var sc=projSchedule(pr),mySteps=sc.rows.filter(function(r){return r.s.owner===uid;});if(!mySteps.length)return null;
   return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),target:pr.target||"",
     links:(pr.files||[]).filter(function(f){return !f.fid&&safeUrl(f.url);}).slice(0,20).map(function(f){return {label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};}),
-    steps:mySteps.map(function(r){return {id:r.s.id,title:r.s.title,days:r.s.days||0,start:r.fixed?pIso(r.start):"",hours:r.s.hours||0,end:pIso(r.due||r.end),done:r.done,note:r.s.note||"",how:r.s.how||""};})};
+    steps:mySteps.map(function(r){return {id:r.s.id,title:r.s.title,days:r.s.days||0,start:r.fixed?pIso(r.start):"",hours:r.s.hours||0,end:pIso(r.due||r.end),done:r.done,note:r.s.note||"",how:r.s.how||"",offDay:!!r.s.offDay};})};
 }
 // Admin only: keep the progress-only docs and each person's own docs in step with the full project.
 var projSyncT=null;
@@ -3657,12 +3662,12 @@ function holidayCard(pr,save,rerender){
   var a=pDay(pr.start)||pToday(),b=pDay(pr.target)||pDay(pIso(new Date(a.getFullYear(),a.getMonth()+3,a.getDate()))),hl=holidaysIn(a,b);
   if(!hl.length)return null;
   var byDay={};hl.forEach(function(x){byDay[pIso(x.d)]=x.n;});
-  var clash=(pr.steps||[]).filter(function(st){return !st.done&&((st.startOn&&byDay[st.startOn])||(st.due&&byDay[st.due]));});
-  var box=h("details",{class:"more",open:clash.length?true:null},h("summary",{text:"Public holidays in this plan ("+hl.length+")"+(clash.length?" \u00b7 "+clash.length+" step"+(clash.length>1?"s":"")+" land on one":"")}),
+  var onHol=(pr.steps||[]).filter(function(st){return !st.done&&((st.startOn&&byDay[st.startOn])||(st.due&&byDay[st.due]));}),clash=onHol.filter(function(st){return !st.offDay;}),kept=onHol.length-clash.length;
+  var box=h("details",{class:"more",open:clash.length?true:null},h("summary",{text:"Public holidays in this plan ("+hl.length+")"+(clash.length?" \u00b7 "+clash.length+" step"+(clash.length>1?"s":"")+" land on one":"")+(kept?" \u00b7 "+kept+" planned on purpose":"")}),
     h("ul",{class:"ovlist"},hl.map(function(x){var k=pIso(x.d),n=clash.filter(function(st){return st.startOn===k||st.due===k;}).length;
       return h("li",null,h("p",{class:"ovwho"},h("b",{text:x.d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})}),h("span",{class:"sub",text:" \u00b7 "+x.n+(n?" \u00b7 "+n+" step"+(n>1?"s":"")+" planned on it":"")})));})),
     h("p",{class:"sub",text:"These days are not working days. Eid al-Fitr and Eid al-Adha are announced each year, so add them on the Today page, under Calendar, once they are confirmed."}));
-  if(clash.length)box.append(h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Move those steps to a working day",onclick:function(){
+  if(clash.length)box.append(h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Keep them there, mark as holiday work",onclick:function(){clash.forEach(function(st){st.offDay=true;});save(true);rerender();toast("Marked as holiday work.");}}),h("button",{type:"button",class:"btn small go",text:"Move those steps to a working day",onclick:function(){
     clash.forEach(function(st){var sd=st.startOn?pDay(st.startOn):null,dd=st.due?pDay(st.due):null;
       if(sd&&byDay[st.startOn])st.startOn=pIso(pNextWork(sd));
       if(dd&&byDay[st.due])st.due=pIso(pPrevWork(dd));
@@ -3742,12 +3747,13 @@ function drawProject(root){
       h("button",{type:"button",class:"pstick","aria-pressed":String(r.done),"aria-label":(r.done?"Mark not done: ":"Mark done: ")+s.title,onclick:function(){s.done=r.done?false:true;s.doneAt=s.done?nowIso():"";save(true);rerenderProj();}},r.done?ico("check",16):null),
       h("button",{type:"button",class:"pstt",onclick:function(){S.panel["pstep:"+s.id]=!open;renderEvents();}},
         h("b",{text:(hasSec?"":(i+1)+". ")+(s.title||"Untitled step")}),
-        h("span",{class:"sub",text:r.fixed?(s.hours?fmtDur(s.hours)+" · ":"")+(r.start.getTime()===r.end.getTime()?pShort(r.end):pShort(r.start)+" to "+pShort(r.end))+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":""):(s.days?s.days+" day"+(s.days>1?"s":""):"No estimate")+(s.hours?" · "+s.hours+" hr"+(s.hours>1?"s":""):"")+" · "+(s.par&&i>0&&!(hasSec&&sc.rows[i-1].s.section===s.section)?"runs with \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d · ":"")+"ends "+pShort(r.end)+(r.due?" · deadline "+pShort(r.due)+(r.over>0?" ("+r.over+" day"+(r.over>1?"s":"")+" over)":""):"")+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":"")})));
+        h("span",{class:"sub",text:r.fixed?(s.hours?fmtDur(s.hours)+" · ":"")+(r.start.getTime()===r.end.getTime()?pShort(r.end):pShort(r.start)+" to "+pShort(r.end))+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":"")+(function(){var mk=markOf(r.start,r.end,s.offDay);return mk?" \u00b7 "+mk:"";})():(s.days?s.days+" day"+(s.days>1?"s":""):"No estimate")+(s.hours?" · "+s.hours+" hr"+(s.hours>1?"s":""):"")+" · "+(s.par&&i>0&&!(hasSec&&sc.rows[i-1].s.section===s.section)?"runs with \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d · ":"")+"ends "+pShort(r.end)+(r.due?" · deadline "+pShort(r.due)+(r.over>0?" ("+r.over+" day"+(r.over>1?"s":"")+" over)":""):"")+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":"")})));
     var li=h("li",{class:"pstep","data-s":r.done?"done":r.late?"late":""},top);
     if(open){
       var ti=h("input",{type:"text","aria-label":"Step","data-k":"pst-"+s.id,value:s.title});ti.addEventListener("input",function(){s.title=ti.value;save();});
       var dy=h("input",{type:"number",min:"0",max:"365","aria-label":"Estimated days","data-k":"pdy-"+s.id,value:String(s.days||0)});dy.addEventListener("change",function(){s.days=Math.max(0,Math.round(Number(dy.value)||0));save(true);rerenderProj();});
       var ow=h("select",{"aria-label":"Who does it"},h("option",{value:"",text:"Nobody yet"}),people.map(function(p){return h("option",{value:p.id,text:pname(p)});}));ow.value=s.owner||"";ow.addEventListener("change",function(){s.owner=ow.value;save(true);rerenderProj();});
+      var offc=h("input",{type:"checkbox","aria-label":"Needs doing on a holiday or weekend"});offc.checked=!!s.offDay;offc.addEventListener("change",function(){s.offDay=offc.checked;save(true);rerenderProj();});
       var par=h("input",{type:"checkbox","aria-label":"Starts with the step before"});par.checked=!!s.par;par.addEventListener("change",function(){s.par=par.checked;save(true);rerenderProj();});
       var nt=h("input",{type:"text","aria-label":"Note","data-k":"pnt-"+s.id,placeholder:"Note: what done looks like, who to ask",value:s.note||""});nt.addEventListener("input",function(){s.note=nt.value;save();});
       var hw=h("textarea",{rows:"3","aria-label":"What this step is and what to do","data-k":"phow-"+s.id,placeholder:"A short summary people see when they open it: what it is, what to do"});hw.value=s.how||"";hw.addEventListener("input",function(){s.how=hw.value;save();});
@@ -3757,6 +3763,7 @@ function drawProject(root){
           h("div",{class:"field"},h("label",{text:"Must be done by (optional)"}),(function(){var di=h("input",{type:"date","aria-label":"Deadline for this step","data-k":"pdue-"+s.id,value:s.due||""});di.addEventListener("change",function(){var d0=pDay(di.value);if(d0&&pr.noWeekends&&pOff(d0)){var why1=offWhy(d0);d0=pPrevWork(d0);toast("That was "+why1+", so it moved back to "+pShort(d0)+".");}s.due=d0?pIso(d0):di.value;save(true);rerenderProj();});return di;})())),
         h("div",{class:"field"},h("label",{text:"Estimated hours (optional)"}),(function(){var hi=h("input",{type:"number",min:"0",max:"999",step:"0.25","aria-label":"Estimated hours","data-k":"phr-"+s.id,value:s.hours?String(s.hours):""});hi.addEventListener("change",function(){s.hours=Math.max(0,Number(hi.value)||0);save(true);rerenderProj();});return hi;})()),
         h("div",{class:"field"},h("label",{text:"Section (optional)"}),(function(){var si=h("input",{type:"text",list:"psecs-dl","aria-label":"Section","data-k":"psec-"+s.id,placeholder:"For example Banking",value:s.section||""});si.addEventListener("change",function(){s.section=clean(si.value).slice(0,40);save(true);renderEvents();});return si;})()),
+        h("label",{class:"pcheck"},offc," This needs doing on a public holiday or weekend (it will be marked as holiday work)"),
         i>0?h("label",{class:"pcheck"},par," Runs alongside \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d (starts at the same time)"):null,
         h("div",{class:"field"},h("label",{text:"What it is and what to do"}),hw),
         h("div",{class:"field"},h("label",{text:"Note"}),nt),
@@ -5173,12 +5180,12 @@ function stepInfo(pid,sid){
     var pr=projById(pid);if(!pr)return null;
     var rows=projSchedule(pr).rows,r=rows.filter(function(x){return x.s.id===sid;})[0];if(!r)return null;
     var rp=r.s.owner?latestReply("p_"+pid,sid,r.s.owner):null;
-    return {pid:pid,sid:sid,pname:pr.name,title:r.s.title,how:r.s.how||"",note:r.s.note||"",hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.due||r.end,done:r.done,spent:r.s.spent||0,status:stepStatusOf(r.done,r.s.status,rp),target:pr.target};
+    return {pid:pid,sid:sid,pname:pr.name,title:r.s.title,how:r.s.how||"",note:r.s.note||"",hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.due||r.end,done:r.done,spent:r.s.spent||0,offDay:!!r.s.offDay,mark:markOf(r.start,r.due||r.end,r.s.offDay),status:stepStatusOf(r.done,r.s.status,rp),target:pr.target};
   }
   var it=S.myProj&&S.myProj[pid];if(!it)return null;
   var x=(it.steps||[]).filter(function(y){return y.id===sid;})[0];if(!x)return null;
   var q=latestReply("p_"+pid,sid,S.uid),dn=q?q.done===true:!!x.done;
-  return {pid:pid,sid:sid,pname:it.name,title:x.title,how:x.how||"",note:x.note||"",hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,spent:(q&&q.spent)||0,status:stepStatusOf(dn,"",q),target:it.target};
+  return {pid:pid,sid:sid,pname:it.name,title:x.title,how:x.how||"",note:x.note||"",hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,spent:(q&&q.spent)||0,offDay:!!x.offDay,mark:markOf(x.start?pDay(x.start):null,pDay(x.end),x.offDay),status:stepStatusOf(dn,"",q),target:it.target};
 }
 // status: todo | working | paused | blocked | done
 function setStepStatus(pid,sid,status){
@@ -5240,6 +5247,13 @@ function drawStepDetail(root){
     h("h1",{class:"h-sum",text:g.title||"Step"}),
     h("p",{class:"sub",style:"margin:-6px 0 8px",text:[due,S.isAdmin?(g.owner?"With "+nameOf(g.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ")}),
     g.hours?h("p",{class:"est"},h("span",{text:"Estimated time"}),h("b",{text:"about "+fmtDur(g.hours)})):null);
+  var offName=(g.end&&holidayName(g.end))||(g.start&&holidayName(g.start))||"",offWk=!offName&&g.end&&(g.end.getDay()===0||g.end.getDay()===6);
+  if(offName||(offWk&&g.offDay)){
+    var hb=h("section",{class:"card hsec holbanner"},h("h3",{class:"q",text:offName?"Planned on a public holiday":"Planned on a weekend"}),
+      h("p",{style:"margin:0",text:(offName?offName+" is not a working day. ":"")+(g.offDay?"This was planned on purpose, so it is marked as holiday work.":"This step is planned on a non-working day. Check it is meant to be.")}));
+    if(S.isAdmin&&!g.offDay)hb.append(h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Keep it, mark as holiday work",onclick:function(){var pr=projById(g.pid),st=pr&&pr.steps.filter(function(x){return x.id===g.sid;})[0];if(st){st.offDay=true;saveProject(pr,true);re();}}})));
+    root.append(hb);
+  }
   root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"What this is"}),
     g.how?h("p",{class:"about",style:"margin:0",text:g.how}):h("p",{class:"sub",style:"margin:0",text:S.isAdmin?"No summary yet. Add one under the step, in the project page.":"No summary yet."}),
     g.note?h("p",{class:"sub",style:"margin:8px 0 0",text:"Note: "+g.note}):null));
@@ -5270,19 +5284,19 @@ function drawStepDetail(root){
 S.cal={y:null,m:null,mode:"month",sel:"",incHol:false};
 function calSources(cb){
   if(S.isAdmin){
-    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){if(r.done)return;cb({kind:"project",pid:pr.id,sid:r.s.id,title:r.s.title||"Step",pname:pr.name||"Project",hours:r.s.hours,start:r.start,end:r.end});});});
+    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){if(r.done)return;cb({kind:"project",mark:markOf(r.start,r.end,r.s.offDay),pid:pr.id,sid:r.s.id,title:r.s.title||"Step",pname:pr.name||"Project",hours:r.s.hours,start:r.start,end:r.end});});});
   }else{
     Object.keys(S.myProj||{}).forEach(function(pid){var it=S.myProj[pid];(it.steps||[]).forEach(function(x){
       var q=latestReply("p_"+pid,x.id,S.uid),dn=q?q.done===true:!!x.done,e=pDay(x.end);if(dn||!e)return;
-      cb({kind:"project",pid:pid,sid:x.id,title:x.title||"Step",pname:it.name||"Project",hours:x.hours,start:x.start?pDay(x.start):e,end:e});});});
+      cb({kind:"project",mark:markOf(x.start?pDay(x.start):e,e,x.offDay),pid:pid,sid:x.id,title:x.title||"Step",pname:it.name||"Project",hours:x.hours,start:x.start?pDay(x.start):e,end:e});});});
   }
   (S.events||[]).forEach(function(ev){
     if(ev.published===false)return;
     var d=ev.date?pDay(ev.date):null;
-    if(d)cb({kind:"event",pid:ev.id,sid:"",title:ev.name||"Event",pname:"Event day"+(ev.start?" \u00b7 "+ev.start:""),hours:0,start:d,end:d});
+    if(d)cb({kind:"event",mark:markOf(null,d,false,true),pid:ev.id,sid:"",title:ev.name||"Event",pname:"Event day"+(ev.start?" \u00b7 "+ev.start:""),hours:0,start:d,end:d});
     priorityList(ev,S.isAdmin?undefined:S.uid).forEach(function(x){
       if(!x.due)return;var dd=new Date(x.due.getTime());dd.setHours(0,0,0,0);
-      cb({kind:"event",pid:ev.id,sid:x.t.id,title:x.t.title||"Task",pname:ev.name||"Event",hours:0,start:dd,end:dd});});
+      cb({kind:"event",mark:markOf(null,dd,false,true),pid:ev.id,sid:x.t.id,title:x.t.title||"Task",pname:ev.name||"Event",hours:0,start:dd,end:dd});});
   });
 }
 function calByDay(){
@@ -5361,7 +5375,7 @@ function calendarPanel(){
     for(var i=0;i<first;i++)grid.append(h("span",{class:"calc empty"}));
     for(var d=1;d<=last;d++)(function(d){
       var dt=new Date(c.y,c.m,d),k=pIso(dt),items=by[k]||[],hn=holidayName(dt),off=dt.getDay()===0||dt.getDay()===6,np=items.filter(function(o){return o.kind==="project";}).length,ne=items.length-np;
-      grid.append(h("button",{type:"button",class:"calc"+(off?" off":"")+(hn?" hol":"")+(k===today?" today":"")+(c.sel===k?" sel":""),"aria-label":dt.toDateString()+(hn?", "+hn:"")+(items.length?", "+items.length+" items":""),onclick:function(){c.sel=(c.sel===k?"":k);re();}},
+      grid.append(h("button",{type:"button",class:"calc"+(off?" off":"")+(hn?" hol":"")+((hn||off)&&items.some(function(o){return o.mark;})?" holwork":"")+(k===today?" today":"")+(c.sel===k?" sel":""),"aria-label":dt.toDateString()+(hn?", "+hn:"")+(items.length?", "+items.length+" items":""),onclick:function(){c.sel=(c.sel===k?"":k);re();}},
         h("span",{class:"cn",text:String(d)}),items.length?h("span",{class:"cd2"},np?h("i",{class:"dp"}):null,ne?h("i",{class:"de"}):null,h("em",{text:String(items.length)})):null));
     })(d);
     det.append(grid,h("p",{class:"calkey"},h("i",{class:"dp"})," projects  ",h("i",{class:"de"})," events  \u00b7 shaded: weekend or public holiday"));
@@ -5369,7 +5383,7 @@ function calendarPanel(){
       var sd=pDay(c.sel),sh=holidayName(sd),its=(by[c.sel]||[]).slice().sort(function(a,b){return (a.kind===b.kind?0:a.kind==="project"?-1:1);});
       det.append(h("div",{class:"calday"},h("h3",{class:"q",text:sd.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"})}),
         sh?h("p",{class:"sub",style:"margin:0 0 6px",text:"Public holiday: "+sh+". Not a working day."}):(sd.getDay()===0||sd.getDay()===6?h("p",{class:"sub",style:"margin:0 0 6px",text:"Weekend. Not a working day."}):null),
-        its.length?its.map(function(o){return h("div",{class:"nrow"},h("div",{class:"nr-t"},h("b",{class:"gr-title",text:o.title}),h("span",{class:"sub",text:o.pname+(o.hours?" \u00b7 about "+fmtDur(o.hours):"")})),
+        its.length?its.map(function(o){return h("div",{class:"nrow"},h("div",{class:"nr-t"},h("span",null,o.mark?h("span",{class:"pill p-hol",text:o.mark}):null,h("b",{class:"gr-title",text:o.title})),h("span",{class:"sub",text:o.pname+(o.hours?" \u00b7 about "+fmtDur(o.hours):"")})),
           h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){
             if(o.kind==="project"){S.stepOpen={pid:o.pid,sid:o.sid};re();window.scrollTo(0,0);}
             else if(o.sid){S.evOpen=S.isAdmin?o.pid:"";S.evSel=S.isAdmin?"":o.pid;S.goTask={eid:o.pid,tid:o.sid};showView(S.isAdmin?"events":"mevents");openLinkedTask();}
@@ -5423,12 +5437,12 @@ function projectDayBuckets(){
       if(x.st==="passed"){out.any=true;out.behind.push({kind:"event",pid:ev.id,pname:ev.name||"Event",sid:x.t.id,title:x.t.title,hours:0,owner:x.t.owner,start:null,end:x.due?(function(){var q=new Date(x.due.getTime());q.setHours(0,0,0,0);return q;})():pToday(),done:false,when:x.due,st:"passed",declined:true});return;}
       if(!x.due)return;
       var d=new Date(x.due.getTime());d.setHours(0,0,0,0);
-      add({kind:"event",pid:ev.id,pname:ev.name||"Event",sid:x.t.id,title:x.t.title,hours:0,owner:x.t.owner,start:null,end:d,done:false,when:x.due,st:x.st});});});
-    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){add({kind:"project",pid:pr.id,pname:pr.name,sid:r.s.id,title:r.s.title,hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.end,done:r.done,status:stepStatusOf(r.done,r.s.status,r.s.owner?latestReply("p_"+pr.id,r.s.id,r.s.owner):null)});});});
+      add({kind:"event",mark:markOf(null,d,false,true),pid:ev.id,pname:ev.name||"Event",sid:x.t.id,title:x.t.title,hours:0,owner:x.t.owner,start:null,end:d,done:false,when:x.due,st:x.st});});});
+    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){add({kind:"project",mark:markOf(r.start,r.end,r.s.offDay),pid:pr.id,pname:pr.name,sid:r.s.id,title:r.s.title,hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.end,done:r.done,status:stepStatusOf(r.done,r.s.status,r.s.owner?latestReply("p_"+pr.id,r.s.id,r.s.owner):null)});});});
   }else{
     Object.keys(S.myProj||{}).forEach(function(pid){var it=S.myProj[pid];(it.steps||[]).forEach(function(x){
       var rp=latestReply("p_"+pid,x.id,S.uid),dn=rp?rp.done===true:!!x.done;
-      add({kind:"project",pid:pid,pname:it.name,sid:x.id,title:x.title,hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,status:stepStatusOf(dn,"",rp)});});});
+      add({kind:"project",mark:markOf(x.start?pDay(x.start):null,pDay(x.end),x.offDay),pid:pid,pname:it.name,sid:x.id,title:x.title,hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,status:stepStatusOf(dn,"",rp)});});});
   }
   function key(o){return o.when?o.when.getTime():(o.start||o.end).getTime();}
   function byStart(a,b){return (key(a)-key(b))||String(a.title).localeCompare(String(b.title));}
@@ -5446,7 +5460,7 @@ function projectDaySections(root,b){
     if(admin&&!isEv)tick=h("button",{type:"button",class:"tick","aria-label":"Mark done: "+o.title,onclick:function(){var pr=projById(o.pid),stp=pr&&pr.steps.filter(function(x){return x.id===o.sid;})[0];if(!stp)return;stp.done=true;stp.doneAt=nowIso();stp.status="";saveProject(pr,true);renderToday();}});
     else if(admin&&isEv&&o.owner===S.uid)tick=h("button",{type:"button",class:"tick","aria-label":"Mark done: "+o.title,onclick:function(){var ev=evById(o.pid),tk=ev&&(ev.tasks||[]).filter(function(x){return x.id===o.sid;})[0];if(!tk)return;quickDone(ev,tk,null);setTimeout(renderToday,250);}});
     else if(admin)tick=h("span",{class:"ks-ico k1","aria-hidden":"true"},ico("flag",18));
-    return h("div",{class:"nrow"},tick,h("div",{class:"nr-t"},h("span",null,pill?h("span",{class:"pill "+pill[0],text:pill[1]}):null,(o.status&&o.status!=="todo"&&o.status!=="done")?h("span",{class:"pill "+({working:"p-ok",paused:"p-gold",blocked:"p-red"}[o.status]),text:({working:"Working",paused:"Paused",blocked:"Blocked"}[o.status])}):null,h("b",{class:"gr-title",text:o.title||"Step"})),h("span",{class:"sub",text:sub})),go);
+    return h("div",{class:"nrow"},tick,h("div",{class:"nr-t"},h("span",null,pill?h("span",{class:"pill "+pill[0],text:pill[1]}):null,o.mark?h("span",{class:"pill p-hol",text:o.mark}):null,(o.status&&o.status!=="todo"&&o.status!=="done")?h("span",{class:"pill "+({working:"p-ok",paused:"p-gold",blocked:"p-red"}[o.status]),text:({working:"Working",paused:"Paused",blocked:"Blocked"}[o.status])}):null,h("b",{class:"gr-title",text:o.title||"Step"})),h("span",{class:"sub",text:sub})),go);
   }
   function block(title,small,list,key,empty,tone){
     var box=tone==="week"?h("details",{class:"dayblock t-week",open:S.panel.dayWeek?true:null,ontoggle:function(e){S.panel.dayWeek=e.currentTarget.open;}},h("summary",{class:"fold-h"},h("span",{text:title}),h("small",{text:small}))):h("section",{class:"dayblock t-"+tone});
@@ -5490,7 +5504,7 @@ function drawToday(root){
   var pdb=projectDayBuckets(),tdAll=pdb.today.concat(pdb.behind),nToday=tdAll.length,nPj=tdAll.filter(function(o){return o.kind==="project";}).length,nEvT=nToday-nPj;
   var parts=[nPj?nPj+" project step"+(nPj>1?"s":""):"",nEvT?nEvT+" event task"+(nEvT>1?"s":""):""].filter(Boolean).join(" and ");
   var hrsToday=tdAll.reduce(function(t,o){return t+(o.hours||0);},0);
-  var hn=holidayName(new Date()),line=[hn?"Today is a public holiday: "+hn+". Not a working day.":"",nToday?parts+" for today"+(pdb.behind.length?" ("+pdb.behind.length+" behind)":"")+(hrsToday?", about "+fmtDur(hrsToday)+" of work":"")+".":(hn?"":"Nothing is due today. You are clear.")].filter(Boolean).join(" ");
+  var hn=holidayName(new Date()),line=[hn?"Today is a public holiday: "+hn+". "+(nToday?nToday+" thing"+(nToday>1?"s are":" is")+" planned on it, marked as holiday work.":"Not a working day."):"",(nToday&&!hn)?parts+" for today"+(pdb.behind.length?" ("+pdb.behind.length+" behind)":"")+(hrsToday?", about "+fmtDur(hrsToday)+" of work":"")+".":(hn?"":"Nothing is due today. You are clear.")].filter(Boolean).join(" ");
   root.append(h("div",{class:"welcome"},h("p",{class:"k",text:new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}),
     h("h1",{class:"h-sum",text:greet+", "+first}),h("p",{class:"sub",style:"margin:-6px 0 0",text:line})));
   var hasProfile=!!profileOf(Object.assign(payload(),{id:S.uid}));
