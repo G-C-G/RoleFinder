@@ -588,8 +588,8 @@ body.has-nav{padding-bottom:104px}
 .calm{appearance:none;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 6px;display:grid;gap:2px;justify-items:center;cursor:pointer;color:var(--ink)}.calm.cur{outline:2px solid var(--green)}
 .calexp{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
 .calwarn{color:var(--red);font-weight:600}
-.dscroll{max-height:345px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-.dhint{margin:4px 4px 0;font:600 12.5px var(--font-body);color:var(--muted)}
+.band.dscroll{max-height:345px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.dhint{appearance:none;display:block;width:100%;margin:6px 0 0;padding:8px;border:1px dashed var(--line);border-radius:12px;background:transparent;font:700 13px var(--font-body);color:var(--ink);cursor:pointer;min-height:40px}
 .dsub.ds-project{border-left:4px solid var(--ink);padding-left:8px}
 .dsub.ds-event{border-left:4px solid var(--gold);padding-left:8px}
 .dsub{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;font:700 12.5px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.dsub .dn{min-width:22px;height:20px;border-radius:99px;display:grid;place-items:center;padding:0 7px;background:var(--bg-2);color:var(--ink)}
@@ -5175,8 +5175,9 @@ function stepStatusOf(doneFlag,own,rp){
   var v=own||(rp&&rp.state)||"";
   return v==="started"?"working":(v==="working"||v==="paused"||v==="blocked")?v:"todo";
 }
+function useFull(pid){return !!(S.isAdmin||(S.realAdmin&&projById(pid)));}
 function stepInfo(pid,sid){
-  if(S.isAdmin){
+  if(useFull(pid)){
     var pr=projById(pid);if(!pr)return null;
     var rows=projSchedule(pr).rows,r=rows.filter(function(x){return x.s.id===sid;})[0];if(!r)return null;
     var rp=r.s.owner?latestReply("p_"+pid,sid,r.s.owner):null;
@@ -5190,13 +5191,13 @@ function stepInfo(pid,sid){
 // status: todo | working | paused | blocked | done
 function setStepStatus(pid,sid,status){
   var now=nowIso();
-  if(S.isAdmin){
+  if(useFull(pid)){
     var pr=projById(pid),st=pr&&pr.steps.filter(function(x){return x.id===sid;})[0];if(!st)return;
     var from=st.status==="working"&&st.statusAt?Date.parse(st.statusAt):0;
     st.statusAt=now;
     if(status==="done"){st.done=true;st.doneAt=now;st.status="";if(from){var mn=Math.round((Date.now()-from)/60000);if(mn>=1&&mn<=720)st.spent=mn;}}
     else{st.done=null;st.doneAt="";st.status=status==="todo"?"":status;if(status==="working"&&!st.owner){st.owner=S.uid;toast("It is now yours.");}}
-    saveProject(pr,true);renderToday();return;
+    saveProject(pr,true);S.isAdmin?renderToday():renderHome();return;
   }
   if(!S.db||!S.uid){toast("This needs the live page.");return;}
   var prev=latestReply("p_"+pid,sid,S.uid),spent=0;
@@ -5283,8 +5284,8 @@ function drawStepDetail(root){
 /* ---------- Calendar: the month, the year, and an export that can be refreshed ---------- */
 S.cal={y:null,m:null,mode:"month",sel:"",incHol:false};
 function calSources(cb){
-  if(S.isAdmin){
-    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){if(r.done)return;cb({kind:"project",mark:markOf(r.start,r.end,r.s.offDay),pid:pr.id,sid:r.s.id,title:r.s.title||"Step",pname:pr.name||"Project",hours:r.s.hours,start:r.start,end:r.end});});});
+  if(S.isAdmin||(S.realAdmin&&(S.projects||[]).length)){
+    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){if(r.done||(!S.isAdmin&&r.s.owner!==S.uid))return;cb({kind:"project",mark:markOf(r.start,r.end,r.s.offDay),pid:pr.id,sid:r.s.id,title:r.s.title||"Step",pname:pr.name||"Project",hours:r.s.hours,start:r.start,end:r.end});});});
   }else{
     Object.keys(S.myProj||{}).forEach(function(pid){var it=S.myProj[pid];(it.steps||[]).forEach(function(x){
       var q=latestReply("p_"+pid,x.id,S.uid),dn=q?q.done===true:!!x.done,e=pDay(x.end);if(dn||!e)return;
@@ -5439,6 +5440,10 @@ function projectDayBuckets(){
       var d=new Date(x.due.getTime());d.setHours(0,0,0,0);
       add({kind:"event",mark:markOf(null,d,false,true),pid:ev.id,pname:ev.name||"Event",sid:x.t.id,title:x.t.title,hours:0,owner:x.t.owner,start:null,end:d,done:false,when:x.due,st:x.st});});});
     (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){add({kind:"project",mark:markOf(r.start,r.end,r.s.offDay),pid:pr.id,pname:pr.name,sid:r.s.id,title:r.s.title,hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.end,done:r.done,status:stepStatusOf(r.done,r.s.status,r.s.owner?latestReply("p_"+pr.id,r.s.id,r.s.owner):null)});});});
+  }else if(S.realAdmin&&(S.projects||[]).length){
+    // An admin looking at the team view still sees every step that is theirs
+    S.projects.forEach(function(pr){projSchedule(pr).rows.forEach(function(r){if(r.s.owner!==S.uid)return;
+      add({kind:"project",mark:markOf(r.start,r.end,r.s.offDay),pid:pr.id,pname:pr.name,sid:r.s.id,title:r.s.title,hours:r.s.hours,owner:S.uid,start:r.start,end:r.end,done:r.done,status:stepStatusOf(r.done,r.s.status,latestReply("p_"+pr.id,r.s.id,S.uid))});});});
   }else{
     Object.keys(S.myProj||{}).forEach(function(pid){var it=S.myProj[pid];(it.steps||[]).forEach(function(x){
       var rp=latestReply("p_"+pid,x.id,S.uid),dn=rp?rp.done===true:!!x.done;
@@ -5469,16 +5474,20 @@ function projectDaySections(root,b){
     [["project","Projects"],["event","Events"]].forEach(function(g){
       var items=list.filter(function(x){return x.o.kind===g[0];});if(!items.length)return;
       var scroll=items.length>3;
-      box.append(h("p",{class:"dsub ds-"+g[0]},h("span",{text:g[1]}),h("span",{class:"dn",text:String(items.length)})),
-        h("div",{class:"band b-soft"+(scroll?" dscroll":""),tabindex:scroll?"0":null,"aria-label":scroll?g[1]+", scrollable list":null},items.map(function(x){return row(x.o,x.k);})),
-        scroll?h("p",{class:"dhint",text:(items.length-3)+" more below. Scroll the list."}):null);
+      var listEl=h("div",{class:"band b-soft"+(scroll?" dscroll":""),tabindex:scroll?"0":null,"aria-label":scroll?g[1]+", scrollable list":null},items.map(function(x){return row(x.o,x.k);}));
+      var hint=null;
+      if(scroll){
+        hint=h("button",{type:"button",class:"dhint",text:"\u2193 "+(items.length-3)+" more, tap or scroll",onclick:function(){var end=listEl.scrollTop+listEl.clientHeight>=listEl.scrollHeight-4;if(end)listEl.scrollTo({top:0,behavior:"smooth"});else listEl.scrollBy({top:Math.round(listEl.clientHeight*0.8),behavior:"smooth"});}});
+        listEl.addEventListener("scroll",function(){var end=listEl.scrollTop+listEl.clientHeight>=listEl.scrollHeight-4;hint.textContent=end?"\u2191 Back to the top":"\u2193 More below, tap or scroll";});
+      }
+      box.append(h("p",{class:"dsub ds-"+g[0]},h("span",{text:g[1]}),h("span",{class:"dn",text:String(items.length)})),listEl,hint);
     });
     root.append(box);
   }
   var bl=b.behind.map(function(o){return {o:o,k:"behind"};}),td=b.today.map(function(o){return {o:o,k:"today"};});
   if(bl.length)block("Not done yet",bl.length+" need attention",bl,"dayB","","behind");
   block("Today",td.length?td.length+" to do":"",td,"dayT","Nothing else is scheduled for today.","today");
-  block("This week",b.week.length?b.week.length+" coming up":"nothing yet",b.week.map(function(o){return {o:o,k:"week"};}),"dayW","Nothing else is scheduled this week.","week");
+  block("This week","",b.week.map(function(o){return {o:o,k:"week"};}),"dayW","Nothing else is scheduled this week.","week");
   root.append(calendarPanel());
 }
 function renderToday(){
