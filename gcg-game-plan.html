@@ -1490,10 +1490,13 @@ var CONFIRM={yes:"Yes, that is me",partly:"Partly",no:"Not really"};
 
 /* ---------- Scoring ---------- */
 // answer v = most*4+least+1 (1..16). q[NQ] is a bitmask of EXP, q[NQ+1] a bitmask of LIKE.
-function decodeA(v){v=Number(v);if(!(v>=1&&v<=16))return null;var m=Math.floor((v-1)/4),l=(v-1)%4;return m===l?null:{m:m,l:l};}
-function normQ(a){var out=[];for(var i=0;i<NQ;i++){var v=Number(a&&a[i]);out.push(decodeA(v)?v:0);}var mk=Number(a&&a[NQ]);out.push(mk>=0&&mk<4096?Math.floor(mk):0);var m2=Number(a&&a[NQ+1]);out.push(m2>=0&&m2<128?Math.floor(m2):0);return out;}
-function encodeQ(q){var t="";for(var i=0;i<NQ;i++)t+=(q[i]>=1?Number(q[i]).toString(17):"0");return t+"-"+(q[NQ]||0)+"-"+(q[NQ+1]||0);}
-function decodeQ(str){var m=String(str).split("-"),arr=[];for(var i=0;i<NQ;i++){var c=(m[0]||"").charAt(i);arr.push(c?parseInt(c,17)||0:0);}arr.push(Number(m[1])||0);arr.push(Number(m[2])||0);return normQ(arr);}
+// One situation answer: 1-16 = most and least both picked; 17-20 = only a most; 21-24 = only a least; 25 = skipped on purpose; 0 = not reached yet.
+function decodeA(v){v=Number(v);if(v>=17&&v<=20)return {m:v-17,l:null};if(v>=21&&v<=24)return {m:null,l:v-21};if(!(v>=1&&v<=16))return null;var m=Math.floor((v-1)/4),l=(v-1)%4;return m===l?null:{m:m,l:l};}
+function isSkip(v){return Number(v)===25;}
+function askDone(q,i){return !!(decodeA(q&&q[i])||isSkip(q&&q[i]));}
+function normQ(a){var out=[];for(var i=0;i<NQ;i++){var v=Number(a&&a[i]);out.push((decodeA(v)||isSkip(v))?v:0);}var mk=Number(a&&a[NQ]);out.push(mk>=0&&mk<4096?Math.floor(mk):0);var m2=Number(a&&a[NQ+1]);out.push(m2>=0&&m2<128?Math.floor(m2):0);return out;}
+function encodeQ(q){var t="";for(var i=0;i<NQ;i++)t+=(q[i]>=1?Number(q[i]).toString(26):"0");return t+"-"+(q[NQ]||0)+"-"+(q[NQ+1]||0);}
+function decodeQ(str){var m=String(str).split("-"),arr=[];for(var i=0;i<NQ;i++){var c=(m[0]||"").charAt(i);arr.push(c?parseInt(c,26)||0:0);}arr.push(Number(m[1])||0);arr.push(Number(m[2])||0);return normQ(arr);}
 function answeredAsk(q){return ASK.filter(function(i){return decodeA(q&&q[i]);}).length;}
 // Trait score 0..1, 0.5 neutral. Most = +1, least = -1, scaled by how often the trait was on offer.
 // These scores rank traits within one person. They are not a fair way to rank people against each other.
@@ -1502,8 +1505,8 @@ function traitScores(q){
   for(var i=0;i<NQ;i++){
     var d=decodeA(q&&q[i]);if(!d)continue;any=true;
     ITEMS[i][1].forEach(function(o){cnt[o[1]]=(cnt[o[1]]||0)+1;});
-    var mt=ITEMS[i][1][d.m][1],lt=ITEMS[i][1][d.l][1];
-    raw[mt]=(raw[mt]||0)+1;raw[lt]=(raw[lt]||0)-1;
+    if(d.m!=null){var mt=ITEMS[i][1][d.m][1];raw[mt]=(raw[mt]||0)+1;}
+    if(d.l!=null){var lt=ITEMS[i][1][d.l][1];raw[lt]=(raw[lt]||0)-1;}
   }
   var out={};if(!any)return out;
   Object.keys(cnt).forEach(function(t){out[t]=((raw[t]||0)+cnt[t])/(2*cnt[t]);});
@@ -1904,7 +1907,7 @@ var BUILD={
     if(started){var pc=Math.round(Math.max(PATH.indexOf(S.screen),1+answeredAsk(S.q))/(PATH.length-1)*100);
       card.append(h("div",{class:"resume"},h("b",{text:"You're "+Math.min(pc,95)+"% through setting up."}),h("span",{text:" Everything so far is saved. Pick up where you left off."})));}
     if(!S.db||!S.uid||S.canWrite===false)card.append(h("p",{class:"sub",style:"margin:10px 0",role:"alert",text:"Heads up: this page cannot save for you right now ("+(!S.uid?"you are not signed in to Claude here":S.canWrite===false?"you only have view access, so ask Hinda to make you a Contributor":"it is not connected")+"). You can still fill it in, and at the end use Copy my results and send it to Hinda."}));
-    navRow(card,started?"Continue →":"Let's play →",function(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}if(started&&PATH.indexOf(S.screen)>0){render();return;}var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});if(started&&answeredAsk(S.q)>0)go(k>-1?"s"+k:"deck");else next();},{big:true});
+    navRow(card,started?"Continue →":"Let's play →",function(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}if(started&&PATH.indexOf(S.screen)>0){render();return;}var k=ASK.findIndex(function(n){return !askDone(S.q,n);});if(started&&answeredAsk(S.q)>0)go(k>-1?"s"+k:"deck");else next();},{big:true});
     return hd;
   },
   like:function(card){
@@ -1915,36 +1918,37 @@ var BUILD={
   },
   sit:function(card,sc){
     var i=Number(sc.slice(1)),n=ASK[i],it=ITEMS[n],d=decodeA(S.q[n]);
-    var cur=(S.tmp&&S.tmp.n===n)?S.tmp:{n:n,m:d?d.m:null,l:d?d.l:null};
+    var cur=(S.tmp&&S.tmp.n===n)?S.tmp:{n:n,m:d?d.m:null,l:d?d.l:null,mode:(d&&d.m!=null)?"l":"m"};
     var hd=shell(card,"Situation "+(i+1)+" of "+ASK.length,it[0],null);
     var hint=h("p",{class:"hint",role:"status","aria-live":"polite"});
-    var box=h("div",{class:"tiles"}),btns=[];
+    var box=h("div",{class:"tiles"}),btns=[],modes=h("div",{class:"seg3 sitmode",role:"group","aria-label":"What you are picking"});
+    function code(){return (cur.m!=null&&cur.l!=null)?cur.m*4+cur.l+1:cur.m!=null?17+cur.m:cur.l!=null?21+cur.l:0;}
     function paint(){
       btns.forEach(function(b,idx){
         var m=cur.m===idx?"most":(cur.l===idx?"least":"");
         b.setAttribute("data-m",m);
         b.setAttribute("aria-label",it[1][idx][0]+(m?" ("+(m==="most"?"most like me":"least like me")+")":""));
       });
-      if(cur.m==null){hint.setAttribute("data-k","m");hint.textContent="Tap the one MOST like you";}
-      else if(cur.l==null){hint.setAttribute("data-k","l");hint.textContent="Now tap the one LEAST like you";}
-      else{hint.setAttribute("data-k","ok");hint.textContent="Got it";}
+      modes.querySelectorAll(".sb").forEach(function(b){b.setAttribute("aria-pressed",String(b.getAttribute("data-md")===cur.mode));});
+      if(cur.m!=null&&cur.l!=null){hint.setAttribute("data-k","ok");hint.textContent="Got it";}
+      else if(cur.m!=null||cur.l!=null){hint.setAttribute("data-k","l");hint.textContent=cur.m!=null?"Got your most. Pick the LEAST like you, or tap Next if none is.":"Got your least. Pick the MOST like you, or tap Next if none is.";}
+      else{hint.setAttribute("data-k","m");hint.textContent=cur.mode==="l"?"Tap the one LEAST like you":"Tap the one MOST like you";}
     }
+    [["m","Most like me"],["l","Least like me"]].forEach(function(x){modes.append(h("button",{type:"button",class:"sb","data-md":x[0],"aria-pressed":"false",text:x[1],onclick:function(){cur.mode=x[0];S.tmp=cur;paint();}}));});
     it[1].forEach(function(o,idx){
       var b=h("button",{type:"button",class:"tile pick",onclick:function(){
         clearTimeout(advTimer);
-        if(cur.m===idx)cur.m=null;else if(cur.l===idx)cur.l=null;
-        else if(cur.m==null)cur.m=idx;else cur.l=idx;
-        S.tmp=cur;
-        if(cur.m!=null&&cur.l!=null){
-          S.q[n]=cur.m*4+cur.l+1;saveDraft();paint();
-          advTimer=setTimeout(function(){if(S.screen===sc)next();},650);
-        }else{S.q[n]=0;saveDraft();paint();}
+        if(cur.mode==="m"){if(cur.m===idx)cur.m=null;else{cur.m=idx;if(cur.l===idx)cur.l=null;}if(cur.m!=null&&cur.l==null)cur.mode="l";}
+        else{if(cur.l===idx)cur.l=null;else{cur.l=idx;if(cur.m===idx)cur.m=null;}if(cur.l!=null&&cur.m==null)cur.mode="m";}
+        S.tmp=cur;S.q[n]=code();saveDraft();paint();
+        if(cur.m!=null&&cur.l!=null)advTimer=setTimeout(function(){if(S.screen===sc)next();},650);
       }},h("span",{class:"tx",text:o[0]}),h("span",{class:"stamp","aria-hidden":"true"}));
       btns.push(b);box.append(b);
     });
-    card.append(hint,box);
+    card.append(h("p",{class:"sub",style:"margin:0 0 8px",text:"Pick the one most like you and the one least like you. If none fits, pick just one, or skip."}),modes,hint,box);
     paint();
-    navRow(card,"Next →",function(){if(!decodeA(S.q[n])){warn("Pick one most like you and one least like you.");return;}next();});
+    card.append(h("button",{type:"button",class:"btn link",text:"Skip this one",onclick:function(){clearTimeout(advTimer);S.tmp=null;S.q[n]=25;saveDraft();next();}}));
+    navRow(card,"Next →",function(){if(!decodeA(S.q[n])){warn("Pick one, or tap Skip this one.");return;}next();});
     return hd;
   },
   done:function(card){
@@ -2003,7 +2007,7 @@ var BUILD={
       card.append(g.no.length?h("div",null,h("p",{class:"lab",text:"Not for me"}),h("div",{class:"chips"},g.no.map(function(i){return h("span",{class:"chip no",text:""+FN[i].name});}))):h("p",{class:"sub",text:"No jobs that are not for you? That is fine. You can mark some any time under Me, and Hinda will see them on your profile."}));
       card.append(h("button",{type:"button",class:"btn",text:"See all "+FNS.filter(function(f){return f.when!=="Later";}).length+" jobs (optional)",onclick:function(){S.returnTo="deck";go("all");}}));
       navRow(card,"Reveal my card ",function(){
-        if(answeredAsk(S.q)<ASK.length){var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});go("s"+k);setTimeout(function(){warn("One situation still needs an answer.");},50);return;}
+        if(ASK.some(function(n){return !askDone(S.q,n);})){var k=ASK.findIndex(function(n){return !askDone(S.q,n);});go("s"+k);setTimeout(function(){warn("One situation still needs an answer, or a skip.");},50);return;}
         next();},{big:true});
       return hd;
     }
@@ -2117,7 +2121,11 @@ var BUILD={
   profile:function(card){
     var p=payload(),prof=profileOf(p);
     var hd=shell(card,"Your card is ready","Here is your player card",null);
-    if(!prof){card.append(h("p",{class:"sub",text:"Answer the situations and your card shows up here."}));return hd;}
+    if(!prof){
+      var skippedN=ASK.filter(function(n){return isSkip(S.q[n]);}).length;
+      card.append(h("p",{class:"sub",text:skippedN?"You skipped enough situations that there is not enough to build your card yet. That is fine: your jobs and everything else still count. You can come back to the situations later.":"Answer the situations and your card shows up here."}));
+      if(skippedN)navRow(card,"Continue →",function(){next();},{big:true});
+      return hd;}
     card.append(playerCard(p,prof,{reveal:true}));
     card.append(h("div",{class:"pc-lines quiet"},prof.lines.slice(0,2).map(function(l){return h("p",{text:l});})));
     // Does this sound like you?
