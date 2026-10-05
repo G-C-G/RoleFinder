@@ -1625,15 +1625,20 @@ function listText(ids){return ids.map(function(i){return FN[i].name;}).join("; "
 var reduceMotion=false;try{reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
 
 /* ---------- Story ---------- */
-function newStory(){return {future:"",team:"",structure:"",why:[],hidden:[],hiddenNote:"",proud:"",enjoy:[],explore:[],exploreNote:""};}
+function newStory(){return {future:"",futures:[],own:"",sitNotes:{},team:"",structure:"",why:[],hidden:[],hiddenNote:"",proud:"",enjoy:[],explore:[],exploreNote:""};}
 function sanitizeStory(s){
   s=s||{};var o=newStory();
-  o.future=one(M_FUTURE,s.future);o.team=one(M_TEAM,s.team);o.structure=one(M_STRUCT,s.structure);
+  var fl=many(s.futures,M_FUTURE,3);if(!fl.length&&s.future)fl=many([s.future],M_FUTURE,1);
+  if(fl.length>1)fl=fl.filter(function(k){return k!=="unsure";});
+  o.futures=fl;o.future=fl[0]||"";o.own=clean(s.own).slice(0,500);
+  o.sitNotes={};ASK.forEach(function(n){var t=clean(s.sitNotes&&s.sitNotes[n]).slice(0,120);if(t)o.sitNotes[n]=t;});
+  o.team=one(M_TEAM,s.team);o.structure=one(M_STRUCT,s.structure);
   o.why=many(s.why,M_WHY,3);o.hidden=many(s.hidden,M_HIDDEN,HIDDEN.length);
   o.enjoy=many(s.enjoy,M_ENJOY,3);o.explore=many(s.explore,M_EXPLORE,2);
   o.hiddenNote=clean(s.hiddenNote).slice(0,120);o.exploreNote=clean(s.exploreNote).slice(0,80);o.proud=clean(s.proud).slice(0,400);
   return o;
 }
+function futureLabels(st){return (st.futures||[]).map(function(k){return M_FUTURE[k]?M_FUTURE[k].label:"";}).filter(Boolean);}
 function workStyle(st){
   var a=[];if(st.team)a.push(M_TEAM[st.team].label);if(st.structure)a.push(M_STRUCT[st.structure].label);
   return a.join(" · ");
@@ -1642,7 +1647,9 @@ function storyLines(story){
   var st=sanitizeStory(story),L=[];
   var ws=workStyle(st);if(ws)L.push(["Works best",ws]);
   if(st.why.length)L.push(["Here for",labels(M_WHY,st.why).join("; ")]);
-  if(st.future)L.push(["In a few years",M_FUTURE[st.future].label]);
+  if(st.futures.length)L.push(["In a few years",futureLabels(st).join("; ")]);
+  if(st.own)L.push(["In their own words",st.own]);
+  var sn=Object.keys(st.sitNotes);if(sn.length)L.push(["Notes on situations",sn.map(function(n){return st.sitNotes[n];}).join("; ")]);
   if(st.proud)L.push(["Proudest work",st.proud]);
   var hid=labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]);
   if(hid.length)L.push(["Also brings",hid.join("; ")]);
@@ -1657,7 +1664,14 @@ var TEAM_PHRASE={solo:"on your own, then sharing the result",pair:"with one or t
 var STRUCT_PHRASE={clear:"a clear brief and a checklist",guided:"a goal and some guidance",free:"a goal and the freedom to find your own way"};
 function profileOf(r){
   var rt=rankedTraits(r.q),ts=rt.ts,ks=rt.ks;
-  if(ks.length<4)return null;
+  if(ks.length<4){
+    var so=sanitizeStory(r.story);
+    if(!so.own||so.own.length<20)return null;
+    var L0=[so.own];
+    if(so.team||so.structure)L0.push("You work best"+(so.team?" "+TEAM_PHRASE[so.team]:"")+(so.structure?(so.team?", with ":" with ")+STRUCT_PHRASE[so.structure]:"")+".");
+    if(so.futures.length&&so.futures[0]!=="unsure"){var f0=futureLabels(so).map(lc1);L0.push("In a few years you see yourself "+(f0.length>1?f0.slice(0,-1).join(", ")+" and "+f0[f0.length-1]:f0[0])+".");}
+    return {title:"In your own words",chips:["Written in my own words"],top:[],stats:[],lines:L0,own:true};
+  }
   var top=ks.slice(0,3),low=ks[ks.length-1],st=sanitizeStory(r.story),L=[];
   var a1=ARCH[top[0]],a2=ARCH[top[1]],a3=ARCH[top[2]];
   L.push("You "+a1[1]+", and you "+a2[1]+". There is some "+a3[0]+" in you too.");
@@ -1667,7 +1681,7 @@ function profileOf(r){
   var likes=maskLabels(LIKE,r.q&&r.q[NQ+1]).map(lc1);
   if(likes.length)L.push(likes.length>3?"You are drawn to many kinds of work, including "+likes.slice(0,3).join(", ")+".":"You lose track of time "+likes.join(" or ")+".");
   if(low&&ts[low]<0.4)L.push("In the situations, "+TRAIT_LABEL[low].toLowerCase()+" was the least like you. We will not lean on you for it unless you say so.");
-  if(st.future&&st.future!=="unsure")L.push("In a few years you see yourself "+lc1(M_FUTURE[st.future].label)+".");
+  if(st.futures.length&&st.futures[0]!=="unsure"){var fl2=futureLabels(st).map(lc1);L.push("In a few years you see yourself "+(fl2.length>1?fl2.slice(0,-1).join(", ")+" and "+fl2[fl2.length-1]:fl2[0])+".");}
   return {title:"The "+a1[0]+" & "+a2[0],chips:top.map(function(t){return ARCH[t][0];}),top:top,
     stats:ks.slice(0,5).map(function(t){return {label:TRAIT_LABEL[t],v:ts[t]};}),lines:L};
 }
@@ -1748,7 +1762,7 @@ function shareText(){
   if(p.cv)L.push("CV or LinkedIn: "+p.cv);
   var s=p.story;
   L.push("Code: GCG1|"+clean(p.name)+"|T="+p.top.join(",")+"|G="+p.good.join(",")+"|C="+p.curious.join(",")+"|R="+p.no.join(",")+"|Q="+encodeQ(p.q)+
-    "|W1="+s.future+"|W2="+s.enjoy.join(",")+"|W3="+s.explore.join(",")+"|W4="+s.hidden.join(",")+"|X3="+clean(s.exploreNote)+"|X4="+clean(s.hiddenNote)+
+    "|W1="+(s.futures||[]).join(",")+"|W2="+s.enjoy.join(",")+"|W3="+s.explore.join(",")+"|W4="+s.hidden.join(",")+"|X3="+clean(s.exploreNote)+"|X4="+clean(s.hiddenNote)+
     "|W5="+s.team+"|W6="+s.structure+"|W7="+s.why.join(",")+"|X7="+clean(s.proud)+"|K="+p.confirm+"|X8="+clean(p.confirmNote)+"|N="+clean(p.extra)+"|V="+clean(p.cv));
   return L.join("\n");
 }
@@ -1762,7 +1776,7 @@ function parseCode(line){
     if(k==="T")o.top=ids.slice(0,3);else if(k==="G")o.good=ids;else if(k==="C")o.curious=ids;else if(k==="R")o.no=ids;
     else if(k==="N")o.extra=clean(v).slice(0,600);else if(k==="V")o.cv=clean(v).slice(0,1500);
     else if(k==="Q")o.q=decodeQ(v);
-    else if(k==="W1")o.story.future=v;else if(k==="W2")o.story.enjoy=list;else if(k==="W3")o.story.explore=list;else if(k==="W4")o.story.hidden=list;
+    else if(k==="W1"){o.story.futures=list;o.story.future=list[0]||"";}else if(k==="W2")o.story.enjoy=list;else if(k==="W3")o.story.explore=list;else if(k==="W4")o.story.hidden=list;
     else if(k==="X3")o.story.exploreNote=v;else if(k==="X4")o.story.hiddenNote=v;
     else if(k==="W5")o.story.team=v;else if(k==="W6")o.story.structure=v;else if(k==="W7")o.story.why=list;else if(k==="X7")o.story.proud=v;
     else if(k==="K")o.confirm=CONFIRM[v]?v:"";else if(k==="X8")o.confirmNote=clean(v).slice(0,300);
@@ -1947,6 +1961,9 @@ var BUILD={
     });
     card.append(h("p",{class:"sub",style:"margin:0 0 8px",text:"Pick the one most like you and the one least like you. If none fits, pick just one, or skip."}),modes,hint,box);
     paint();
+    var wn=h("input",{type:"text",maxlength:"120","aria-label":"None of these fit? Write your own",placeholder:"None of these fit? Write your own (optional)","data-k":"sitnote-"+n,value:(S.story.sitNotes&&S.story.sitNotes[n])||""});
+    wn.addEventListener("input",function(){S.story.sitNotes=S.story.sitNotes||{};S.story.sitNotes[n]=wn.value;saveDraft();});
+    card.append(h("div",{class:"field",style:"margin-top:10px"},wn));
     card.append(h("button",{type:"button",class:"btn link",text:"Skip this one",onclick:function(){clearTimeout(advTimer);S.tmp=null;S.q[n]=25;saveDraft();next();}}));
     navRow(card,"Next →",function(){if(!decodeA(S.q[n])){warn("Pick one, or tap Skip this one.");return;}next();});
     return hd;
@@ -2104,10 +2121,10 @@ var BUILD={
   why:function(card){
     var hd=shell(card,"About you","Why are you here?","Pick up to 3.");
     card.append(multiGroup(WHY,function(){return S.story.why;},3,true,"two"),
-      h("div",{class:"qgroup"},h("h3",{text:"Where do you see yourself at GCG in a few years?"}),singleGroup(FUTURE,function(){return S.story.future;},function(v){S.story.future=v;},true)));
+      h("div",{class:"qgroup"},h("h3",{text:"Where do you see yourself at GCG in a few years?"}),multiGroup(FUTURE,function(){return S.story.futures;},3,true,"two"),h("p",{class:"sub",style:"margin:6px 0 0",text:"Pick up to three. Some people push in more than one direction."})));
     navRow(card,S.extraMode?"Save ":"Next →",function(){
       if(!S.story.why.length){warn("Pick at least one reason.");return;}
-      if(!S.story.future){warn("Pick where you see yourself. Not sure yet is fine.");return;}
+      if(!S.story.futures.length){warn("Pick where you see yourself. Not sure yet is fine.");return;}
       next();
     },{big:true});
     return hd;
@@ -2123,8 +2140,14 @@ var BUILD={
     var hd=shell(card,"Your card is ready","Here is your player card",null);
     if(!prof){
       var skippedN=ASK.filter(function(n){return isSkip(S.q[n]);}).length;
-      card.append(h("p",{class:"sub",text:skippedN?"You skipped enough situations that there is not enough to build your card yet. That is fine: your jobs and everything else still count. You can come back to the situations later.":"Answer the situations and your card shows up here."}));
-      if(skippedN)navRow(card,"Continue →",function(){next();},{big:true});
+      card.append(h("p",{class:"sub",text:skippedN?"You skipped enough situations that there is not enough to build your card yet. That is fine: your jobs and everything else still count. You can write it in your own words below, or go back and answer a few more.":"Answer the situations and your card shows up here."}));
+      if(skippedN){
+        var own=h("textarea",{rows:"4",maxlength:"500","aria-label":"Describe yourself in your own words",placeholder:"In your own words: how do you work, what are you like, what do you do well? A few lines is enough.","data-k":"own-words"});own.value=S.story.own||"";
+        own.addEventListener("input",function(){S.story.own=own.value;saveDraft();});
+        card.append(h("div",{class:"field"},h("label",{text:"Describe yourself in your own words"}),own),
+          h("div",{class:"row"},h("button",{type:"button",class:"btn go",text:"Use my own words",onclick:function(){if(clean(own.value).length<20){warn("Write a little more, at least a sentence.");return;}S.story.own=clean(own.value);saveDraft();render();}}),
+            h("button",{type:"button",class:"btn link",text:"Continue without a card",onclick:function(){next();}})));
+      }
       return hd;}
     card.append(playerCard(p,prof,{reveal:true}));
     card.append(h("div",{class:"pc-lines quiet"},prof.lines.slice(0,2).map(function(l){return h("p",{text:l});})));
@@ -2288,7 +2311,7 @@ function summaryBlocks(){
   grp("Jobs I said yes to",g.top.concat(g.good));grp("Jobs I might try",g.curious);grp("Jobs that are not for me",g.no);
   var st=sanitizeStory(p.story);
   if(st.why.length){B.push({t:"h",text:"Why I am here"});labels(M_WHY,st.why).forEach(function(x){B.push({t:"li",text:x});});}
-  if(st.future){B.push({t:"h",text:"In a few years"});B.push({t:"p",text:M_FUTURE[st.future].label});}
+  if(st.futures.length){B.push({t:"h",text:"In a few years"});B.push({t:"p",text:futureLabels(st).join("; ")});}
   if(p.cv){B.push({t:"h",text:"CV or LinkedIn"});B.push({t:"p",text:p.cv});}
   return B;
 }
@@ -2590,7 +2613,7 @@ function exportPeople(){
     var prof=profileOf(p),st=sanitizeStory(p.story);
     rows.push([p.name,prof?prof.title:"",prof?prof.chips.join("; "):"",listText(yesOf(p)),listText(p.curious||[]),listText(p.no||[]),
       maskLabels(EXP,p.q&&p.q[NQ]).join("; "),labels(M_HIDDEN,st.hidden).concat(st.hiddenNote?[st.hiddenNote]:[]).join("; "),st.proud,workStyle(st),
-      labels(M_WHY,st.why).join("; "),st.future?M_FUTURE[st.future].label:"",p.confirm?CONFIRM[p.confirm]:"",p.confirmNote||"",p.cv||"",p.extra||"",p.source||""]);
+      labels(M_WHY,st.why).join("; "),futureLabels(st).join("; "),p.confirm?CONFIRM[p.confirm]:"",p.confirmNote||"",p.cv||"",p.extra||"",p.source||""]);
   });
   saveFile("gcg-team-overview.csv",csv(rows));
 }
@@ -5953,7 +5976,7 @@ function homeView(){return S.isAdmin?"today":"home";}
 var EXTRA=["done","bring","proud","photo","work","why"];
 function extraMissing(sc){var st=sanitizeStory(S.story);
   if(sc==="photo")return false;
-  return sc==="done"?!(Number(S.q[NQ])>0):sc==="bring"?!(st.hidden.length||st.hiddenNote):sc==="proud"?!st.proud:sc==="work"?!(st.team&&st.structure):!(st.why.length&&st.future);}
+  return sc==="done"?!(Number(S.q[NQ])>0):sc==="bring"?!(st.hidden.length||st.hiddenNote):sc==="proud"?!st.proud:sc==="work"?!(st.team&&st.structure):!(st.why.length&&st.futures.length);}
 function startExtra(only){var first=only||EXTRA.filter(extraMissing)[0]||EXTRA[0];S.extraMode=true;S.screen=first;saveDraft();showView("flow");}
 function saveResponse(done,fail){
   var p=payload();if(!S.db||!S.uid){if(fail)fail("not signed in");return;}
@@ -5985,7 +6008,7 @@ function playerCard(p,prof,opts){
   var logo=ph?h("img",{class:"pc2-photo",src:ph,alt:(p.name||"Crew member")+" photo"}):h("div",{class:"pc2-photo empty","aria-hidden":"true",text:initials(p.name)||"?"});
   var ts=S.uid?titlesOf(opts.pid||S.uid):[];
   var strengths=prof?h("ul",{class:"pc2-str"},(prof.labels||prof.top.map(function(t){return TRAIT_LABEL[t];})).map(function(t){return h("li",{text:t});})):null;
-  var typeEl=prof?h("p",{class:"pc2-type"},h("span",{text:"The "+prof.chips[0]}),prof.chips[1]?h("br"):null,prof.chips[1]?h("span",{class:"plus",text:"+ "+prof.chips[1]}):null):h("p",{class:"pc2-type",text:"Card coming soon"});
+  var typeEl=prof?h("p",{class:"pc2-type"},h("span",{text:(prof.own?"":"The ")+prof.chips[0]}),prof.chips[1]?h("br"):null,prof.chips[1]?h("span",{class:"plus",text:"+ "+prof.chips[1]}):null):h("p",{class:"pc2-type",text:"Card coming soon"});
   var photoBtn=!ph&&mine&&!opts.reveal?h("button",{type:"button",class:"btn small go",text:"Add your photo",onclick:function(){startExtra("photo");}}):null;
   // With a role: function first (what they do here and what to ask them), then the person, then the personality.
   if(ts.length&&!opts.reveal){
@@ -6205,7 +6228,7 @@ function drawMe(root){
   }
   var hist=historyOf(S.uid),evc={};hist.forEach(function(x){evc[x.ev.id]=1;});
   var evN=Object.keys(evc).length,counts=hist.length?hist.length+" task"+(hist.length===1?"":"s")+" done · "+evN+" event"+(evN===1?"":"s"):"New to the crew";
-  var role=ts.length?ts.map(function(x){return x.name;}).join(" · "):"The "+prof.chips[0]+" + "+prof.chips[1];
+  var role=ts.length?ts.map(function(x){return x.name;}).join(" · "):(prof.own?"In my own words":"The "+prof.chips[0]+" + "+prof.chips[1]);
   var ph=cleanPhoto(S.photo),pst=h("p",{class:"status",role:"status","aria-live":"polite"});
   // The profile header is the dark crew card: photo, name, role, strengths and a line about you, once. Everything else sits below it on light.
   root.append(playerCard(p,prof,{counts:counts,statement:prof.lines[0]}));
@@ -6245,7 +6268,7 @@ function drawMe(root){
     mrow("exp","Experience",done.length?String(done.length):"",[line("What you have done",done.join("; ")),line("Proudest work",st.proud)]),
     mrow("skills","Skills and what I bring",brings.length?String(brings.length):"",[brings.length?h("div",{class:"chips"},brings.map(function(x){return h("span",{class:"chip",text:x});})):null]),
     mrow("how","How I work","",[line("Works best",ws)]),
-    mrow("want","What I want from GCG","",[line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",st.future?M_FUTURE[st.future].label:"")]),
+    mrow("want","What I want from GCG","",[line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",futureLabels(st).join("; "))]),
     mrow("proof","Proof of experience",(clean(p.cv)||S.cvFile)?"CV added":"",[line("CV or link",clean(p.cv)),cvControl()])));
   root.append(h("p",{class:"sub accessline",text:"The GCG admins see your answers too. The crew only sees what you chose to share, under Who sees what below."}));
   // title
