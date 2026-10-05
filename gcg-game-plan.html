@@ -1894,7 +1894,7 @@ var BUILD={
     var steps=[["You","What kind of work pulls you in"],["Situations","7 quick ones: pick what is most and least like you"],["Jobs","Jobs that might suit you. Pick as many as you like"],["Your profile","What you've done, your CV and a photo if you like"]];
     card.append(h("ol",{class:"levels","aria-label":"The four levels"},steps.map(function(s,i){return h("li",null,h("span",{class:"n","aria-hidden":"true",text:String(i+1)}),h("div",null,h("b",{text:s[0]}),h("span",{text:s[1]})));})));
     card.append(h("div",{class:"prize"},h("b",{text:"At the end: your player card"}),
-      h("span",{text:"Your player card, your profile, and your own Game Plan: what to do next, your events and your place at GCG. Hinda sees your answers. The crew sees your About, plus anything you choose to share."})));
+      h("span",{text:"Your player card, your profile, and your own Game Plan: what to do next, your events and your place at GCG. The GCG admins see your answers. The crew sees your About, plus anything you choose to share."})));
     var inp=h("input",{type:"text",id:"name",autocomplete:"name",placeholder:"First name is fine",value:S.name});
     inp.addEventListener("input",function(){S.name=inp.value;saveDraft();});
     function start(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}next();}
@@ -2136,7 +2136,7 @@ var BUILD={
     var canSend=!!(S.db&&S.uid&&S.canWrite!==false);
     card.append(!canSend?h("button",{type:"button",class:"btn go big wide",text:"Next: build my profile →",onclick:function(){go("done");}}):canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile →",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"Your profile was not saved. This usually means your access is View or Comment only. Ask Hinda to change you to Contributor in the Share menu, then tap Save again. Until then, tap Copy my results and send it to Hinda.","warn");});}})
         :null,st,
-      h("p",{class:"sub center",text:canSend?"Hinda sees your answers. The crew sees your About; you choose the rest.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
+      h("p",{class:"sub center",text:canSend?"The GCG admins see your answers. The crew sees your About; you choose the rest.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
       h("details",{class:"more"},h("summary",{text:"More: share, PDF, all jobs"}),
         h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Share my card",onclick:function(){downloadPdf(true);}}),h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false);}}),
           h("button",{type:"button",class:"btn small",text:"See all jobs",onclick:function(){S.returnTo="profile";go("all");}}),
@@ -5076,7 +5076,7 @@ function cvControl(){
         S.cvFile={name:file.name,size:size,n:n,at:nowIso()};saveDraft();if(S.db&&S.uid)saveResponse();renderProfile();if(S.screen==="proud")render();toast("CV attached.");});});});
   return h("div",{class:"field cvfile"},h("label",{text:"CV as a PDF"}),
     f?h("p",{class:"sub"},h("b",{text:f.name}),"  "+sizeText(f.size)):h("p",{class:"sub",text:"Optional. Up to 1 MB."}),
-    h("p",{class:"sub",text:"Only you and Hinda can open it. It is never shown to the crew."}),fi,
+    h("p",{class:"sub",text:"Only you and the GCG admins can open it. It is never shown to the crew."}),fi,
     h("div",{class:"row"},f?h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){getPdf("responses/"+S.uid+"/files","cv",f.n,f.name,st);}}):null,
       h("label",{for:"cvFileIn",class:"btn small go"},f?"Replace":"Attach a PDF"),
       f?h("button",{type:"button",class:"btn small",text:"Remove",onclick:function(){dropChunks("responses/"+S.uid+"/files","cv",f.n);S.cvFile=null;saveDraft();if(S.db&&S.uid)saveResponse();renderProfile();if(S.screen==="proud")render();}}):null),st);
@@ -5844,7 +5844,7 @@ function ideaBox(inline){
   paint();
   var mine=ideaItems(S.uid).slice().reverse().slice(0,5);
   return h("details",{class:inline?"ideas hrow-d":"card hsec ideas"},h("summary",{text:"Share an idea, lead or feedback"}),
-    h("p",{class:"sub",text:"Hinda reads everything and sees who sent it."}),chips,ta,
+    h("p",{class:"sub",text:"The GCG admins read everything and see who sent it."}),chips,ta,
     h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Send",onclick:function(){
       var txt=clean(ta.value).slice(0,600);if(!txt){say(st,"Write a line first.","warn");return;}
       if(!S.db||S.canWrite===false){say(st,"Sending needs the shared page.","warn");return;}
@@ -6239,7 +6239,7 @@ function drawMe(root){
     mrow("how","How I work","",[line("Works best",ws)]),
     mrow("want","What I want from GCG","",[line("Why you are here",st.why.length?labels(M_WHY,st.why).join("; "):""),line("Where you see yourself",st.future?M_FUTURE[st.future].label:"")]),
     mrow("proof","Proof of experience",(clean(p.cv)||S.cvFile)?"CV added":"",[line("CV or link",clean(p.cv)),cvControl()])));
-  root.append(h("p",{class:"sub accessline",text:"Hinda sees your answers too. The crew only sees what you chose to share, under Who sees what below."}));
+  root.append(h("p",{class:"sub accessline",text:"The GCG admins see your answers too. The crew only sees what you chose to share, under Who sees what below."}));
   // title
   root.append(h("section",{class:"msec"},h("h3",{class:"msec-h",text:"My title"}),
     ts.length?ts.map(function(x){return h("div",{class:"box"},h("b",{text:x.name}),x.desc?h("p",{text:x.desc}):null,
@@ -6269,7 +6269,7 @@ function drawMe(root){
     h("div",{class:"row",style:"margin-top:12px"},h("button",{type:"button",class:"btn link",text:"Update my answers",onclick:function(){S.screen="like";showView("flow");}})));
   // Editing lives at the very bottom. Never offer is part of it, not a headline.
   root.append(h("details",{class:"more msec",open:S.panel["me-edit"]?true:null,ontoggle:function(e){S.panel["me-edit"]=e.currentTarget.open;}},h("summary",{text:"Edit profile"}),
-    h("p",{class:"sub",text:"Change what you told us. Hinda sees this too, when matching tasks and giving titles."}),neverBox));
+    h("p",{class:"sub",text:"Change what you told us. The GCG admins see this too, when matching tasks and giving titles."}),neverBox));
 }
 
 /* ---------- Sharing: everyone's About is visible to the crew; the rest is each person's choice ---------- */
@@ -6304,7 +6304,7 @@ function shareToggles(onChange){
       h("span",{class:"shr-e","aria-hidden":"true",text:o[1]}),h("span",{class:"shr-t"},h("b",{text:o[2]})),h("span",{class:"pill","data-s":on?"taken":"draft",text:on?"Shared":"Private"}));
     box.append(b);
   });
-  box.append(h("p",{class:"sub",text:"Always private, whatever you choose: jobs that are not for you, why you're here, and your card corrections. Only you and Hinda see those."}));
+  box.append(h("p",{class:"sub",text:"Always private, whatever you choose: jobs that are not for you, why you're here, and your card corrections. Only you and the GCG admins see those."}));
   return box;
 }
 
