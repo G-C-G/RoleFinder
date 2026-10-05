@@ -559,6 +559,7 @@ body.has-nav{padding-bottom:104px}
 .tlmini .btn.link{margin-top:2px}
 .ovrow.noopen{cursor:default}
 .fcrow{border-top:1px solid var(--line);padding:10px 0}.fcrow:first-of-type{border-top:0}
+.pill.p-ok{background:#e1f2e4;color:#1d6b34}
 .pill.kindtag{background:transparent;border:1px solid var(--line);color:var(--muted)}
 .welcome{margin:16px 0 4px}.welcome .k{margin:0 0 4px}
 .sharewrap{display:inline-block;flex:none}
@@ -3374,8 +3375,8 @@ function pPrevWork(d){var x=new Date(d.getTime());while(pWeekend(x))x.setDate(x.
 function pAddWork(d,n){var x=new Date(d.getTime()),k=Math.round(n);while(k>0){x.setDate(x.getDate()+1);if(!pWeekend(x))k--;}return x;}
 function pWorkDays(a,b){var n=0,x=new Date(a.getTime());while(x<b){if(!pWeekend(x))n++;x.setDate(x.getDate()+1);}return n;}
 function pToday(){var t=new Date();t.setHours(0,0,0,0);return t;}
-function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,60).map(function(s){
-  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*10)/10)),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),note:clean(s.note).slice(0,300)};});}
+function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,200).map(function(s){
+  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*10)/10)),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),status:({working:1,paused:1,blocked:1})[s.status]?s.status:"",statusAt:clean(s.statusAt).slice(0,40),how:clean(s.how).slice(0,320),note:clean(s.note).slice(0,300)};});}
 function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),flyer:cleanFlyer(pr.flyer),thumb:cleanThumb(pr.thumb),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),noWeekends:!!pr.noWeekends,packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
   files:(pr.files||[]).slice(0,30).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
   created:pr.created||nowIso(),updated:nowIso()};}
@@ -3444,7 +3445,7 @@ function mineOf(pr,uid){
   var sc=projSchedule(pr),mySteps=sc.rows.filter(function(r){return r.s.owner===uid;});if(!mySteps.length)return null;
   return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),target:pr.target||"",
     links:(pr.files||[]).filter(function(f){return !f.fid&&safeUrl(f.url);}).slice(0,20).map(function(f){return {label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};}),
-    steps:mySteps.map(function(r){return {id:r.s.id,title:r.s.title,days:r.s.days||0,start:r.fixed?pIso(r.start):"",hours:r.s.hours||0,end:pIso(r.due||r.end),done:r.done,note:r.s.note||""};})};
+    steps:mySteps.map(function(r){return {id:r.s.id,title:r.s.title,days:r.s.days||0,start:r.fixed?pIso(r.start):"",hours:r.s.hours||0,end:pIso(r.due||r.end),done:r.done,note:r.s.note||"",how:r.s.how||""};})};
 }
 // Admin only: keep the progress-only docs and each person's own docs in step with the full project.
 var projSyncT=null;
@@ -3513,7 +3514,7 @@ function projectsBlock(root){
 S.pup={};
 function pupItems(uid,pid){var d=S.pup[uid];return ((d&&d.items)||[]).filter(function(x){return !pid||x.pid===pid;});}
 function savePup(uid,items,cb){
-  if(!S.db)return;var doc={items:items.slice(0,40).map(function(f){var o={pid:clean(f.pid).slice(0,40),label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400),at:f.at||nowIso()};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),updated:nowIso()};
+  if(!S.db)return;var doc={items:items.slice(0,40).map(function(f){var o={pid:clean(f.pid).slice(0,40),sid:clean(f.sid).slice(0,24),label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400),at:f.at||nowIso()};if(f.fid){if(f.img)o.img=true;o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),updated:nowIso()};
   S.pup[uid]={items:doc.items};S.db.doc("projectup/"+uid).set(doc).then(function(){if(cb)cb();},function(){});
 }
 // A person adds a PDF or link to a project they have a step in.
@@ -3671,6 +3672,7 @@ function drawProject(root){
       var ow=h("select",{"aria-label":"Who does it"},h("option",{value:"",text:"Nobody yet"}),people.map(function(p){return h("option",{value:p.id,text:pname(p)});}));ow.value=s.owner||"";ow.addEventListener("change",function(){s.owner=ow.value;save(true);rerenderProj();});
       var par=h("input",{type:"checkbox","aria-label":"Starts with the step before"});par.checked=!!s.par;par.addEventListener("change",function(){s.par=par.checked;save(true);rerenderProj();});
       var nt=h("input",{type:"text","aria-label":"Note","data-k":"pnt-"+s.id,placeholder:"Note: what done looks like, who to ask",value:s.note||""});nt.addEventListener("input",function(){s.note=nt.value;save();});
+      var hw=h("textarea",{rows:"3","aria-label":"What this step is and what to do","data-k":"phow-"+s.id,placeholder:"A short summary people see when they open it: what it is, what to do"});hw.value=s.how||"";hw.addEventListener("input",function(){s.how=hw.value;save();});
       li.append(h("div",{class:"psedit"},h("div",{class:"field"},h("label",{text:"Step"}),ti),
         h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Estimated days"}),dy),h("div",{class:"field"},h("label",{text:"Who does it"}),ow)),
         h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Starts on (optional)"}),(function(){var si2=h("input",{type:"date","aria-label":"Start date for this step","data-k":"pson-"+s.id,value:s.startOn||""});si2.addEventListener("change",function(){var d0=pDay(si2.value);if(d0&&pr.noWeekends&&pWeekend(d0)){d0=pNextWork(d0);toast("That was a weekend, so it moved to "+pShort(d0)+".");}s.startOn=d0?pIso(d0):si2.value;save(true);rerenderProj();});return si2;})()),
@@ -3678,6 +3680,7 @@ function drawProject(root){
         h("div",{class:"field"},h("label",{text:"Estimated hours (optional)"}),(function(){var hi=h("input",{type:"number",min:"0",max:"999",step:"0.5","aria-label":"Estimated hours","data-k":"phr-"+s.id,value:s.hours?String(s.hours):""});hi.addEventListener("change",function(){s.hours=Math.max(0,Number(hi.value)||0);save(true);rerenderProj();});return hi;})()),
         h("div",{class:"field"},h("label",{text:"Section (optional)"}),(function(){var si=h("input",{type:"text",list:"psecs-dl","aria-label":"Section","data-k":"psec-"+s.id,placeholder:"For example Banking",value:s.section||""});si.addEventListener("change",function(){s.section=clean(si.value).slice(0,40);save(true);renderEvents();});return si;})()),
         i>0?h("label",{class:"pcheck"},par," Runs alongside \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d (starts at the same time)"):null,
+        h("div",{class:"field"},h("label",{text:"What it is and what to do"}),hw),
         h("div",{class:"field"},h("label",{text:"Note"}),nt),
         h("div",{class:"row"},
           i>0?h("button",{type:"button",class:"btn small",text:"Move up",onclick:function(){var a=pr.steps;a.splice(i-1,0,a.splice(i,1)[0]);save(true);renderEvents();}}):null,
@@ -4122,8 +4125,18 @@ function shareNotes(){
   });
   return out.sort(function(a,b){return 0;});
 }
+function blockedNotes(){
+  var out=[];
+  (S.projects||[]).forEach(function(pr){(pr.steps||[]).forEach(function(st){
+    var rp=st.owner?latestReply("p_"+pr.id,st.id,st.owner):null,blocked=(!st.done&&st.status==="blocked")||(rp&&rp.state==="blocked"&&rp.done!==true&&st.done!==true);
+    if(!blocked||st.owner===S.uid)return;
+    var at=(rp&&rp.state==="blocked"?rp.at:st.statusAt)||"",id="blk:"+pr.id+":"+st.id+":"+at;if(S.acks&&S.acks[id])return;
+    out.push({id:id,kind:"Needs help",title:(st.owner?nameOf(st.owner):"Someone")+" is stuck on "+(st.title||"a step"),sub:pr.name||"Project",
+      act:{label:"Open it",fn:function(){S.stepOpen={pid:pr.id,sid:st.id};showView("today");renderToday();}}});});});
+  return out;
+}
 function adminNotes(){
-  var out=shareNotes();
+  var out=shareNotes().concat(blockedNotes());
   Object.keys(S.ideas||{}).forEach(function(uid){ideaItems(uid).forEach(function(i){if(i.status!=="new")return;
     out.push({id:"",kind:kindName(i.kind),title:nameOf(uid)+": "+i.text.slice(0,90),act:{label:"Open inbox",fn:function(){S.teamTab="ideas";showView("team");}}});});});
   S.events.forEach(function(ev){(ev.tasks||[]).forEach(function(tk){
@@ -4558,7 +4571,7 @@ function resetTab(v){
   }
   if(v==="team"){S.titlePerson="";S.titleOpen="";S.titleDraft=null;S.tlOpen={};dropPanels(["titles-","cvr","notes"]);}
   if(v==="crew"){S.crewQ="";Object.keys(S.tlOpen||{}).forEach(function(k){if(k.indexOf("crew:")===0||k.indexOf("adm:")===0)delete S.tlOpen[k];});}
-  if(v==="today"||v==="home"){S.goTask=null;}
+  if(v==="today"||v==="home"){S.goTask=null;S.stepOpen=null;}
 }
 function go2(v){
   resetTab(v);
@@ -4764,6 +4777,7 @@ function myProgressCard(){
 }
 function drawHome(root){
   if(loadingNow()){root.append(identityBand(clean(S.name)||"there",""),skeleton(3));return;}
+  if(drawStepDetail(root))return;
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),items=myOpenItems(),st=h("p",{class:"status",role:"status","aria-live":"polite"});
   var ts=titlesOf(S.uid),hist=historyOf(S.uid),evCount={};hist.forEach(function(x){evCount[x.ev.id]=1;});
   var nEv=Object.keys(evCount).length,mp=prof?missingProfile():0;
@@ -5069,6 +5083,107 @@ function coverage(){
     return {a:a,people:ppl,gaps:gaps,level:ppl.length===0?"none":ppl.length===1?"thin":ppl.length===2?"ok":"good"};
   });
 }
+/* ---------- A single step: what it is, "I'm working on this", "Finished", then what is next ---------- */
+var STEP_LABEL={todo:"Not started",working:"Working on it",paused:"Paused",blocked:"Blocked, needs help",done:"Finished"};
+function stepStatusOf(doneFlag,own,rp){
+  if(doneFlag)return "done";
+  var v=own||(rp&&rp.state)||"";
+  return v==="started"?"working":(v==="working"||v==="paused"||v==="blocked")?v:"todo";
+}
+function stepInfo(pid,sid){
+  if(S.isAdmin){
+    var pr=projById(pid);if(!pr)return null;
+    var rows=projSchedule(pr).rows,r=rows.filter(function(x){return x.s.id===sid;})[0];if(!r)return null;
+    var rp=r.s.owner?latestReply("p_"+pid,sid,r.s.owner):null;
+    return {pid:pid,sid:sid,pname:pr.name,title:r.s.title,how:r.s.how||"",note:r.s.note||"",hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.due||r.end,done:r.done,status:stepStatusOf(r.done,r.s.status,rp),target:pr.target};
+  }
+  var it=S.myProj&&S.myProj[pid];if(!it)return null;
+  var x=(it.steps||[]).filter(function(y){return y.id===sid;})[0];if(!x)return null;
+  var q=latestReply("p_"+pid,sid,S.uid),dn=q?q.done===true:!!x.done;
+  return {pid:pid,sid:sid,pname:it.name,title:x.title,how:x.how||"",note:x.note||"",hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,status:stepStatusOf(dn,"",q),target:it.target};
+}
+// status: todo | working | paused | blocked | done
+function setStepStatus(pid,sid,status){
+  var now=nowIso();
+  if(S.isAdmin){
+    var pr=projById(pid),st=pr&&pr.steps.filter(function(x){return x.id===sid;})[0];if(!st)return;
+    st.statusAt=now;
+    if(status==="done"){st.done=true;st.doneAt=now;st.status="";}
+    else{st.done=null;st.doneAt="";st.status=status==="todo"?"":status;if(status==="working"&&!st.owner){st.owner=S.uid;toast("It is now yours.");}}
+    saveProject(pr,true);renderToday();return;
+  }
+  if(!S.db||!S.uid){toast("This needs the live page.");return;}
+  var rr={eid:"p_"+pid,tid:sid,pid:S.uid,done:status==="done",state:(status==="working"||status==="paused"||status==="blocked")?status:"",at:now};
+  S.db.doc("replies/p_"+pid+"__"+sid+"__"+S.uid).set(rr).then(function(){S.replies=S.replies.filter(function(x){return !(x.eid===rr.eid&&x.tid===rr.tid&&x.pid===rr.pid);}).concat([rr]);renderHome();},function(){toast("Could not save. Tell Hinda directly.");});
+}
+// Fetch a chunked file back as a data URL (screenshots) so it can be shown.
+function getImg(base,fid,n,st,cb){
+  if(!S.db){say(st,"Opening files needs the live page.","warn");return;}
+  say(st,"Fetching…");var jobs=[];for(var i=0;i<n;i++)jobs.push(S.db.doc(base+"/"+fid+"_"+i).get());
+  Promise.all(jobs).then(function(snaps){var b64="";for(var k=0;k<snaps.length;k++){if(!snaps[k].exists){say(st,"That file is no longer there.","warn");return;}b64+=snaps[k].data().data||"";}say(st,"");cb("data:image/jpeg;base64,"+b64);},function(){say(st,"Could not fetch the file.","warn");});
+}
+// Proof and documents for one step: a PDF, a screenshot or a link.
+function stepProofCard(g,re){
+  var st=h("p",{class:"status",role:"status","aria-live":"polite"}),lb=h("input",{type:"text","aria-label":"Name for the file or link",placeholder:"Name, e.g. Name search result","data-k":"prf-l"}),ur=h("input",{type:"text","aria-label":"Link address",placeholder:"Link (optional), e.g. drive.google.com/...","data-k":"prf-u"});
+  var fi=h("input",{type:"file",accept:"application/pdf,.pdf,image/*",id:"prfIn",class:"sr"});
+  function add(item){var items=pupItems(S.uid).concat([Object.assign({pid:g.pid,sid:g.sid,at:nowIso()},item)]);savePup(S.uid,items,function(){toast("Added.");re();});}
+  fi.addEventListener("change",function(){var file=fi.files&&fi.files[0];if(!file)return;say(st,"Uploading\u2026");var fid="u"+Date.now().toString(36),label=clean(lb.value)||file.name.replace(/\.[a-z0-9]+$/i,"");
+    if(/^image\//.test(file.type)){
+      shrinkImg(file,1100,170000,function(url){if(!url){say(st,"That image could not be used. Try another.","warn");return;}var b64=url.split(",")[1]||"";
+        putChunks("projectup/"+S.uid+"/files",fid,b64,function(e2,n){if(e2){say(st,pdfProblem(e2),"warn");return;}add({label:label,fid:fid,name:file.name,size:Math.round(b64.length*0.75),n:n,img:true});});});
+    }else{
+      readPdf(file,function(err,b64,size){if(err){say(st,pdfProblem(err),"warn");return;}
+        putChunks("projectup/"+S.uid+"/files",fid,b64,function(e2,n){if(e2){say(st,pdfProblem(e2),"warn");return;}add({label:label,fid:fid,name:file.name,size:size,n:n});});});
+    }});
+  var rows=[];Object.keys(S.pup||{}).forEach(function(uid){if(!S.isAdmin&&uid!==S.uid)return;pupItems(uid,g.pid).forEach(function(f){if(f.sid===g.sid)rows.push({uid:uid,f:f});});});
+  return h("section",{class:"card hsec"},h("h3",{class:"q",text:"Proof and documents"}),
+    rows.length?rows.map(function(x){var f=x.f,u=safeUrl(f.url);
+      return h("div",{class:"cvline"},h("span",{class:"cv-t"},f.fid?h("b",{text:f.label||f.name}):(u?h("a",{href:u,target:"_blank",rel:"noopener",text:f.label||f.url}):h("b",{text:f.label||f.url})),
+        h("span",{class:"sub",text:(S.isAdmin&&x.uid!==S.uid?nameOf(x.uid)+" \u00b7 ":"")+(f.fid?(f.img?"Screenshot":"PDF")+" \u00b7 "+sizeText(f.size):"Link")})),
+        h("span",{class:"cvbtns"},f.fid?h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){var base="projectup/"+x.uid+"/files";if(f.img)getImg(base,f.fid,f.n,st,function(src){lightbox(src,f.label||"Screenshot");});else getPdf(base,f.fid,f.n,f.name||f.label||"file.pdf",st);}}):null,
+          x.uid===S.uid?h("button",{type:"button",class:"btn link",text:"Remove",onclick:function(){if(f.fid)dropChunks("projectup/"+S.uid+"/files",f.fid,f.n);savePup(S.uid,pupItems(S.uid).filter(function(y){return y!==f&&!(y.fid&&y.fid===f.fid);}),re);}}):null));}):
+      h("p",{class:"sub",style:"margin:0 0 8px",text:"Add a PDF, a screenshot or a link that shows this was done. Only you and the admins can see it."}),
+    st,h("div",{class:"two-col"},h("div",{class:"field"},lb),h("div",{class:"field"},ur)),fi,
+    h("div",{class:"row"},h("label",{for:"prfIn",class:"btn small go"},"Upload a PDF or screenshot"),
+      h("button",{type:"button",class:"btn small",text:"Add link",onclick:function(){if(!safeUrl(ur.value)){say(st,"Add a full web link.","warn");return;}add({label:clean(lb.value)||clean(ur.value),url:clean(ur.value)});}})));
+}
+function drawStepDetail(root){
+  var so=S.stepOpen;if(!so)return false;
+  var g=stepInfo(so.pid,so.sid);if(!g){S.stepOpen=null;return false;}
+  function re(){S.isAdmin?renderToday():renderHome();window.scrollTo(0,0);}
+  function setS(v){setStepStatus(g.pid,g.sid,v);}
+  var late=g.status!=="done"&&g.end&&g.end<pToday();
+  var due=g.end?(g.start&&g.start.getTime()!==g.end.getTime()?pShort(g.start)+" to "+pShort(g.end):"Due "+pShort(g.end)):"";
+  root.append(h("button",{type:"button",class:"btn small",text:"\u2190 Back to "+(S.isAdmin?"Today":"Home"),onclick:function(){S.stepOpen=null;re();}}),
+    h("p",{class:"k",style:"margin:14px 0 4px",text:"Project \u00b7 "+(g.pname||"")}),
+    h("h1",{class:"h-sum",text:g.title||"Step"}),
+    h("p",{class:"sub",style:"margin:-6px 0 12px",text:[due,g.hours?g.hours+(g.hours===1?" hr":" hrs"):"",S.isAdmin?(g.owner?"With "+nameOf(g.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ")}));
+  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"What this is"}),
+    g.how?h("p",{class:"about",style:"margin:0",text:g.how}):h("p",{class:"sub",style:"margin:0",text:S.isAdmin?"No summary yet. Add one under the step, in the project page.":"No summary yet."}),
+    g.note?h("p",{class:"sub",style:"margin:8px 0 0",text:"Note: "+g.note}):null));
+  // Status: where it is, the next move, and the other options
+  var cls={todo:"p-soft",working:late?"p-red":"p-ok",paused:"p-gold",blocked:"p-red",done:"p-ok"}[g.status];
+  var label=STEP_LABEL[g.status]+(g.status==="working"?(late?" \u00b7 behind":" \u00b7 on track"):"");
+  var hint={todo:"Not started yet.",working:late?"This was due "+(g.end?pShort(g.end):"")+". Finish it, or tell us you are stuck.":"You are on it"+(g.end?", due "+pShort(g.end):"")+".",paused:"On hold. Pick it back up when you are ready.",blocked:(S.isAdmin?"Marked as needing help.":"Hinda has been told you need help."),done:"Done. Well done."}[g.status];
+  var box=h("section",{class:"card hsec"},h("h3",{class:"q",text:"Where you are"}),h("p",{style:"margin:0"},h("span",{class:"pill "+cls,text:label})),h("p",{class:"sub",style:"margin:0",text:hint}));
+  var prim={todo:["I'm working on this now","working"],working:["Finished","done"],paused:["Back to working","working"],blocked:["Unblocked, back to working","working"],done:null}[g.status];
+  var sec={todo:[["Mark finished","done"]],working:[["Pause","paused"],["I'm stuck, need help","blocked"]],paused:[["I'm stuck, need help","blocked"],["Finished","done"],["Back to not started","todo"]],blocked:[["Pause","paused"],["Finished","done"]],done:[["Reopen","todo"]]}[g.status];
+  var row=h("div",{class:"row"});
+  if(prim)row.append(h("button",{type:"button",class:"btn go big",text:prim[0],onclick:function(){setS(prim[1]);}}));
+  box.append(row);
+  box.append(h("div",{class:"row"},sec.map(function(x){return h("button",{type:"button",class:"btn small",text:x[0],onclick:function(){setS(x[1]);}});})));
+  root.append(box);
+  root.append(stepProofCard(g,re));
+  // what comes next
+  var b=projectDayBuckets(),list=b.behind.concat(b.today).filter(function(o){return !(o.kind==="project"&&o.pid===g.pid&&o.sid===g.sid)&&!o.done;});
+  var nx=list[0];
+  root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:g.status==="done"?"Next up":"Then"}),
+    nx?h("div",null,h("p",{style:"margin:0"},h("b",{text:nx.title}),h("span",{class:"sub",text:" \u00b7 "+(nx.pname||"")})),
+      h("div",{class:"row"},h("button",{type:"button",class:"btn "+(g.status==="done"?"go":""),text:"Open the next one",onclick:function(){if(nx.kind==="project"){S.stepOpen={pid:nx.pid,sid:nx.sid};re();}else{S.stepOpen=null;S.evOpen=nx.pid;S.goTask={eid:nx.pid,tid:nx.sid};showView("events");openLinkedTask();}}}),
+        h("button",{type:"button",class:"btn small",text:"Back to "+(S.isAdmin?"Today":"Home"),onclick:function(){S.stepOpen=null;re();}}))):
+      h("div",null,h("p",{class:"sub",style:"margin:0",text:"Nothing else is due today."}),h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Back to "+(S.isAdmin?"Today":"Home"),onclick:function(){S.stepOpen=null;re();}})))));
+  return true;
+}
 /* ---------- Today and this week: the dated steps of projects ---------- */
 function projectDayBuckets(){
   var t0=pToday().getTime(),wk=t0+7*864e5,out={behind:[],today:[],week:[],any:false};
@@ -5084,11 +5199,11 @@ function projectDayBuckets(){
       if(!x.due||x.st==="draft")return;
       var d=new Date(x.due.getTime());d.setHours(0,0,0,0);
       add({kind:"event",pid:ev.id,pname:ev.name||"Event",sid:x.t.id,title:x.t.title,hours:0,owner:x.t.owner,start:null,end:d,done:false,when:x.due,st:x.st});});});
-    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){add({kind:"project",pid:pr.id,pname:pr.name,sid:r.s.id,title:r.s.title,hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.end,done:r.done});});});
+    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){add({kind:"project",pid:pr.id,pname:pr.name,sid:r.s.id,title:r.s.title,hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.end,done:r.done,status:stepStatusOf(r.done,r.s.status,r.s.owner?latestReply("p_"+pr.id,r.s.id,r.s.owner):null)});});});
   }else{
     Object.keys(S.myProj||{}).forEach(function(pid){var it=S.myProj[pid];(it.steps||[]).forEach(function(x){
       var rp=latestReply("p_"+pid,x.id,S.uid),dn=rp?rp.done===true:!!x.done;
-      add({kind:"project",pid:pid,pname:it.name,sid:x.id,title:x.title,hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn});});});
+      add({kind:"project",pid:pid,pname:it.name,sid:x.id,title:x.title,hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,status:stepStatusOf(dn,"",rp)});});});
   }
   function key(o){return o.when?o.when.getTime():(o.start||o.end).getTime();}
   function byStart(a,b){return (key(a)-key(b))||String(a.title).localeCompare(String(b.title));}
@@ -5102,10 +5217,10 @@ function projectDaySections(root,b){
     var sub=[o.pname||(isEv?"Event":"Project"),isEv&&o.when&&kind!=="week"?fmtClock(o.when):"",o.hours?o.hours+(o.hours===1?" hr":" hrs"):"",admin?(o.owner?"With "+nameOf(o.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ");
     var go=h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){
       if(isEv){S.evOpen=o.pid;S.goTask={eid:o.pid,tid:o.sid};showView("events");openLinkedTask();}
-      else if(admin){S.projOpen=o.pid;S.evOpen="";showView("events");}else{S.projSel=o.pid;showView("plan");}window.scrollTo(0,0);}});
+      else{S.stepOpen={pid:o.pid,sid:o.sid};admin?renderToday():renderHome();}window.scrollTo(0,0);}});
     var tick=(admin&&!isEv)?h("button",{type:"button",class:"tick","aria-label":"Mark done: "+o.title,onclick:function(){var pr=projById(o.pid),stp=pr&&pr.steps.filter(function(x){return x.id===o.sid;})[0];if(!stp)return;stp.done=true;stp.doneAt=nowIso();saveProject(pr,true);renderToday();}}):
       (admin?h("span",{class:"ks-ico k1","aria-hidden":"true"},ico("flag",18)):null);
-    return h("div",{class:"nrow"},tick,h("div",{class:"nr-t"},h("span",null,h("span",{class:"pill "+pill[0],text:pill[1]}),h("span",{class:"pill kindtag "+(isEv?"k-ev":"k-pj"),text:isEv?"Event":"Project"}),h("b",{class:"gr-title",text:o.title||"Step"})),h("span",{class:"sub",text:sub})),go);
+    return h("div",{class:"nrow"},tick,h("div",{class:"nr-t"},h("span",null,h("span",{class:"pill "+pill[0],text:pill[1]}),h("span",{class:"pill kindtag "+(isEv?"k-ev":"k-pj"),text:isEv?"Event":"Project"}),(o.status&&o.status!=="todo"&&o.status!=="done")?h("span",{class:"pill "+({working:"p-ok",paused:"p-gold",blocked:"p-red"}[o.status]),text:({working:"Working",paused:"Paused",blocked:"Blocked"}[o.status])}):null,h("b",{class:"gr-title",text:o.title||"Step"})),h("span",{class:"sub",text:sub})),go);
   }
   function block(title,small,list,key,empty){
     var all=!!S.panel[key],shown=all?list:list.slice(0,6);
@@ -5123,6 +5238,7 @@ function renderToday(){
   try{drawToday(root);}finally{focusRestore(root,keep);}
 }
 function drawToday(root){
+  if(drawStepDetail(root))return;
   var evs=activeEvents(),need=[];
   evs.forEach(function(ev){
     if(ev.published===false)return;
