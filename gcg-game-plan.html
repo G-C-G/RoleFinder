@@ -2177,12 +2177,27 @@ function submit(){
   say(st,"Sending…");
   S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
   S.db.doc("responses/"+S.uid).set(p).then(function(){
-    var first=!S.sentAt;S.sentAt=p.updated;if(first)startAutoShare();say(st,"Saved. Opening your Game Plan…","ok");
-    setTimeout(function(){if(S.view==="flow"&&!S.goProj)showView(homeView());if(first)toast("Welcome to your Game Plan");},900);
-  },function(){say(st,"This account cannot send here. Use Copy my results and send it to Hinda.","warn");});
+    // Do not trust the first answer: read it back, so a save the server dropped is caught here and not discovered later.
+    S.db.doc("responses/"+S.uid).get().then(function(snap){
+      if(!snap.exists){say(st,"The page said saved, but the server does not have your profile. Open Me, then Check my saving, and send Hinda a screenshot. Until then, tap Copy my results and send it to Hinda.","warn");return;}
+      var first=!S.sentAt;S.sentAt=p.updated;if(first)startAutoShare();say(st,"Saved. Opening your Game Plan…","ok");
+      setTimeout(function(){if(S.view==="flow"&&!S.goProj)showView(homeView());if(first)toast("Welcome to your Game Plan");},900);
+    },function(e){say(st,"Saved, but I could not read it back ("+errText(e)+"). Open Me, then Check my saving, and send Hinda a screenshot.","warn");});
+  },function(e){say(st,"Your profile was not saved ("+errText(e)+"). This usually means your access is View or Comment only. Ask Hinda to change you to Contributor in the Share menu, then tap Save again. Until then, tap Copy my results and send it to Hinda.","warn");});
 }
 
 /* ---------- PDF: a small hand-built PDF, no library, works offline ---------- */
+function errText(e){return e?String(e.code||e.message||e).slice(0,120):"unknown";}
+// A plain check anyone can run and screenshot: who the page thinks you are, whether it can write, and whether your profile is on the server.
+function savingCheck(st){
+  var lines=["Signed in as: "+(S.uid||"nobody"),"Database: "+(S.db?"connected":"not connected"),"Allowed to save: "+(S.canWrite===null?"not reported":S.canWrite?"yes":"no"),"Profile found on this page: "+(S.sentAt?"yes ("+String(S.sentAt).slice(0,10)+")":"no")];
+  if(!S.db||!S.uid){say(st,lines.join(" \u00b7 ")+". Nothing can be saved from here. Open the link in Claude and sign in.","warn");return;}
+  say(st,"Checking\u2026");
+  var tag="data/users/"+S.uid;
+  S.db.doc("responses/"+S.uid).get().then(function(snap){lines.push("Profile on the server: "+(snap.exists?"found":"not found"));},function(e){lines.push("Reading your profile failed: "+errText(e));})
+    .then(function(){return S.db.doc(tag+"/check").set({at:nowIso()}).then(function(){lines.push("Write test: worked");return S.db.doc(tag+"/check").get();},function(e){lines.push("Write test failed: "+errText(e));return null;});})
+    .then(function(snap){if(snap)lines.push("Read-back: "+(snap.exists?"worked":"empty"));var t=lines.join(" \u00b7 ");say(st,t,/failed|not found|empty|: no\b/.test(t)?"warn":"ok");},function(e){lines.push("Check stopped: "+errText(e));say(st,lines.join(" \u00b7 "),"warn");});
+}
 function pdfAscii(t){
   t=String(t==null?"":t).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/•/g,"-").replace(/…/g,"...").replace(/\s+/g," ");
   var out="";
@@ -6155,13 +6170,19 @@ function appearanceBox(){
       return h("button",{type:"button",class:"sb","data-c":"yes","aria-pressed":String(cur===o[0]),text:o[1],onclick:function(){lsSet("gcg_theme",o[0]);applyTheme();renderProfile();}});})),
     h("p",{class:"sub",text:"Light is the default. Your choice is saved on this phone."}));
 }
+function savingCheckBox(){
+  var chk=h("p",{class:"status",role:"status","aria-live":"polite"});
+  return h("details",{class:"more msec",open:S.panel.saveChk?true:null,ontoggle:function(e){S.panel.saveChk=e.currentTarget.open;}},h("summary",{text:"Check my saving (if your profile is not saving)"}),
+    h("p",{class:"sub",text:"This checks who the page thinks you are and whether it can save for you. If something is wrong, send Hinda a screenshot."}),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Check my saving",onclick:function(){savingCheck(chk);}})),chk);
+}
 function drawMe(root){
   // Access is granted by the page owner in the Share menu; nobody can claim it from their profile. This line confirms what the page sees.
   root.append(h("p",{class:"sub accessline"},h("b",{text:"Your access: "}),S.realAdmin?"Admin. You can run events, see the team and export records."+(S.asMember?" You are viewing as a team member right now.":""):"Team member. You can see your tasks, the plan and the crew."));
   var p=Object.assign(payload(),{id:S.uid}),prof=profileOf(p),g=grouped(S),yes=g.top.concat(g.good),st=sanitizeStory(p.story),ts=titlesOf(S.uid);
   if(!prof){
     root.append(h("div",{class:"card"},h("h2",{class:"q",text:"Make your player card"}),h("p",{class:"sub",text:"About 6 minutes. It is how the page knows which tasks suit you."}),
-      h("button",{type:"button",class:"btn go big",text:"Let's play →",onclick:function(){S.screen="intro";showView("flow");}})),appearanceBox());
+      h("button",{type:"button",class:"btn go big",text:"Let's play →",onclick:function(){S.screen="intro";showView("flow");}})),appearanceBox(),savingCheckBox());
     return;
   }
   var hist=historyOf(S.uid),evc={};hist.forEach(function(x){evc[x.ev.id]=1;});
@@ -6223,6 +6244,7 @@ function drawMe(root){
       :h("p",{class:"sub",text:"Everything you finish is recorded here, event by event, so your contribution is seen and remembered."})));
   root.append(h("details",{class:"more msec",open:S.panel["me-share"]?true:null,ontoggle:function(e){S.panel["me-share"]=e.currentTarget.open;}},h("summary",{text:"Who sees what"}),shareToggles(function(){saveResponse();})));
   root.append(appearanceBox());
+  root.append(savingCheckBox());
   if(S.realAdmin)root.append(h("details",{class:"more msec"},h("summary",{text:"Link check (for troubleshooting)"}),
     h("p",{class:"sub",text:"If a shared link does not open the right place, open it, come here and send me a screenshot of this."}),
     h("p",{class:"sub",style:"word-break:break-all"},h("b",{text:"Address the page sees: "}),String(location.href).slice(0,240)),
