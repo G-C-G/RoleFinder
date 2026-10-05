@@ -1903,6 +1903,7 @@ var BUILD={
     var started=PATH.indexOf(S.screen)>0||answeredAsk(S.q)>0;
     if(started){var pc=Math.round(Math.max(PATH.indexOf(S.screen),1+answeredAsk(S.q))/(PATH.length-1)*100);
       card.append(h("div",{class:"resume"},h("b",{text:"You're "+Math.min(pc,95)+"% through setting up."}),h("span",{text:" Everything so far is saved. Pick up where you left off."})));}
+    if(!S.db||!S.uid||S.canWrite===false)card.append(h("p",{class:"sub",style:"margin:10px 0",role:"alert",text:"Heads up: this page cannot save for you right now ("+(!S.uid?"you are not signed in to Claude here":S.canWrite===false?"you only have view access, so ask Hinda to make you a Contributor":"it is not connected")+"). You can still fill it in, and at the end use Copy my results and send it to Hinda."}));
     navRow(card,started?"Continue →":"Let's play →",function(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}if(started&&PATH.indexOf(S.screen)>0){render();return;}var k=ASK.findIndex(function(n){return !decodeA(S.q[n]);});if(started&&answeredAsk(S.q)>0)go(k>-1?"s"+k:"deck");else next();},{big:true});
     return hd;
   },
@@ -5947,14 +5948,21 @@ function extraMissing(sc){var st=sanitizeStory(S.story);
   return sc==="done"?!(Number(S.q[NQ])>0):sc==="bring"?!(st.hidden.length||st.hiddenNote):sc==="proud"?!st.proud:sc==="work"?!(st.team&&st.structure):!(st.why.length&&st.future);}
 function startExtra(only){var first=only||EXTRA.filter(extraMissing)[0]||EXTRA[0];S.extraMode=true;S.screen=first;saveDraft();showView("flow");}
 function saveResponse(done,fail){
-  var p=payload();if(!S.db||!S.uid){if(fail)fail();return;}
+  var p=payload();if(!S.db||!S.uid){if(fail)fail("not signed in");return;}
   S.db.doc("people/"+S.uid).set({name:p.name,updated:p.updated}).catch(function(){});
-  S.db.doc("responses/"+S.uid).set(p).then(function(){S.sentAt=p.updated;renderNav();publishCrew();if(done)done();},function(){if(fail)fail();});
+  // Read it back before saying it worked, so a save the server dropped is caught while the answers are still on screen.
+  S.db.doc("responses/"+S.uid).set(p).then(function(){
+    S.db.doc("responses/"+S.uid).get().then(function(snap){
+      if(!snap.exists){if(fail)fail("the server did not keep it");return;}
+      S.sentAt=p.updated;renderNav();publishCrew();if(done)done();
+    },function(e){if(fail)fail("could not read it back: "+errText(e));});
+  },function(e){if(fail)fail("refused: "+errText(e));});
 }
 function finishOnboarding(){
-  if(!S.db||!S.uid){S.screen="profile";saveDraft();render();setTimeout(function(){say($("submitStatus"),"Sending from this page is not set up for you. Use Copy my results and send them to Hinda.","warn");},60);return;}
-  saveResponse(function(){S.screen="profile";saveDraft();showView(homeView());toast("Welcome to your Game Plan");},
-    function(){warn("Could not save here. Go back to your card and use Copy my results.");});
+  saveDraft();
+  function failed(why){S.screen="profile";saveDraft();render();setTimeout(function(){var msg="Your answers are safe on this device, but they did not save to the shared page ("+(why||"unknown reason")+"). Tap Save my card to try again. If it keeps failing, tap Copy my results below and send it to Hinda, and ask her to check you are a Contributor. Under Me there is also Check my saving.",el=$("submitStatus");if(el)say(el,msg,"warn");else warn(msg);},80);}
+  if(!S.db||!S.uid){failed("you are not signed in to Claude here");return;}
+  saveResponse(function(){S.screen="profile";saveDraft();showView(homeView());toast("Welcome to your Game Plan");},failed);
 }
 function finishExtra(){
   S.extraMode=false;
