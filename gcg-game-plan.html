@@ -5671,15 +5671,24 @@ function workDoneCard(pr){
   return det;
 }
 // Admin: look at what someone did (the proof shows above), then accept it or send it back with a note.
+var REVIEW_WHY=["Add proof (screenshot, file or link)","Add a bit more detail","Not quite what was asked","Please redo it"];
 function reviewCard(g,re){
   if(!S.isAdmin||(g.status!=="done"&&!g.review))return null;
   var pr=projById(g.pid),stp=pr&&pr.steps.filter(function(x){return x.id===g.sid;})[0];if(!stp)return null;
-  var rv=stp.review,nt=h("input",{type:"text",maxlength:"300","aria-label":"Review note","data-k":"rv-n",placeholder:"A note for them (needed if you send it back)"});
-  var box=h("section",{class:"card hsec"},h("h3",{class:"q",text:"Review"}));
-  box.append(h("p",{class:"sub",style:"margin:0 0 8px",text:rv?("Last review by "+nameOf(rv.by)+" on "+whenText(rv.at)+": "+(rv.state==="ok"?"looks good":"sent back")+(rv.note?". "+rv.note:"")):"Look through what they added above, then say if it is fine."}),nt,
-    h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Looks good",onclick:function(){stp.review={state:"ok",note:clean(nt.value),by:S.uid,at:nowIso()};saveProject(pr,true);toast("Marked as reviewed.");re();}}),
-      h("button",{type:"button",class:"btn small",text:"Needs more",onclick:function(){var note=clean(nt.value);if(!note){toast("Say what is missing, so they know what to add.");nt.focus();return;}
-        stp.review={state:"changes",note:note,by:S.uid,at:nowIso()};stp.done=false;stp.doneAt="";stp.status="";saveProject(pr,true);toast("Sent back with your note.");re();}})));
+  var rv=stp.review,box=h("section",{class:"card hsec"},h("h3",{class:"q",text:"Review"}));
+  function approve(){stp.review={state:"ok",note:"",by:S.uid,at:nowIso()};if(!stp.done){stp.done=true;stp.doneAt=nowIso();stp.status="";}saveProject(pr,true);toast("Marked as done.");re();}
+  function sendBack(note){stp.review={state:"changes",note:clean(note).slice(0,300),by:S.uid,at:nowIso()};stp.done=null;stp.doneAt="";stp.status="";saveProject(pr,true);toast("Reopened. They will see what is needed.");re();}
+  box.append(h("p",{class:"sub",style:"margin:0 0 8px",text:rv?("By "+nameOf(rv.by)+", "+whenText(rv.at)+": "+(rv.state==="ok"?"done":"still needs work")+(rv.note?". "+rv.note:"")):"Look through what they added above, then pick one."}));
+  if(rv&&rv.state==="ok"){
+    box.append(h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Reopen and tell them",onclick:function(){sendBack("Reopened");}})));
+    return box;
+  }
+  var why=h("div",{class:"row",hidden:true,"data-k":"rv-why"}),nt=h("input",{type:"text",maxlength:"300","aria-label":"Review note","data-k":"rv-n",placeholder:"What is missing?",hidden:true}),
+      send=h("button",{type:"button",class:"btn small",text:"Send",hidden:true,onclick:function(){var n=clean(nt.value);if(!n){toast("Write what is missing, or pick one above.");nt.focus();return;}sendBack(n);}});
+  REVIEW_WHY.forEach(function(w){why.append(h("button",{type:"button",class:"btn small","data-k":"rv-chip",text:w,onclick:function(){sendBack(w);}}));});
+  why.append(h("button",{type:"button",class:"btn small","data-k":"rv-own",text:"Write my own...",onclick:function(){nt.hidden=false;send.hidden=false;nt.focus();}}));
+  box.append(h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:"Done",onclick:approve}),
+    h("button",{type:"button",class:"btn small",text:rv?"Still needs work":"Needs more",onclick:function(){why.hidden=!why.hidden;}})),why,nt,send);
   return box;
 }
 // Events: what has been done, by whom and when, by stage
