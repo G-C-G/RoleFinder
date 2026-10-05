@@ -4774,6 +4774,7 @@ function drawHome(root){
   items.forEach(function(x){if(x.ev!==topEv&&otherEvs.indexOf(x.ev)<0)otherEvs.push(x.ev);});
   root.append(h("h1",{class:"h-sum",text:otherEvs.length?"Your tasks, event by event.":items.length?(items.length===1?"One thing to do now.":items.length+" things to do now."):firstRun?"Welcome, "+nm+".":"You're good for now."}));
   if(otherEvs.length)root.append(h("p",{class:"sub",style:"margin:-6px 2px 10px",text:"Each task belongs to one event. The tasks below are for "+(topEv.name||"this event")+" only. Your tasks for the other event"+(otherEvs.length>1?"s":"")+" are further down."}));
+  projectDaySections(root,projectDayBuckets());
   var pc=myProgressCard();if(pc)root.append(pc);
   (function(){var e0=myEvents()[0];if(e0&&daysTo(e0.date)!==""&&!attendOf(e0)[S.uid]&&new Date(e0.date+"T23:59:59")>=new Date())root.append(attendCard(e0,true));})();
   function open(x){S.evSel=x.ev.id;S.goTask={eid:x.ev.id,tid:x.t.id};showView("mevents");openLinkedTask();}
@@ -5067,6 +5068,47 @@ function coverage(){
     return {a:a,people:ppl,gaps:gaps,level:ppl.length===0?"none":ppl.length===1?"thin":ppl.length===2?"ok":"good"};
   });
 }
+/* ---------- Today and this week: the dated steps of projects ---------- */
+function projectDayBuckets(){
+  var t0=pToday().getTime(),wk=t0+7*864e5,out={behind:[],today:[],week:[],any:false};
+  function add(o){
+    out.any=true;if(o.done||!o.end)return;
+    var st=o.start?o.start.getTime():null,en=o.end.getTime();
+    if(en<t0)out.behind.push(o);
+    else if(en===t0||(st!=null&&st<=t0))out.today.push(o);
+    else if((st!=null?st:en)<wk)out.week.push(o);
+  }
+  if(S.isAdmin){
+    (S.projects||[]).forEach(function(pr){projSchedule(pr).rows.forEach(function(r){add({pid:pr.id,pname:pr.name,sid:r.s.id,title:r.s.title,hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.end,done:r.done});});});
+  }else{
+    Object.keys(S.myProj||{}).forEach(function(pid){var it=S.myProj[pid];(it.steps||[]).forEach(function(x){
+      var rp=latestReply("p_"+pid,x.id,S.uid),dn=rp?rp.done===true:!!x.done;
+      add({pid:pid,pname:it.name,sid:x.id,title:x.title,hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn});});});
+  }
+  function byStart(a,b){return ((a.start||a.end)-(b.start||b.end))||String(a.title).localeCompare(String(b.title));}
+  out.behind.sort(byStart);out.today.sort(byStart);out.week.sort(byStart);
+  return out;
+}
+function projectDaySections(root,b){
+  if(!b.any)return;
+  function row(o,kind){
+    var admin=S.isAdmin,pill=kind==="behind"?["p-red","Behind"]:kind==="today"?["p-gold","Today"]:["p-soft",pShort(o.start||o.end)];
+    var sub=[o.pname||"Project",o.hours?o.hours+(o.hours===1?" hr":" hrs"):"",admin?(o.owner?"With "+nameOf(o.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ");
+    var go=h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){if(admin){S.projOpen=o.pid;S.evOpen="";showView("events");}else{S.projSel=o.pid;showView("plan");}window.scrollTo(0,0);}});
+    var tick=admin?h("button",{type:"button",class:"tick","aria-label":"Mark done: "+o.title,onclick:function(){var pr=projById(o.pid),stp=pr&&pr.steps.filter(function(x){return x.id===o.sid;})[0];if(!stp)return;stp.done=true;stp.doneAt=nowIso();saveProject(pr,true);renderToday();}}):null;
+    return h("div",{class:"nrow"},tick,h("div",{class:"nr-t"},h("span",null,h("span",{class:"pill "+pill[0],text:pill[1]}),h("b",{class:"gr-title",text:o.title||"Step"})),h("span",{class:"sub",text:sub})),go);
+  }
+  function block(title,small,list,key,empty){
+    var all=!!S.panel[key],shown=all?list:list.slice(0,6);
+    root.append(h("h2",{class:"tsec"},h("span",{text:title}),h("small",{text:small})));
+    if(!list.length){root.append(h("p",{class:"sub",style:"margin:0 2px",text:empty}));return;}
+    root.append(h("div",{class:"band b-soft"},shown.map(function(x){return row(x.o,x.k);}),
+      list.length>6?h("button",{type:"button",class:"band-more",text:all?"Show fewer":"Show "+(list.length-6)+" more",onclick:function(){S.panel[key]=!all;S.isAdmin?renderToday():renderHome();}}):null));
+  }
+  var td=b.behind.map(function(o){return {o:o,k:"behind"};}).concat(b.today.map(function(o){return {o:o,k:"today"};}));
+  block("Today",td.length?td.length+" to do":"",td,"dayT","Nothing is scheduled for today.");
+  block("This week","next 7 days",b.week.map(function(o){return {o:o,k:"week"};}),"dayW","Nothing else is scheduled this week.");
+}
 function renderToday(){
   var root=$("todayBody");if(!root||!S.isAdmin)return;var keep=focusKeep(root);clear(root);
   try{drawToday(root);}finally{focusRestore(root,keep);}
@@ -5086,9 +5128,11 @@ function drawToday(root){
   // Welcome: who, what day, and the one-line state of things
   var hr=new Date().getHours(),greet=hr<12?"Good morning":hr<18?"Good afternoon":"Good evening",first=(clean(S.name)||"Hinda").split(" ")[0];
   var nNow=need.filter(function(n){return n.sev==="now";}).length,evIds={};need.forEach(function(n){evIds[n.ev.id]=1;});var nEv=Object.keys(evIds).length;
-  var line=need.length?(nNow?nNow+" behind or stuck. ":"")+need.length+" thing"+(need.length>1?"s need":" needs")+" you across "+nEv+" event"+(nEv>1?"s":"")+".":"Nothing needs you right now.";
+  var pdb=projectDayBuckets(),nToday=pdb.today.length+pdb.behind.length;
+  var line=[nToday?nToday+" project step"+(nToday>1?"s":"")+" for today"+(pdb.behind.length?" ("+pdb.behind.length+" behind)":"")+".":"",need.length?(nNow?nNow+" behind or stuck. ":"")+need.length+" thing"+(need.length>1?"s need":" needs")+" you across "+nEv+" event"+(nEv>1?"s":"")+".":(nToday?"":"Nothing needs you right now.")].filter(Boolean).join(" ");
   root.append(h("div",{class:"welcome"},h("p",{class:"k",text:new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}),
     h("h1",{class:"h-sum",text:greet+", "+first}),h("p",{class:"sub",style:"margin:-6px 0 0",text:line})));
+  projectDaySections(root,pdb);
   var hasProfile=!!profileOf(Object.assign(payload(),{id:S.uid}));
   var teamJoined=Object.keys(S.crew||{}).some(function(id){return id!==S.uid;});
   var anyEvent=S.events.length>0,anyPublished=S.events.some(function(e){return e.published!==false;});
