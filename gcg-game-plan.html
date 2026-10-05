@@ -565,6 +565,7 @@ body.has-nav{padding-bottom:104px}
 .dayblock.t-behind .tsec{color:var(--red)}
 .dayblock.t-week{background:var(--bg-2);border:1px solid var(--line)}
 .dayblock .tsec{margin:2px 2px 6px}
+.est{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;padding:10px 14px;border-radius:14px;background:var(--bg-2);font:600 14px var(--font-body);color:var(--muted)}.est b{font-size:1.15rem;color:var(--ink)}
 .dscroll{max-height:345px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .dhint{margin:4px 4px 0;font:600 12.5px var(--font-body);color:var(--muted)}
 .dsub.ds-project{border-left:4px solid var(--ink);padding-left:8px}
@@ -3386,8 +3387,9 @@ function pPrevWork(d){var x=new Date(d.getTime());while(pWeekend(x))x.setDate(x.
 function pAddWork(d,n){var x=new Date(d.getTime()),k=Math.round(n);while(k>0){x.setDate(x.getDate()+1);if(!pWeekend(x))k--;}return x;}
 function pWorkDays(a,b){var n=0,x=new Date(a.getTime());while(x<b){if(!pWeekend(x))n++;x.setDate(x.getDate()+1);}return n;}
 function pToday(){var t=new Date();t.setHours(0,0,0,0);return t;}
+function fmtDur(h){var m=Math.round((Number(h)||0)*60);if(m<=0)return "";if(m<60)return m+" min";var hh=Math.floor(m/60),r=m%60;return r?hh+" hr "+r+" min":hh+(hh===1?" hr":" hrs");}
 function cleanSteps(list){return (Array.isArray(list)?list:[]).slice(0,200).map(function(s){
-  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*10)/10)),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),status:({working:1,paused:1,blocked:1})[s.status]?s.status:"",statusAt:clean(s.statusAt).slice(0,40),how:clean(s.how).slice(0,320),note:clean(s.note).slice(0,300)};});}
+  return {id:clean(s.id).slice(0,24)||newId("s"),title:clean(s.title).slice(0,120),days:Math.max(0,Math.min(365,Math.round(Number(s.days)||0))),par:!!s.par,section:clean(s.section).slice(0,40),startOn:/^\d{4}-\d{2}-\d{2}$/.test(s.startOn||"")?s.startOn:"",hours:Math.max(0,Math.min(999,Math.round((Number(s.hours)||0)*100)/100)),spent:Math.max(0,Math.min(99999,Math.round(Number(s.spent)||0))),due:/^\d{4}-\d{2}-\d{2}$/.test(s.due||"")?s.due:"",owner:clean(s.owner).slice(0,60),done:s.done===true?true:(s.done===false?false:null),doneAt:clean(s.doneAt).slice(0,40),status:({working:1,paused:1,blocked:1})[s.status]?s.status:"",statusAt:clean(s.statusAt).slice(0,40),how:clean(s.how).slice(0,320),note:clean(s.note).slice(0,300)};});}
 function cleanProject(pr){return {name:clean(pr.name).slice(0,80),about:clean(pr.about).slice(0,1500),flyer:cleanFlyer(pr.flyer),thumb:cleanThumb(pr.thumb),start:pr.start||"",target:pr.target||"",steps:cleanSteps(pr.steps),noWeekends:!!pr.noWeekends,packed:!!pr.packed,secGoals:(function(g){var o={};Object.keys(g||{}).slice(0,20).forEach(function(k){o[clean(k).slice(0,40)]=clean(g[k]).slice(0,200);});return o;})(pr.secGoals),items:(Array.isArray(pr.items)?pr.items:[]).slice(0,80).map(function(x){return {id:clean(x.id).slice(0,24)||newId("c"),text:clean(x.text).slice(0,160),done:!!x.done};}),
   files:(pr.files||[]).slice(0,30).map(function(f){var o={label:clean(f.label).slice(0,60),url:clean(f.url).slice(0,400)};if(f.fid){o.fid=clean(f.fid).slice(0,30);o.name=clean(f.name).slice(0,80);o.size=Number(f.size)||0;o.n=Math.max(1,Math.min(12,Number(f.n)||1));}return o;}),
   created:pr.created||nowIso(),updated:nowIso()};}
@@ -3675,7 +3677,7 @@ function drawProject(root){
       h("button",{type:"button",class:"pstick","aria-pressed":String(r.done),"aria-label":(r.done?"Mark not done: ":"Mark done: ")+s.title,onclick:function(){s.done=r.done?false:true;s.doneAt=s.done?nowIso():"";save(true);rerenderProj();}},r.done?ico("check",16):null),
       h("button",{type:"button",class:"pstt",onclick:function(){S.panel["pstep:"+s.id]=!open;renderEvents();}},
         h("b",{text:(hasSec?"":(i+1)+". ")+(s.title||"Untitled step")}),
-        h("span",{class:"sub",text:r.fixed?(s.hours?s.hours+" hr"+(s.hours>1?"s":"")+" · ":"")+(r.start.getTime()===r.end.getTime()?pShort(r.end):pShort(r.start)+" to "+pShort(r.end))+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":""):(s.days?s.days+" day"+(s.days>1?"s":""):"No estimate")+(s.hours?" · "+s.hours+" hr"+(s.hours>1?"s":""):"")+" · "+(s.par&&i>0&&!(hasSec&&sc.rows[i-1].s.section===s.section)?"runs with \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d · ":"")+"ends "+pShort(r.end)+(r.due?" · deadline "+pShort(r.due)+(r.over>0?" ("+r.over+" day"+(r.over>1?"s":"")+" over)":""):"")+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":"")})));
+        h("span",{class:"sub",text:r.fixed?(s.hours?fmtDur(s.hours)+" · ":"")+(r.start.getTime()===r.end.getTime()?pShort(r.end):pShort(r.start)+" to "+pShort(r.end))+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":""):(s.days?s.days+" day"+(s.days>1?"s":""):"No estimate")+(s.hours?" · "+s.hours+" hr"+(s.hours>1?"s":""):"")+" · "+(s.par&&i>0&&!(hasSec&&sc.rows[i-1].s.section===s.section)?"runs with \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d · ":"")+"ends "+pShort(r.end)+(r.due?" · deadline "+pShort(r.due)+(r.over>0?" ("+r.over+" day"+(r.over>1?"s":"")+" over)":""):"")+(s.owner?" · "+nameOf(s.owner):" · nobody yet")+(r.done?" · done":r.late?" · behind":"")})));
     var li=h("li",{class:"pstep","data-s":r.done?"done":r.late?"late":""},top);
     if(open){
       var ti=h("input",{type:"text","aria-label":"Step","data-k":"pst-"+s.id,value:s.title});ti.addEventListener("input",function(){s.title=ti.value;save();});
@@ -3688,7 +3690,7 @@ function drawProject(root){
         h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Estimated days"}),dy),h("div",{class:"field"},h("label",{text:"Who does it"}),ow)),
         h("div",{class:"two-col"},h("div",{class:"field"},h("label",{text:"Starts on (optional)"}),(function(){var si2=h("input",{type:"date","aria-label":"Start date for this step","data-k":"pson-"+s.id,value:s.startOn||""});si2.addEventListener("change",function(){var d0=pDay(si2.value);if(d0&&pr.noWeekends&&pWeekend(d0)){d0=pNextWork(d0);toast("That was a weekend, so it moved to "+pShort(d0)+".");}s.startOn=d0?pIso(d0):si2.value;save(true);rerenderProj();});return si2;})()),
           h("div",{class:"field"},h("label",{text:"Must be done by (optional)"}),(function(){var di=h("input",{type:"date","aria-label":"Deadline for this step","data-k":"pdue-"+s.id,value:s.due||""});di.addEventListener("change",function(){var d0=pDay(di.value);if(d0&&pr.noWeekends&&pWeekend(d0)){d0=pPrevWork(d0);toast("That was a weekend, so it moved back to "+pShort(d0)+".");}s.due=d0?pIso(d0):di.value;save(true);rerenderProj();});return di;})())),
-        h("div",{class:"field"},h("label",{text:"Estimated hours (optional)"}),(function(){var hi=h("input",{type:"number",min:"0",max:"999",step:"0.5","aria-label":"Estimated hours","data-k":"phr-"+s.id,value:s.hours?String(s.hours):""});hi.addEventListener("change",function(){s.hours=Math.max(0,Number(hi.value)||0);save(true);rerenderProj();});return hi;})()),
+        h("div",{class:"field"},h("label",{text:"Estimated hours (optional)"}),(function(){var hi=h("input",{type:"number",min:"0",max:"999",step:"0.25","aria-label":"Estimated hours","data-k":"phr-"+s.id,value:s.hours?String(s.hours):""});hi.addEventListener("change",function(){s.hours=Math.max(0,Number(hi.value)||0);save(true);rerenderProj();});return hi;})()),
         h("div",{class:"field"},h("label",{text:"Section (optional)"}),(function(){var si=h("input",{type:"text",list:"psecs-dl","aria-label":"Section","data-k":"psec-"+s.id,placeholder:"For example Banking",value:s.section||""});si.addEventListener("change",function(){s.section=clean(si.value).slice(0,40);save(true);renderEvents();});return si;})()),
         i>0?h("label",{class:"pcheck"},par," Runs alongside \u201c"+(sc.rows[i-1].s.title||"the step above")+"\u201d (starts at the same time)"):null,
         h("div",{class:"field"},h("label",{text:"What it is and what to do"}),hw),
@@ -3772,7 +3774,7 @@ function drawMyProject(root){
         if(!S.db){say(st,"This needs the live page.","warn");return;}
         var rr={eid:"p_"+S.projSel,tid:s.id,pid:S.uid,done:!dn,at:nowIso()};
         S.db.doc("replies/p_"+S.projSel+"__"+s.id+"__"+S.uid).set(rr).then(function(){S.replies=S.replies.filter(function(x){return !(x.eid===rr.eid&&x.tid===rr.tid&&x.pid===rr.pid);}).concat([rr]);renderPlan();},function(){say(st,"Could not save. Tell Hinda directly.","warn");});}},dn?ico("check",16):null),
-      h("span",{class:"pstt"},h("b",{text:s.title}),h("span",{class:"sub",text:(s.hours?s.hours+" hr"+(s.hours>1?"s":"")+" · ":(s.days?s.days+" day"+(s.days>1?"s":"")+" · ":""))+(pDay(s.start)&&s.start!==s.end?pShort(pDay(s.start))+" to ":"by ")+(pDay(s.end)?pShort(pDay(s.end)):"")+(dn?" · done":"")+(s.note?" · "+s.note:"")})))));
+      h("span",{class:"pstt"},h("b",{text:s.title}),h("span",{class:"sub",text:(s.hours?fmtDur(s.hours)+" · ":(s.days?s.days+" day"+(s.days>1?"s":"")+" · ":""))+(pDay(s.start)&&s.start!==s.end?pShort(pDay(s.start))+" to ":"by ")+(pDay(s.end)?pShort(pDay(s.end)):"")+(dn?" · done":"")+(s.note?" · "+s.note:"")})))));
   });
   root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"Your steps"}),list,st));
   root.append(addToProjectCard(S.projSel));
@@ -5106,25 +5108,28 @@ function stepInfo(pid,sid){
     var pr=projById(pid);if(!pr)return null;
     var rows=projSchedule(pr).rows,r=rows.filter(function(x){return x.s.id===sid;})[0];if(!r)return null;
     var rp=r.s.owner?latestReply("p_"+pid,sid,r.s.owner):null;
-    return {pid:pid,sid:sid,pname:pr.name,title:r.s.title,how:r.s.how||"",note:r.s.note||"",hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.due||r.end,done:r.done,status:stepStatusOf(r.done,r.s.status,rp),target:pr.target};
+    return {pid:pid,sid:sid,pname:pr.name,title:r.s.title,how:r.s.how||"",note:r.s.note||"",hours:r.s.hours,owner:r.s.owner,start:r.start,end:r.due||r.end,done:r.done,spent:r.s.spent||0,status:stepStatusOf(r.done,r.s.status,rp),target:pr.target};
   }
   var it=S.myProj&&S.myProj[pid];if(!it)return null;
   var x=(it.steps||[]).filter(function(y){return y.id===sid;})[0];if(!x)return null;
   var q=latestReply("p_"+pid,sid,S.uid),dn=q?q.done===true:!!x.done;
-  return {pid:pid,sid:sid,pname:it.name,title:x.title,how:x.how||"",note:x.note||"",hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,status:stepStatusOf(dn,"",q),target:it.target};
+  return {pid:pid,sid:sid,pname:it.name,title:x.title,how:x.how||"",note:x.note||"",hours:x.hours,owner:S.uid,start:x.start?pDay(x.start):null,end:pDay(x.end),done:dn,spent:(q&&q.spent)||0,status:stepStatusOf(dn,"",q),target:it.target};
 }
 // status: todo | working | paused | blocked | done
 function setStepStatus(pid,sid,status){
   var now=nowIso();
   if(S.isAdmin){
     var pr=projById(pid),st=pr&&pr.steps.filter(function(x){return x.id===sid;})[0];if(!st)return;
+    var from=st.status==="working"&&st.statusAt?Date.parse(st.statusAt):0;
     st.statusAt=now;
-    if(status==="done"){st.done=true;st.doneAt=now;st.status="";}
+    if(status==="done"){st.done=true;st.doneAt=now;st.status="";if(from){var mn=Math.round((Date.now()-from)/60000);if(mn>=1&&mn<=720)st.spent=mn;}}
     else{st.done=null;st.doneAt="";st.status=status==="todo"?"":status;if(status==="working"&&!st.owner){st.owner=S.uid;toast("It is now yours.");}}
     saveProject(pr,true);renderToday();return;
   }
   if(!S.db||!S.uid){toast("This needs the live page.");return;}
-  var rr={eid:"p_"+pid,tid:sid,pid:S.uid,done:status==="done",state:(status==="working"||status==="paused"||status==="blocked")?status:"",at:now};
+  var prev=latestReply("p_"+pid,sid,S.uid),spent=0;
+  if(status==="done"&&prev&&prev.state==="working"&&prev.at){var mn=Math.round((Date.now()-Date.parse(prev.at))/60000);if(mn>=1&&mn<=720)spent=mn;}
+  var rr={eid:"p_"+pid,tid:sid,pid:S.uid,done:status==="done",state:(status==="working"||status==="paused"||status==="blocked")?status:"",at:now};if(spent)rr.spent=spent;
   S.db.doc("replies/p_"+pid+"__"+sid+"__"+S.uid).set(rr).then(function(){S.replies=S.replies.filter(function(x){return !(x.eid===rr.eid&&x.tid===rr.tid&&x.pid===rr.pid);}).concat([rr]);renderHome();},function(){toast("Could not save. Tell Hinda directly.");});
 }
 // Fetch a chunked file back as a data URL (screenshots) so it can be shown.
@@ -5168,14 +5173,15 @@ function drawStepDetail(root){
   root.append(h("button",{type:"button",class:"btn small",text:"\u2190 Back to "+(S.isAdmin?"Today":"Home"),onclick:function(){S.stepOpen=null;re();}}),
     h("p",{class:"k",style:"margin:14px 0 4px",text:"Project \u00b7 "+(g.pname||"")}),
     h("h1",{class:"h-sum",text:g.title||"Step"}),
-    h("p",{class:"sub",style:"margin:-6px 0 12px",text:[due,g.hours?g.hours+(g.hours===1?" hr":" hrs"):"",S.isAdmin?(g.owner?"With "+nameOf(g.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ")}));
+    h("p",{class:"sub",style:"margin:-6px 0 8px",text:[due,S.isAdmin?(g.owner?"With "+nameOf(g.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ")}),
+    g.hours?h("p",{class:"est"},h("span",{text:"Estimated time"}),h("b",{text:"about "+fmtDur(g.hours)})):null);
   root.append(h("section",{class:"card hsec"},h("h3",{class:"q",text:"What this is"}),
     g.how?h("p",{class:"about",style:"margin:0",text:g.how}):h("p",{class:"sub",style:"margin:0",text:S.isAdmin?"No summary yet. Add one under the step, in the project page.":"No summary yet."}),
     g.note?h("p",{class:"sub",style:"margin:8px 0 0",text:"Note: "+g.note}):null));
   // Status: where it is, the next move, and the other options
   var cls={todo:"p-soft",working:late?"p-red":"p-ok",paused:"p-gold",blocked:"p-red",done:"p-ok"}[g.status];
   var label=STEP_LABEL[g.status]+(g.status==="working"?(late?" \u00b7 behind":" \u00b7 on track"):"");
-  var hint={todo:"Not started yet.",working:late?"This was due "+(g.end?pShort(g.end):"")+". Finish it, or tell us you are stuck.":"You are on it"+(g.end?", due "+pShort(g.end):"")+".",paused:"On hold. Pick it back up when you are ready.",blocked:(S.isAdmin?"Marked as needing help.":"Hinda has been told you need help."),done:"Done. Well done."}[g.status];
+  var hint={todo:"Not started yet.",working:late?"This was due "+(g.end?pShort(g.end):"")+". Finish it, or tell us you are stuck.":"You are on it"+(g.end?", due "+pShort(g.end):"")+".",paused:"On hold. Pick it back up when you are ready.",blocked:(S.isAdmin?"Marked as needing help.":"Hinda has been told you need help."),done:g.spent?"Done. It took about "+fmtDur(g.spent/60)+(g.hours?" (estimated "+fmtDur(g.hours)+")":"")+", from starting to finishing.":"Done. Well done."}[g.status];
   var box=h("section",{class:"card hsec"},h("h3",{class:"q",text:"Where you are"}),h("p",{style:"margin:0"},h("span",{class:"pill "+cls,text:label})),h("p",{class:"sub",style:"margin:0",text:hint}));
   var prim={todo:["I'm working on this now","working"],working:["Finished","done"],paused:["Back to working","working"],blocked:["Unblocked, back to working","working"],done:null}[g.status];
   var sec={todo:[["Mark finished","done"]],working:[["Pause","paused"],["I'm stuck, need help","blocked"]],paused:[["I'm stuck, need help","blocked"],["Finished","done"],["Back to not started","todo"]],blocked:[["Pause","paused"],["Finished","done"]],done:[["Reopen","todo"]]}[g.status];
@@ -5225,7 +5231,7 @@ function projectDaySections(root,b){
   if(!b.any)return;
   function row(o,kind){
     var admin=S.isAdmin,isEv=o.kind==="event",pill=kind==="behind"?["p-red","Was due "+pShort(o.end)]:kind==="today"?null:["p-soft",pShort(o.start||o.end)];
-    var sub=[o.pname||(isEv?"Event":"Project"),isEv&&o.when&&kind!=="week"?fmtClock(o.when):"",o.hours?o.hours+(o.hours===1?" hr":" hrs"):"",admin?(o.owner?"With "+nameOf(o.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ");
+    var sub=[o.pname||(isEv?"Event":"Project"),isEv&&o.when&&kind!=="week"?fmtClock(o.when):"",o.hours?"about "+fmtDur(o.hours):"",admin?(o.owner?"With "+nameOf(o.owner):"No one yet"):""].filter(Boolean).join(" \u00b7 ");
     var go=h("button",{type:"button",class:"btn small",text:"Open",onclick:function(){
       if(isEv){S.evOpen=o.pid;S.goTask={eid:o.pid,tid:o.sid};showView("events");openLinkedTask();}
       else{S.stepOpen={pid:o.pid,sid:o.sid};admin?renderToday():renderHome();}window.scrollTo(0,0);}});
@@ -5275,10 +5281,10 @@ function drawToday(root){
   var nNow=need.filter(function(n){return n.sev==="now";}).length,evIds={};need.forEach(function(n){evIds[n.ev.id]=1;});var nEv=Object.keys(evIds).length;
   var pdb=projectDayBuckets(),tdAll=pdb.today.concat(pdb.behind),nToday=tdAll.length,nPj=tdAll.filter(function(o){return o.kind==="project";}).length,nEvT=nToday-nPj;
   var parts=[nPj?nPj+" project step"+(nPj>1?"s":""):"",nEvT?nEvT+" event task"+(nEvT>1?"s":""):""].filter(Boolean).join(" and ");
-  var line=[nToday?parts+" for today"+(pdb.behind.length?" ("+pdb.behind.length+" behind)":"")+".":"",need.length?(nNow?nNow+" behind or stuck. ":"")+need.length+" thing"+(need.length>1?"s need":" needs")+" you across "+nEv+" event"+(nEv>1?"s":"")+".":(nToday?"":"Nothing needs you right now.")].filter(Boolean).join(" ");
+  var hrsToday=tdAll.reduce(function(t,o){return t+(o.hours||0);},0);
+  var line=[nToday?parts+" for today"+(pdb.behind.length?" ("+pdb.behind.length+" behind)":"")+(hrsToday?", about "+fmtDur(hrsToday)+" of work":"")+".":"",need.length?(nNow?nNow+" behind or stuck. ":"")+need.length+" thing"+(need.length>1?"s need":" needs")+" you across "+nEv+" event"+(nEv>1?"s":"")+".":(nToday?"":"Nothing needs you right now.")].filter(Boolean).join(" ");
   root.append(h("div",{class:"welcome"},h("p",{class:"k",text:new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}),
     h("h1",{class:"h-sum",text:greet+", "+first}),h("p",{class:"sub",style:"margin:-6px 0 0",text:line})));
-  projectDaySections(root,pdb);
   var hasProfile=!!profileOf(Object.assign(payload(),{id:S.uid}));
   var teamJoined=Object.keys(S.crew||{}).some(function(id){return id!==S.uid;});
   var anyEvent=S.events.length>0,anyPublished=S.events.some(function(e){return e.published!==false;});
@@ -5300,6 +5306,7 @@ function drawToday(root){
       return h("li",{"data-s":st},h("span",{class:"gk","aria-hidden":"true"},x.done?ico("check",16):String(i+1)),
         h("div",{class:"gt"},h("b",{text:x.t}),i===cur?h("p",{class:"sub",text:x.d}):null,
           i===cur?h("div",{class:"row"},h("button",{type:"button",class:"btn go small",text:x.act.l,onclick:x.act.fn}),gst2):null));}))));
+  projectDaySections(root,pdb);
   // Your own tasks first
   if(mineItems.length){
     root.append(h("h2",{class:"tsec"},h("span",{text:"Your tasks"}),h("small",{text:mineItems.length+" open"})));
