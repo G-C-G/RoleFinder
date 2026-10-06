@@ -2168,11 +2168,11 @@ var BUILD={
     var canSend=!!(S.db&&S.uid&&S.canWrite!==false);
     card.append(!canSend?h("button",{type:"button",class:"btn go big wide",text:"Next: build my profile →",onclick:function(){go("done");}}):canSend?h("button",{type:"button",class:"btn go big wide",text:"Save my card and build my profile →",onclick:function(){say(st,"Saving…");saveResponse(function(){go("done");},function(){say(st,"Your profile was not saved. This usually means your access is View or Comment only. Ask Hinda to change you to Contributor in the Share menu, then tap Save again. Until then, tap Copy my results and send it to Hinda.","warn");});}})
         :null,st,
-      h("p",{class:"sub center",text:canSend?"The GCG admins see your answers. The crew sees your About; you choose the rest.":"Sending from this page is not set up for you. Copy your results and send them to Hinda."}),
-      h("details",{class:"more"},h("summary",{text:"More: share, PDF, all jobs"}),
+      h("p",{class:"sub center",text:canSend?"The GCG admins see your answers. The crew sees your About; you choose the rest.":"Sending from this page is not set up for you. Open More below, tap Copy my results, and send it to Hinda."}),
+      h("details",{class:"more",open:!canSend},h("summary",{text:"More: share, PDF, all jobs"}),
         h("div",{class:"row"},h("button",{type:"button",class:"btn small",text:"Share my card",onclick:function(){downloadPdf(true);}}),h("button",{type:"button",class:"btn small",text:"PDF",onclick:function(){downloadPdf(false);}}),
           h("button",{type:"button",class:"btn small",text:"See all jobs",onclick:function(){S.returnTo="profile";go("all");}}),
-          canSend?h("button",{type:"button",class:"btn small",text:"Copy my results",onclick:function(){copyText(shareText(),st,"Copied. Send it to Hinda.");}}):null),
+          h("button",{type:"button",class:"btn small",text:"Copy my results",onclick:function(){copyText(shareText(),st,"Copied. Send it to Hinda.");}})),
         h("textarea",{id:"msg",class:"mono",rows:"6",readonly:true,"aria-label":"Your results as text"},shareText())));
     return hd;
   }
