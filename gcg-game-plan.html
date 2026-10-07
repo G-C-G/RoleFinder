@@ -1922,6 +1922,16 @@ var BUILD={
     if(started){var pc=Math.round(Math.max(PATH.indexOf(S.screen),1+answeredAsk(S.q))/(PATH.length-1)*100);
       card.append(h("div",{class:"resume"},h("b",{text:"You're "+Math.min(pc,95)+"% through setting up."}),h("span",{text:" Everything so far is saved. Pick up where you left off."})));}
     if(!S.db||!S.uid||S.canWrite===false)card.append(h("p",{class:"sub",style:"margin:10px 0",role:"alert",text:"Heads up: this page cannot save for you right now ("+(!S.uid?"you are not signed in to Claude here":S.canWrite===false?"you only have view access, so ask Hinda to make you a Contributor":"it is not connected")+"). You can still fill it in, and at the end use Copy my results and send it to Hinda."}));
+    if(!started&&S.db&&S.uid){
+      var restBox=h("textarea",{id:"restoreBox",rows:"4",class:"mono","aria-label":"Your copied results",placeholder:"Paste the message you sent to Hinda. It has a line that starts with Code."});
+      var restSt=h("p",{class:"status",role:"status","aria-live":"polite"});
+      card.append(h("details",{class:"more"},h("summary",{text:"I already sent my results to Hinda"}),
+        h("p",{class:"sub",text:"Paste the same message here and it is saved to your own account. You do not need to answer again."}),restBox,
+        h("div",{class:"row"},h("button",{type:"button",class:"btn small go",text:"Restore my results",onclick:function(){
+          var got=null;restBox.value.split(/\r?\n/).forEach(function(l){if(!got){var o=parseCode(l);if(o)got=o;}});
+          if(!got){say(restSt,"No line starting with Code was found. Paste the whole message you copied.","warn");return;}
+          applyRecord(got);S.name=got.name||S.name;S.screen="share";saveDraft();say(restSt,"Saving...");finishOnboarding();}})),restSt));
+    }
     navRow(card,started?"Continue →":"Let's play →",function(){if(!clean(S.name)){warn("Add your name first.");inp.focus();return;}if(started&&PATH.indexOf(S.screen)>0){render();return;}var k=ASK.findIndex(function(n){return !askDone(S.q,n);});if(started&&answeredAsk(S.q)>0)go(k>-1?"s"+k:"deck");else next();},{big:true});
     return hd;
   },
