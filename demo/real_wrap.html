@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GCG Game Plan demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{--ink:#0c0c0c;--paper:#FAF6EB;--gold:#F2B01C;--green:#3E9B4F;--muted:#9a9488}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--ink);color:var(--paper);font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+.ex{position:fixed;top:0;left:0;right:0;height:26px;background:var(--gold);color:#111;display:grid;place-items:center;font-weight:700;font-size:12.5px;letter-spacing:.07em;z-index:50}
+.stage{position:absolute;top:26px;bottom:0;left:0;right:0;display:grid;grid-template-columns:326px 1fr 326px;align-items:center;padding:0 24px}
+.pf{width:320px;height:676px;border:8px solid #1c1c1c;border-radius:38px;background:#F6F1E6;overflow:hidden;position:relative;box-shadow:0 0 0 2px #2a2a2a,0 24px 60px rgba(0,0,0,.6)}
+.pf iframe{position:absolute;left:0;top:0;width:390px;height:844px;border:0;transform:scale(.78);transform-origin:0 0}
+.pf.buzz{animation:buzz .5s}@keyframes buzz{20%{transform:translateX(-7px) rotate(-1deg)}40%{transform:translateX(7px) rotate(1deg)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.mid{padding:0 34px;display:grid;gap:22px}
+.kick{color:var(--gold);font-weight:700;font-size:15px;letter-spacing:.16em}
+.mid h1{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:44px;line-height:1.08;margin:0}
+.grp{display:grid;gap:12px}.gl{font-size:12.5px;letter-spacing:.16em;color:var(--muted);font-weight:700;display:flex;gap:10px;align-items:center}.gl i{flex:1;height:2px;background:var(--gold)}.gl.p i{background:var(--green)}
+.st{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:baseline;opacity:.28;transition:opacity .4s}.st.on{opacity:1}
+.st b{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:34px;color:var(--gold)}.st.p b{color:var(--green)}.st span{font-size:19px;font-weight:700;line-height:1.25}
+.cursor{position:fixed;z-index:200;width:24px;height:24px;border-radius:50%;background:rgba(242,176,28,.9);border:3px solid #fff;box-shadow:0 0 0 2px #111;pointer-events:none;transition:left .6s ease,top .6s ease;left:-60px;top:-60px}
+.cursor.click{animation:rip .45s}@keyframes rip{50%{transform:scale(1.8);opacity:.5}}
+.title{position:fixed;inset:0;z-index:300;background:var(--ink);color:var(--paper);display:none;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 110px;gap:20px}.title.on{display:flex}
+.title h1{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:84px;line-height:1.02;margin:0;max-width:1000px}.title h1 b{font-weight:400;color:var(--gold)}.title .ex2{color:var(--gold);font-weight:700;font-size:16px;letter-spacing:.16em}
+</style></head><body>
+<div class="ex">EXAMPLE DATA: fictional people, numbers and company. Not real records.</div>
+<div class="stage">
+ <div class="pf" id="pfA"><iframe id="fA" src="../gcg-game-plan.html"></iframe></div>
+ <div class="mid"><div class="kick">LIVE DEMO</div><h1>From job, to match, to the person.</h1>
+  <div class="grp"><div class="gl">THE MANAGER<i></i></div>
+   <div class="st" id="s1"><b>1</b><span>The manager adds the job</span></div>
+   <div class="st" id="s2"><b>2</b><span>The system suggests a shortlist, with reasons</span></div>
+   <div class="st" id="s3"><b>3</b><span>The manager chooses</span></div></div>
+  <div class="grp"><div class="gl p">THE PERSON<i></i></div>
+   <div class="st p" id="s4"><b>4</b><span>The person sees the offer and their week, and can say yes or ask first</span></div>
+   <div class="st p" id="s5"><b>5</b><span>The person sees their progress, where they stand and a clear path to promotion</span></div></div></div>
+ <div class="pf" id="pfB"><iframe id="fB" src="../gcg-game-plan.html"></iframe></div>
+</div>
+<div class="title" id="title"></div><div class="cursor" id="cursor"></div>
+<script>
+var $=function(i){return document.getElementById(i);};
+window.step=function(n){for(var i=1;i<=5;i++){$('s'+i).classList.toggle('on',i===n);}};
+window.cur=function(x,y){var c=$('cursor');c.style.left=x+'px';c.style.top=y+'px';};
+window.ripple=function(){var c=$('cursor');c.classList.remove('click');void c.offsetWidth;c.classList.add('click');};
+window.buzz=function(id){var p=$(id);p.classList.remove('buzz');void p.offsetWidth;p.classList.add('buzz');};
+window.title=function(h){var t=$('title');if(!h){t.classList.remove('on');return;}t.innerHTML=h;t.classList.add('on');};
+</script></body></html>
