@@ -12,6 +12,7 @@ TEXT={
  'n6':"She sees one thing, and why it fits her. One tap.",
  'n7':"He is already full. He says so, in one tap.",
  'n8':"HR sees why, and offers it to the next best person.",
+ 'nu':"What nobody takes stays in view. Share it out, or hire.",
  'n9':"Stuck? Ask a colleague for a hand.",
  'n10':"Done, with proof. Everything is on record.",
  'n11':"Her progress, her title, her trail. Her work is never lost.",

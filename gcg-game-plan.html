@@ -175,6 +175,8 @@ textarea{resize:vertical}
 .chip.t0{background:var(--red);color:var(--on-red)}
 .chip.t1{background:var(--gold);color:var(--on-gold)}
 .chip.t2{background:var(--green);color:var(--on-green)}
+.gapbox{margin:10px 0 12px;display:grid;gap:8px}.gaprow{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:#fff;border:1px solid #e4dccb}
+.gaprow .gn{font-weight:700;font-size:20px;text-align:center}.gaprow .gt{display:grid}.gaprow[data-t="ok"]{border-left:5px solid #3E9B4F}.gaprow[data-t="warn"]{border-left:5px solid #F2B01C}.gaprow[data-t="bad"]{border-left:5px solid #c0392b}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 
 /* all jobs */
@@ -4141,6 +4143,17 @@ function myTasks(){
   return out;
 }
 function pendingCount(){return myTasks().filter(function(x){return taskState(x.ev,x.t)==="offered"&&isNow(x.ev,x.t);}).length;}
+function gapSummary(gr){
+  // Open work by job, and how many people have a real reason to take it: share it out, watch it, or think about a hire.
+  var by={},order=[];
+  gr.forEach(function(x){var k=FN[x.t.job]?x.t.job:"";if(!by[k]){by[k]={k:k,n:0,ev:x.ev};order.push(k);}by[k].n++;});
+  if(!order.length)return null;
+  var rows=order.map(function(k){var g=by[k],fit=k?S.people.filter(function(p){var m=!noAutoOn(p.id)&&taskMatch(p,k,g.ev.id);return m&&m.pts>=3;}).length:0;
+    var call=!k?"Set a job so it can be matched":fit>=3?"Share it across "+fit+" people":fit>0?"Only "+fit+(fit>1?" people fit":" person fits")+": a risk":"No one fits: think about a hire";
+    return {n:g.n,name:k?FN[k].name:"No job set",call:call,tone:fit>=3?"ok":fit>0?"warn":"bad"};}).sort(function(a,b){return b.n-a.n;});
+  return h("div",{class:"gapbox"},h("b",{text:"Where the gaps are"}),
+    rows.map(function(r){return h("div",{class:"gaprow","data-t":r.tone},h("span",{class:"gn",text:String(r.n)}),h("span",{class:"gt"},h("b",{text:r.name}),h("span",{class:"sub",text:r.call})));}));
+}
 function upForGrabs(){
   var out=[],cut=Date.now()-864e5;
   S.events.forEach(function(ev){if(ev.published===false)return;var d=dateAt(ev,0,null);if(d&&d<cut)return;
@@ -5853,7 +5866,7 @@ function drawToday(root){
   if(gr.length){
     var gst=h("span",{class:"status"});
     var gd=h("details",{class:"grabsbox",style:"margin-top:12px"},h("summary",{class:"fold-h",text:"Up for grabs"}),
-      h("p",{class:"sub",text:"Nobody has these yet. You can take one, first come, first served, like anyone else."}),groupByEvent(gr,"agrab:",grabRow,"open",{kinds:true}),gst);
+      h("p",{class:"sub",text:"Nobody has these yet. You can take one, first come, first served, like anyone else."}),gapSummary(gr),groupByEvent(gr,"agrab:",grabRow,"open",{kinds:true}),gst);
     gd.open=!!S.panel.adminGrabs;gd.addEventListener("toggle",function(){S.panel.adminGrabs=gd.open;});more.append(gd);
   }
   root.append(more);
@@ -6556,7 +6569,7 @@ function boot(){
   $("pasteBtn").addEventListener("click",addPasted);
   readHash();
   render();
-  window.__gcg={projSchedule:projSchedule,pNextWork:pNextWork,pDay:pDay,pIso:pIso,pAdd:pAdd,pOff:pOff,holidayName:holidayName,finishOnboarding:finishOnboarding,S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
+  window.__gcg={taskMatch:taskMatch,projSchedule:projSchedule,pNextWork:pNextWork,pDay:pDay,pIso:pIso,pAdd:pAdd,pOff:pOff,holidayName:holidayName,finishOnboarding:finishOnboarding,S:S,ITEMS:ITEMS,ASK:ASK,traitScores:traitScores,profileOf:profileOf,cvOf:cvOf,parseCode:parseCode,shareText:shareText,payload:payload,
     suggest:suggest,go:go,renderEvents:renderEvents,renderTasks:renderTasks,taskMatch:taskMatch,myTasks:myTasks,crewBlocks:crewBlocks,reportBlocks:reportBlocks,fromTemplate:fromTemplate,setSlots:setSlots,slotsOf:slotsOf,setAsMember:setAsMember,noAutoOn:noAutoOn,toggleNoAuto:toggleNoAuto,rankFor:rankFor,scoreOf:scoreOf,FN:FN,suggestEvent:suggestEvent,visibleEvents:visibleEvents,coverGroup:coverGroup,bringBack:bringBack,applyClaims:applyClaims,sendHelp:sendHelp,myNotes:myNotes,upForGrabs:upForGrabs,taskDue:taskDue,draftCount:draftCount,sendOffers:sendOffers,mustShare:mustShare,taskState:taskState,priorityList:priorityList,renderInsights:renderInsights,renderProfile:renderProfile,progressTimeline:progressTimeline,renderTitles:renderTitles,titlesOf:titlesOf,taskLink:taskLink,icsFile:icsFile,calItem:calItem,googleCal:googleCal,openLinkedTask:openLinkedTask,TEMPLATES:TEMPLATES,render:render,summaryBlocks:summaryBlocks,buildPdf:buildPdf,renderTeam:renderTeam,showView:showView};
   initCaps();
   startAutoShare();

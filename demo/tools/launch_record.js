@@ -102,11 +102,17 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await smooth('A','button:has-text("Offer to next best")',200);await sleep(1300);await shot('8b');
    await tapV('A','button:has-text("Offer to next best")',900,()=>![...document.querySelectorAll('button')].some(b=>/Offer to next best/.test(b.innerText)));await shot('8c');});
 
+ await beat({group:'h',head:'Nothing gets lost.',sub:'What nobody takes stays in view.',idx:8,label:'GAPS',name:'HR'},'nu',async()=>{
+   await F.A.evaluate(()=>{const e=Object.values(window.__store).filter(v=>v&&v.name==='Bill-pay agent launch day')[0];e.tasks.forEach(t=>{if(['C8','F2','D7','G1','C10'].indexOf(t.job)>=0){t.owner='';t.offered=false;t.manual='';t.ok=false;t.passed=[];}});window.__notify();window.__gcg.S.panel.todayMore=false;window.__gcg.S.panel.adminGrabs=false;window.__gcg.showView('today');});await sleep(600);
+   await F.A.evaluate(()=>window.scrollTo({top:0}));
+   await tapV('A','summary:has-text("More")',300,()=>{const d=document.querySelector('details.t-more');return d&&d.open;});
+   await tapV('A','summary:has-text("Up for grabs")',300,()=>{const d=document.querySelector('details.grabsbox');return d&&d.open;});
+   await smooth('A','.gapbox',150);await sleep(1800);await shot('nu');});
  await sync('A','B');
  await fB.evaluate(()=>{window.__as('u4',false,'Efua');const G=window.__gcg;G.S.extraMode=false;G.S.screen='profile';G.showView('home');});await sleep(500);
  await p.evaluate(()=>window.show('B'));
  if(process.env.EXPLORE){await sleep(1500);await shot('x9');console.log('BTN',await F.B.evaluate(()=>[...document.querySelectorAll('button,summary')].filter(e=>e.offsetParent).map(e=>e.innerText.trim().slice(0,40)).join(' | ')));await ctx.close();await b.close();return;}
- await beat({group:'p',head:'Stuck?',sub:'Ask a colleague for a hand.',idx:8,label:'HELP',name:'EFUA'},'n9',async()=>{
+ await beat({group:'p',head:'Stuck?',sub:'Ask a colleague for a hand.',idx:9,label:'HELP',name:'EFUA'},'n9',async()=>{
    await smooth('B','.hero-move',90);await sleep(500);await shot('9a');
    await tapV('B','.hero-move button:text-is("Open")',700,()=>/I need help/.test(document.body.innerText));await smooth('B','button:has-text("I need help")',300);await sleep(400);
    await tapV('B','button:has-text("I need help")',400,()=>!!document.querySelector('select[data-k^="helpto"]'));await shot('9b');
@@ -115,13 +121,13 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await tapQ('B','button:has-text("Send help request")',700);await shot('9d');});
 
  if(process.env.EXPLORE2){console.log('BTN',await F.B.evaluate(()=>[...document.querySelectorAll('button,summary')].filter(e=>e.offsetParent).map(e=>e.innerText.trim().slice(0,30)+'@'+Math.round(e.getBoundingClientRect().top)).join(' | ')));console.log(await F.B.evaluate(()=>scrollY));await ctx.close();await b.close();return;}
- await beat({group:'p',head:'Done, with proof.',sub:'A note, how it went. It stays on record.',idx:9,label:'PROOF',name:'EFUA'},'n10',async()=>{
+ await beat({group:'p',head:'Done, with proof.',sub:'A note, how it went. It stays on record.',idx:10,label:'PROOF',name:'EFUA'},'n10',async()=>{
    await smooth('B','button:text-is("Done")',380);await sleep(700);await tapV('B','button:text-is("Done")',500,()=>/When did you finish/.test(document.body.innerText));await shot('10a');await smooth('B','text=When did you finish',200);await sleep(600);
    await tapQ('B','.seg3 .sb[data-c="yes"]:has-text("Today")',200);
    await tapQ('B','input[placeholder^="Anything worth knowing"]',100);await F.B.locator('input[placeholder^="Anything worth knowing"]').pressSequentially('Venue confirmed. AV plan signed off by the client.',{delay:24});await shot('10b');
    await tapQ('B','button:has-text("Save as done")',900);await sleep(500);await smooth('B','text=Confirm venue access',140);await sleep(1200);await shot('10c');});
 
- await beat({group:'p',head:'Her work is on record.',sub:'Progress, title and trail.',idx:10,label:'RECORD',name:'EFUA'},'n11',async()=>{
+ await beat({group:'p',head:'Her work is on record.',sub:'Progress, title and trail.',idx:11,label:'RECORD',name:'EFUA'},'n11',async()=>{
    await F.B.evaluate(()=>{window.__gcg.showView('home');});await sleep(600);
    await F.B.evaluate(()=>window.scrollTo({top:0}));await smooth('B','text=Your progress',90);await sleep(1300);await shot('11a');
    await tapV('B','.bottomnav .navb:nth-child(5)',1200,()=>/PLAYER CARD/i.test(document.body.innerText));
