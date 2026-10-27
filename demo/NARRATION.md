@@ -1,25 +1,19 @@
 # Narration (about 40 seconds of speech)
 
-**n0** (3.77 s)
-Who should do this job? The system suggests. You decide.
+Record these eight lines in your own voice, one after another, and send the file. I will fit each line to its moment in the film.
 
-**n1** (5.63 s)
-HR adds a project or an event. A name, a date, and the template fills in every task.
+**1.** Who should do this job? The system suggests. You decide.
 
-**n2** (6.42 s)
-The system then reads every profile in the company, and suggests the best person for each task, with the reason.
+**2.** HR adds a project or an event. A name, a date, and every task fills in.
 
-**n3** (4.82 s)
-HR stays in charge. Accept the suggestion, or change it with one tap.
+**3.** The system reads every profile in the company, and suggests the best person for each task, with the reason.
 
-**n4** (2.71 s)
-Send, and everyone is notified at once.
+**4.** HR stays in charge. Accept the suggestion, or change it with one tap.
 
-**n5** (5.53 s)
-Efua gets one clear thing to do, and why it fits her. One tap, and it is hers.
+**5.** Send, and everyone is notified.
 
-**n6** (8.59 s)
-Her progress, her title, her record. Every task is documented, so her work is never taken for granted, and it shows where she stands.
+**6.** Efua gets one clear thing to do, and why it fits her. One tap, and it is hers.
 
-**n7** (3.31 s)
-The right person, for the right task, with a reason you can check.
+**7.** Her progress, her title, her record. Every task is documented, so her work is never taken for granted.
+
+**8.** The right person, for the right task.

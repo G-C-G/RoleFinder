@@ -31,10 +31,10 @@
  <div class="dots" id="dots"><b class="h"></b><b class="h"></b><b class="h"></b><b class="h"></b><b class="p"></b><b class="p"></b><b class="p"></b><span id="dotl"></span></div></div>
 <div class="who" id="who">HR</div>
 <div class="stack"><div class="pf on" id="pfA"><iframe id="fA" src="../gcg-game-plan.html"></iframe></div><div class="pf" id="pfB"><iframe id="fB" src="../gcg-game-plan.html"></iframe></div></div>
-<div class="end" id="end"></div><div class="cursor" id="cursor"></div>
+<div id="mk" style="position:fixed;left:0;bottom:0;width:14px;height:14px;background:#0c0c0c;z-index:400"></div><div class="end" id="end"></div><div class="cursor" id="cursor"></div>
 <script>
 var $=function(i){return document.getElementById(i);};
-window.beat=function(o){var p=o.group==='p';$('chip').classList.toggle('p',p);$('chipt').textContent=p?'THE PERSON':'HR · THE MANAGER';
+window.beat=function(o){var mk=$('mk');mk.dataset.s=mk.dataset.s==='1'?'0':'1';mk.style.background=mk.dataset.s==='1'?'#2c2c2c':'#0c0c0c';var p=o.group==='p';$('chip').classList.toggle('p',p);$('chipt').textContent=p?'THE PERSON':'HR · THE MANAGER';
  $('head').style.opacity=0;$('sub').style.opacity=0;setTimeout(function(){$('head').textContent=o.head;$('sub').textContent=o.sub||'';$('head').style.opacity=1;$('sub').style.opacity=1;},230);
  var d=document.querySelectorAll('#dots b');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',i===o.idx);$('dotl').textContent=o.label||'';
  $('who').textContent=p?'EFUA, ON HER PHONE':'HR, ON THEIR PHONE';};
