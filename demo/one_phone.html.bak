@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GCG Game Plan: one-minute demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{--ink:#0c0c0c;--paper:#FAF6EB;--gold:#F2B01C;--green:#3E9B4F;--muted:#8d877a}
+*{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;background:var(--ink);color:var(--paper);font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+.ex{position:fixed;top:0;left:0;right:0;height:38px;background:var(--gold);color:#111;display:grid;place-items:center;font-weight:700;font-size:18px;letter-spacing:.08em;z-index:50}
+.left{position:absolute;left:130px;top:150px;width:900px;bottom:90px;display:flex;flex-direction:column}
+.chip{display:flex;align-items:center;gap:18px;font-weight:700;font-size:24px;letter-spacing:.2em;color:var(--gold);transition:color .4s}
+.chip i{display:block;width:120px;height:3px;background:currentColor}
+.chip.p{color:var(--green)}
+.head{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:112px;line-height:1.02;margin:34px 0 0;transition:opacity .35s}
+.sub{font-size:38px;line-height:1.3;color:#d9d3c4;margin-top:34px;max-width:780px;transition:opacity .35s}
+.dots{margin-top:auto;display:flex;gap:16px;align-items:center}
+.dots b{width:20px;height:20px;border-radius:50%;border:3px solid #4a463d;transition:.3s}.dots b.h.on{background:var(--gold);border-color:var(--gold);transform:scale(1.25)}.dots b.p.on{background:var(--green);border-color:var(--green);transform:scale(1.25)}
+.dots span{margin-left:14px;font-size:20px;letter-spacing:.14em;color:var(--muted);font-weight:700}
+.stack{position:absolute;right:170px;top:104px;width:449px;height:948px}
+.pf{position:absolute;inset:0;border:10px solid #1c1c1c;border-radius:56px;background:#F6F1E6;overflow:hidden;box-shadow:0 0 0 3px #2a2a2a,0 40px 90px rgba(0,0,0,.65);opacity:0;transition:opacity .55s}
+.pf.on{opacity:1}
+.pf iframe{position:absolute;left:0;top:0;width:390px;height:844px;border:0;transform:scale(1.1);transform-origin:0 0}
+.pf.buzz{animation:buzz .55s}@keyframes buzz{20%{transform:translateX(-10px) rotate(-1deg)}40%{transform:translateX(10px) rotate(1deg)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+.who{position:absolute;right:170px;top:62px;width:449px;text-align:center;font-weight:700;letter-spacing:.2em;font-size:18px;color:var(--muted)}
+.cursor{position:fixed;z-index:200;width:34px;height:34px;border-radius:50%;background:rgba(242,176,28,.92);border:4px solid #fff;box-shadow:0 0 0 2px #111;pointer-events:none;transition:left .32s ease,top .32s ease;left:-80px;top:-80px}
+.cursor.click{animation:rip .4s}@keyframes rip{50%{transform:scale(1.8);opacity:.5}}
+.end{position:fixed;inset:0;z-index:300;background:var(--ink);display:none;flex-direction:column;justify-content:center;padding:0 170px;gap:26px}.end.on{display:flex}
+.end h1{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:132px;line-height:1.02;margin:0}.end h1 b{font-weight:400;color:var(--gold)}.end p{font-size:40px;color:#d9d3c4;margin:0}.end small{font-size:20px;letter-spacing:.16em;color:var(--gold);font-weight:700}
+</style></head><body>
+<div class="ex">EXAMPLE DATA: fictional people, numbers and company. Not real records.</div>
+<div class="left"><div class="chip" id="chip"><span id="chipt">HR · THE MANAGER</span><i></i></div><h1 class="head" id="head"></h1><p class="sub" id="sub"></p>
+ <div class="dots" id="dots"><b class="h"></b><b class="h"></b><b class="h"></b><b class="h"></b><b class="p"></b><b class="p"></b><b class="p"></b><span id="dotl"></span></div></div>
+<div class="who" id="who">HR</div>
+<div class="stack"><div class="pf on" id="pfA"><iframe id="fA" src="../gcg-game-plan.html"></iframe></div><div class="pf" id="pfB"><iframe id="fB" src="../gcg-game-plan.html"></iframe></div></div>
+<div id="mk" style="position:fixed;left:0;bottom:0;width:14px;height:14px;background:#0c0c0c;z-index:400"></div><div class="end" id="end"></div><div class="cursor" id="cursor"></div>
+<script>
+var $=function(i){return document.getElementById(i);};
+window.beat=function(o){var mk=$('mk');mk.dataset.s=mk.dataset.s==='1'?'0':'1';mk.style.background=mk.dataset.s==='1'?'#2c2c2c':'#0c0c0c';var p=o.group==='p';$('chip').classList.toggle('p',p);$('chipt').textContent=p?'THE PERSON':'HR · THE MANAGER';
+ $('head').style.opacity=0;$('sub').style.opacity=0;setTimeout(function(){$('head').textContent=o.head;$('sub').textContent=o.sub||'';$('head').style.opacity=1;$('sub').style.opacity=1;},230);
+ var d=document.querySelectorAll('#dots b');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',i===o.idx);$('dotl').textContent=o.label||'';
+ $('who').textContent=p?'EFUA, ON HER PHONE':'HR, ON THEIR PHONE';};
+window.show=function(w){$('pfA').classList.toggle('on',w==='A');$('pfB').classList.toggle('on',w==='B');};
+window.cur=function(x,y){var c=$('cursor');c.style.left=x+'px';c.style.top=y+'px';};
+window.ripple=function(){var c=$('cursor');c.classList.remove('click');void c.offsetWidth;c.classList.add('click');};
+window.buzz=function(id){var p=$(id);p.classList.remove('buzz');void p.offsetWidth;p.classList.add('buzz');};
+window.endcard=function(h){var e=$('end');if(!h){e.classList.remove('on');return;}e.innerHTML=h;e.classList.add('on');};
+</script></body></html>

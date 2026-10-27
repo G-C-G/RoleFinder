@@ -3992,6 +3992,7 @@ function adminTask(ev,t,cur){
     why&&why.why.length?h("div",{class:"chips"},why.why.map(function(w){return h("span",{class:"chip",text:w});})):null,
     r&&(r.note||r.comment)?h("p",{class:"sub"},h("b",{text:nameOf(t.owner)+": "}),[r.mood?moodText(r.mood)+".":"",r.comment||r.note].join(" ")):null,
     r&&r.state==="stuck"&&r.stuck?h("p",{class:"stuck"},"Stuck: "+r.stuck):null,
+    st==="passed"&&r&&r.reason?h("p",{class:"sub"},h("b",{text:nameOf(t.owner)+" said: "}),r.reason):null,
     claims.map(function(c){return h("div",{class:"row claim"},h("span",{text:""+nameOf(c.pid)+" can take this"+(c.note?": "+c.note:"")}),h("button",{type:"button",class:"btn small go",text:"Give to "+nameOf(c.pid),onclick:function(){giveTo(ev,t,c.pid);}}));}),
     hands.map(function(x){return h("div",{class:"row claim"},h("span",{text:""+nameOf(x.pid)+" needs an extra hand"+(x.hand.note?": "+x.hand.note:"")}),h("button",{type:"button",class:"btn small go",text:"Add a slot",onclick:function(){addSlot(ev,t,x.pid+x.hand.at);}}));}),
     h("div",{class:"row"},
@@ -4862,7 +4863,7 @@ function laterItems(){var out=[];S.events.forEach(function(ev){priorityList(ev,S
 // Importance: what is overdue first, then Must before Should before Nice, then what is due soonest.
 function byTime(a,b){var da=a.due?a.due.getTime():Infinity,db=b.due?b.due.getTime():Infinity;return (b.late-a.late)||(PRI[a.t.pri||"should"].o-PRI[b.t.pri||"should"].o)||(da-db);}
 function myOpenItems(){
-  var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if((x.t.offered||x.t.manual)&&isNow(ev,x.t))out.push(x);});});
+  var out=[];S.events.forEach(function(ev){priorityList(ev,S.uid).forEach(function(x){if((x.t.offered||x.t.manual)&&x.st!=="passed"&&isNow(ev,x.t))out.push(x);});});
   return out.sort(byTime);
 }
 function myEvents(){
@@ -4882,9 +4883,14 @@ function nextMoveCard(x,st,multi){
   var ev=x.ev,t=x.t,due=x.due;
   var btns=x.st==="offered"?[
       h("button",{type:"button",class:"btn go big",text:"I'll take it",onclick:function(){writeReply(ev,t,{answer:"take"},st);}}),
-      h("button",{type:"button",class:"btn",text:"Can't do it",onclick:function(){writeReply(ev,t,{answer:"pass"},st);}})]
+      h("button",{type:"button",class:"btn",text:"Can't do it",onclick:function(){S.panel["pass:"+t.id]=true;renderHome();}})]
     :[h("button",{type:"button",class:"btn go big",text:"Mark done",onclick:function(){quickDone(ev,t,st);}}),
       h("button",{type:"button",class:"btn",text:"Open",onclick:function(){S.evSel=ev.id;S.goTask={eid:ev.id,tid:t.id};showView("mevents");openLinkedTask();}})];
+  if(x.st==="offered"&&S.panel["pass:"+t.id])return h("div",{class:"hero-move"},h("p",{class:"k",text:"Suggested first"}),h("h2",{class:"hm-t",text:t.title}),
+    h("p",{class:"hm-m",text:"No problem. Want to say why? (optional)"}),
+    h("div",{class:"chips"},["At my limit","Not available","Not my thing","Need help"].map(function(w){return h("button",{type:"button",class:"chip addchip",text:w,onclick:function(){S.panel["pass:"+t.id]=false;writeReply(ev,t,{answer:"pass",reason:w},st);}});})),
+    h("div",{class:"row"},h("button",{type:"button",class:"btn link",text:"Skip, just pass",onclick:function(){S.panel["pass:"+t.id]=false;writeReply(ev,t,{answer:"pass"},st);}}),
+      h("button",{type:"button",class:"btn link",text:"Actually, I'll take it",onclick:function(){S.panel["pass:"+t.id]=false;renderHome();}})),st);
   return h("div",{class:"hero-move"},h("p",{class:"k",text:"Suggested first"}),h("h2",{class:"hm-t",text:t.title}),
     h("p",{class:"hm-m"},(ev.name||"")+" · ",due?(x.late?["",clockSpan(due)]:[dueLabel(due)+" · ",clockSpan(due)]):"no deadline"),
     (function(){var me=personById(S.uid)||Object.assign(payload(),{id:S.uid}),m=taskMatch(me,t.job,ev.id);if(!m||!m.why.length)return null;
@@ -5726,7 +5732,7 @@ function projectDayBuckets(){
   if(S.isAdmin){
     activeEvents().forEach(function(ev){if(ev.published===false)return;priorityList(ev).forEach(function(x){
       if(x.st==="draft")return;
-      if(x.st==="passed"){out.any=true;out.behind.push({kind:"event",pid:ev.id,pname:ev.name||"Event",sid:x.t.id,title:x.t.title,hours:0,owner:x.t.owner,start:null,end:x.due?(function(){var q=new Date(x.due.getTime());q.setHours(0,0,0,0);return q;})():pToday(),done:false,when:x.due,st:"passed",declined:true});return;}
+      if(x.st==="passed"){out.any=true;out.behind.push({kind:"event",pid:ev.id,pname:ev.name||"Event",sid:x.t.id,title:x.t.title,hours:0,owner:x.t.owner,start:null,end:x.due?(function(){var q=new Date(x.due.getTime());q.setHours(0,0,0,0);return q;})():pToday(),done:false,when:x.due,st:"passed",declined:true,attn:(function(){var rr=latestReply(ev.id,x.t.id,x.t.owner);return rr&&rr.reason?nameOf(x.t.owner)+": "+rr.reason:"";})()});return;}
       if(!x.due)return;
       var d=new Date(x.due.getTime());d.setHours(0,0,0,0);
       add({kind:"event",mark:markOf(null,d,false,true),pid:ev.id,pname:ev.name||"Event",sid:x.t.id,title:x.t.title,hours:0,owner:x.t.owner,start:null,end:d,done:false,when:x.due,st:x.st});});});
@@ -6103,7 +6109,7 @@ function myTaskCard(ev,t,me){
         FN[t.job]?h("button",{type:"button",class:"btn link",text:"Not really me",title:"Fewer tasks like this",onclick:function(){notMe(ev,t,stat);}}):null));
   }else if(st==="passed"&&r&&r.answer==="pass"){
     body.push(h("p",{class:"sub",text:"No problem. Want to say why? (optional)"}),
-      h("div",{class:"chips"},["Not available","Not my thing","Need help"].map(function(x){return h("button",{type:"button",class:"chip addchip"+(r.reason===x?" good":""),"aria-pressed":String(r.reason===x),text:x,onclick:function(){writeReply(ev,t,{reason:x},stat);}});})),
+      h("div",{class:"chips"},["At my limit","Not available","Not my thing","Need help"].map(function(x){return h("button",{type:"button",class:"chip addchip"+(r.reason===x?" good":""),"aria-pressed":String(r.reason===x),text:x,onclick:function(){writeReply(ev,t,{reason:x},stat);}});})),
       h("button",{type:"button",class:"btn link",text:"Actually, I'll take it",onclick:function(){writeReply(ev,t,{answer:"take"},stat);}}));
   }else if(st==="taken"||st==="started"||st==="stuck"){
     if(st==="stuck"&&r&&r.stuck)body.push(h("p",{class:"stuck",text:"Stuck: "+r.stuck}));
