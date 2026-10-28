@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GCG Game Plan: launch film</title>
+
+<style>
+@font-face{font-family:'Caveat';font-style:normal;font-weight:500;src:url(assets/fonts/Caveat-500-normal.ttf) format('truetype');font-display:block}
+@font-face{font-family:'Caveat';font-style:normal;font-weight:600;src:url(assets/fonts/Caveat-600-normal.ttf) format('truetype');font-display:block}
+@font-face{font-family:'Instrument Serif';font-style:italic;font-weight:400;src:url(assets/fonts/InstrumentSerif-400-italic.ttf) format('truetype');font-display:block}
+@font-face{font-family:'Instrument Serif';font-style:normal;font-weight:400;src:url(assets/fonts/InstrumentSerif-400-normal.ttf) format('truetype');font-display:block}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400;src:url(assets/fonts/Manrope-400-normal.ttf) format('truetype');font-display:block}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:500;src:url(assets/fonts/Manrope-500-normal.ttf) format('truetype');font-display:block}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:600;src:url(assets/fonts/Manrope-600-normal.ttf) format('truetype');font-display:block}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:700;src:url(assets/fonts/Manrope-700-normal.ttf) format('truetype');font-display:block}
+:root{--ink:#143a2d;--ink2:#2c3d35;--gold:#F2B01C;--gold2:#a8740a;--green:#2f7a3f}
+*{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;background:#e9dcc0;color:var(--ink);font-family:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+.bg{position:absolute;inset:0;background:url(assets/bg.jpg) center/cover}
+.ex{position:fixed;top:0;left:0;right:0;height:30px;background:rgba(20,58,45,.92);color:rgba(250,246,235,.85);display:grid;place-items:center;font-weight:600;font-size:13px;letter-spacing:.16em;z-index:50}
+.left{position:absolute;left:190px;top:200px;width:850px;padding:40px 44px 44px;background:rgba(251,247,236,.95);border-radius:28px;box-shadow:0 10px 24px rgba(60,40,10,.16)}
+.lab{display:flex;align-items:center;gap:14px;font-weight:700;font-size:15px;letter-spacing:.26em;color:#7d5604}
+.lab.p{color:#1f5e2e}.lab i{display:block;width:56px;height:2px;background:currentColor;opacity:.8}
+.head{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:108px;line-height:.98;letter-spacing:-.012em;margin:26px 0 0;min-height:215px;color:#08170f;-webkit-text-stroke:2.2px #08170f;paint-order:stroke fill}
+.head .w{display:inline-block;opacity:0;margin-right:.18em;will-change:opacity}
+
+.rule{width:64px;height:4px;background:var(--gold);margin-top:6px;border-radius:2px}
+.sub{font-size:33px;font-weight:600;line-height:1.4;color:#0b1812;margin-top:22px;max-width:760px;min-height:78px;opacity:0}
+.stack{position:absolute;left:1101px;top:50px;width:470px;height:1000px;transform-origin:var(--ox,50%) var(--oy,40%);}
+@keyframes drift{from{transform:scale(1)}to{transform:scale(var(--z,1.05))}}
+.pf{position:absolute;inset:0;border:10px solid #15140f;border-radius:58px;background:#F6F1E6;overflow:hidden;box-shadow:0 0 0 2px #3a382f,0 24px 40px rgba(60,40,10,.3);opacity:0}
+
+.pf iframe{position:absolute;left:0;top:0;width:390px;height:844px;border:0;transform:scale(1.153);transform-origin:0 0}
+.ban{position:absolute;left:1121px;top:110px;width:430px;background:rgba(255,253,246,.98);color:#111;border-radius:24px;padding:15px 20px;z-index:60;box-shadow:0 18px 44px rgba(60,40,10,.35);transform:translateY(-180px);opacity:0}
+.ban small{font-size:12px;letter-spacing:.16em;font-weight:700;color:#7a5a00}.ban b{display:block;font-size:19px;font-weight:600;margin-top:4px;line-height:1.25}
+.pt{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;z-index:80}
+.pt .nt{padding:10px 20px 14px;background:rgba(251,247,236,.88);border-radius:18px;box-shadow:0 10px 30px rgba(40,30,10,.18);position:absolute;font-family:"Caveat",cursive;font-weight:600;font-size:44px;line-height:1.02;color:var(--ink);opacity:0;max-width:290px}
+
+.pt path{fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1}
+
+.pt .hd{opacity:0}
+.cursor{position:fixed;z-index:200;width:30px;height:30px;border-radius:50%;background:rgba(242,176,28,.92);border:3px solid #fff;box-shadow:0 0 0 2px rgba(20,58,45,.5);pointer-events:none;left:-80px;top:-80px}
+
+.card{position:fixed;inset:0;z-index:300;background:url(assets/bg.jpg) center/cover;display:none;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 600px 0 300px;gap:28px}
+.card small{font-size:15px;letter-spacing:.28em;color:var(--gold2);font-weight:700}
+.card h1{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:104px;line-height:1;margin:0;max-width:1000px;letter-spacing:-.005em;color:#08170f;-webkit-text-stroke:2.6px #08170f;paint-order:stroke fill}
+.card .w{display:inline-block;opacity:0;margin-right:.2em}
+.card p.big{font-size:36px;font-weight:700;color:#0b1f16;letter-spacing:.01em;white-space:nowrap;}
+.card p{font-size:28px;font-weight:500;color:var(--ink2);margin:0;opacity:0;letter-spacing:.03em}
+</style></head><body>
+<div class="bg"></div><span style="font-family:Caveat;font-weight:600;position:absolute;opacity:0;left:-99px">hello</span>
+<div class="ex">EXAMPLE DATA  ·  FICTIONAL PEOPLE, NUMBERS AND COMPANY  ·  NOT REAL RECORDS</div>
+<div class="left"><div class="lab" id="chip"><span id="chipt">PROJECT LEAD</span><i></i></div><h1 class="head" id="head"></h1><div class="rule"></div><p class="sub" id="sub"></p></div>
+<div class="stack" id="stack"><div class="pf on" id="pfA"><iframe id="fA" src="../gcg-game-plan.html"></iframe></div><div class="pf" id="pfB"><iframe id="fB" src="../gcg-game-plan.html"></iframe></div></div>
+<svg class="pt" id="pt" viewBox="0 0 1920 1080"><defs></defs><path id="pth" pathLength="1" d=""/><path id="ph1" class="hd" pathLength="1" d="" style="stroke-dasharray:none;stroke-dashoffset:0"/><path id="ph2" class="hd" pathLength="1" d="" style="stroke-dasharray:none;stroke-dashoffset:0"/></svg>
+<div class="pt" id="ptn" style="position:absolute"><div class="nt" id="nt"></div></div>
+<div class="ban" id="ban"><small>GOLD COAST GAMES</small><b id="bant"></b></div>
+<div id="mk" style="position:fixed;left:0;bottom:0;width:14px;height:14px;background:#0c0c0c;z-index:400"></div><div class="card" id="card"></div><div class="cursor" id="cursor"></div>
+<script>
+var $=function(i){return document.getElementById(i);};
+var C={};
+function ease(p){p=Math.max(0,Math.min(1,p));return 1-Math.pow(1-p,3);}
+function setWords(el,text){el.innerHTML=text.split(' ').map(function(w){return '<span class="w">'+w+'</span>';}).join('');return el.querySelectorAll('.w');}
+// geometry for a hand-lettered note and its arrow (same as the live version)
+function prepNote(text,tx,ty){var nx=1600,ny=Math.max(160,Math.min(ty-110,860));var n=$('nt');n.textContent=text;n.style.left=nx+'px';n.style.top=ny+'px';
+ var sx=nx-8,sy=ny+n.offsetHeight/2,ex=tx+12,ey=ty;var cx=(sx+ex)/2,cy=Math.min(sy,ey)-60;
+ $('pth').setAttribute('d','M'+sx+','+sy+' Q'+cx+','+cy+' '+ex+','+ey);
+ var ang=Math.atan2(ey-cy,ex-cx),a1=ang+2.7,a2=ang-2.7,L=22;
+ $('ph1').setAttribute('d','M'+ex+','+ey+' L'+(ex+L*Math.cos(a1))+','+(ey+L*Math.sin(a1)));$('ph2').setAttribute('d','M'+ex+','+ey+' L'+(ex+L*Math.cos(a2))+','+(ey+L*Math.sin(a2)));}
+// s = {chip,chipP,head,ht,sub,st,out, a,b, note:{id,text,tx,ty,t}|null, ban:{text,p}|null, cur:{x,y,rip}|null, card:{id,h,s,k,big,t,fade}|null}
+window.__draw=function(s){
+ if(C.chip!==s.chip){C.chip=s.chip;$('chipt').textContent=s.chip;}
+ $('chip').classList.toggle('p',!!s.chipP);
+ if(C.head!==s.head){C.head=s.head;C.hw=setWords($('head'),s.head);}
+ var o=s.out==null?1:s.out;
+ for(var i=0;i<C.hw.length;i++){var p=ease((s.ht-i*0.1)/0.8);C.hw[i].style.opacity=p*o;C.hw[i].style.transform='translateY('+(24*(1-p))+'px)';}
+ if(C.sub!==s.sub){C.sub=s.sub;$('sub').textContent=s.sub;}
+ var sp=ease((s.ht-0.4)/0.8);$('sub').style.opacity=sp*o;$('sub').style.transform='translateY('+(24*(1-sp))+'px)';
+ $('pfA').style.opacity=s.a;$('pfB').style.opacity=s.b;
+ if(s.note){if(C.note!==s.note.id){C.note=s.note.id;prepNote(s.note.text,s.note.tx,s.note.ty);}
+  var t=s.note.t;$('nt').style.opacity=Math.min(1,t/0.6);$('pth').style.strokeDashoffset=1-ease((t-0.35)/0.9);
+  var hp=Math.max(0,Math.min(1,(t-1.1)/0.3));$('ph1').style.opacity=hp;$('ph2').style.opacity=hp;}
+ else{C.note=null;$('nt').style.opacity=0;$('pth').style.strokeDashoffset=1;$('ph1').style.opacity=0;$('ph2').style.opacity=0;}
+ var b=$('ban');if(s.ban){if(C.ban!==s.ban.text){C.ban=s.ban.text;$('bant').textContent=s.ban.text;}var e=ease(s.ban.p);b.style.transform='translateY('+(-180*(1-e))+'px)';b.style.opacity=Math.min(1,s.ban.p*2.5);}else{b.style.transform='translateY(-180px)';b.style.opacity=0;}
+ var c=$('cursor');if(s.cur){c.style.left=s.cur.x+'px';c.style.top=s.cur.y+'px';var r=s.cur.rip;if(r!=null&&r>=0&&r<0.45){var u=r/0.45,k=u<.5?u/.5:(1-u)/.5;c.style.transform='scale('+(1+0.6*k)+')';c.style.opacity=1-0.45*k;}else{c.style.transform='none';c.style.opacity=1;}}else{c.style.left='-80px';}
+ var cd=$('card');
+ if(s.card){if(C.card!==s.card.id){C.card=s.card.id;var h='';h=(s.card.k?'<small>'+s.card.k+'</small>':'')+'<h1></h1>'+(s.card.s?'<p'+(s.card.big?' class="big"':'')+'></p>':'');cd.innerHTML=h;C.cw=setWords(cd.querySelector('h1'),s.card.h);if(s.card.s)cd.querySelector('p').textContent=s.card.s;}
+  cd.style.display='flex';cd.style.opacity=s.card.fade==null?1:s.card.fade;var t=s.card.t;
+  for(var i=0;i<C.cw.length;i++){var p=ease((t-i*0.1)/1.0);C.cw[i].style.opacity=p;C.cw[i].style.transform='translateY('+(34*(1-p))+'px)';}
+  var pe=cd.querySelector('p');if(pe){var d=s.card.big?0.3:1.2,du=s.card.big?0.6:1.0,pp=ease((t-d)/du);pe.style.opacity=pp;pe.style.transform='translateY('+(24*(1-pp))+'px)';}}
+ else{C.card=null;cd.style.display='none';}
+};
+</script></body></html>
