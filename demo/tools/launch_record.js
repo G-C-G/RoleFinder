@@ -14,7 +14,6 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  await p.addInitScript(base);await p.addInitScript(seed);
  await p.goto('file:///home/user/RoleFinder/demo/launch_frame.html');await sleep(1800);
  const fA=await (await p.$('#fA')).contentFrame(),fB=await (await p.$('#fB')).contentFrame();
- await fA.addStyleTag({content:'body{font-weight:500}'});await fB.addStyleTag({content:'body{font-weight:500}'});
  await fA.waitForFunction(()=>window.__gcg&&window.__seedFake);await fB.waitForFunction(()=>window.__gcg&&window.__seedFake);
  const F={A:fA,B:fB},offs={},sfx=[];
  const log=(k)=>sfx.push([Date.now()-T0,k]);
