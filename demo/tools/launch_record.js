@@ -24,7 +24,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    for(let k=0;k<3;k++){await sleep(220);const ok=await F[w].evaluate(ver).catch(()=>false);if(ok)break;try{await loc.evaluate(e=>e.click());}catch(e){break;}}
    await sleep(after==null?300:after);}
  async function smooth(w,sel,off){await F[w].locator(sel).first().evaluate((e,o)=>{window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-(o==null?70:o),behavior:'smooth'});},off);}
- async function pointAt(w,sel,text){try{const loc=F[w].locator(sel).first();await loc.waitFor({timeout:3000});const bx=await loc.boundingBox();if(!bx)return;const x=Math.min(bx.x+bx.width,1235),y=bx.y+Math.min(bx.height/2,30);await p.evaluate(a=>window.point(a[0],a[1],a[2]),[text,x,y]);}catch(e){console.log('pointAt failed',sel);}}
+ async function pointAt(w,sel,text){try{const loc=F[w].locator(sel).first();await loc.waitFor({timeout:3000});const bx=await loc.boundingBox();if(!bx)return;const x=Math.max(bx.x-6,1362),y=bx.y+Math.min(bx.height/2,30);await p.evaluate(a=>window.point(a[0],a[1],a[2]),[text,x,y]);}catch(e){console.log('pointAt failed',sel);}}
  const H=(o,id,fn)=>beat(o,id,fn);
  async function beat(o,id,fn){offs[id]=Date.now()-T0;const o2=Object.assign({},o);delete o2.pre;await p.evaluate(o=>window.beat(o),o2);if(o.pre)await o.pre();await sleep(250);await Promise.all([fn(),sleep(NARR[id].dur*1000+900)]);}
  async function card(id,h,s,k){offs[id]=Date.now()-T0;await p.evaluate(a=>window.cardOn(a[0],a[1],a[2]),[h,s,k]);log('whoosh');await sleep(NARR[id].dur*1000+900);}
