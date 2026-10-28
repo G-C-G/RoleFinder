@@ -4,18 +4,18 @@ _c._SSL_CTX=ssl.create_default_context(cafile='/root/.ccr/ca-bundle.crt')
 F=__import__('imageio_ffmpeg').get_ffmpeg_exe()
 TEXT={
  'c0':"Every team asks the same question. Who should do this job? Game Plan helps answer it, with data, not guesswork.",
- 'n1':"It starts with the team lead, the organiser or HR. They add a project or an event, and choose a template.",
+ 'n1':"It starts with the project lead. They add a project or an event, and choose a template.",
  'n2':"Every project or event is made of tasks. The template fills them in. Take out what this one does not need, and add anything extra.",
  'n3':"Then the system suggests who fits each task. It reads each person's profile, what they are good at, and the work they have already done here, and it tells you why.",
- 'n4':"The computer only suggests. The team lead or HR has the final say. Accept what looks right, or change it. It just makes the choice quicker, with less room for human error.",
+ 'n4':"The computer only suggests. The project lead has the final say. Accept what looks right, or change it. It just makes the choice quicker, with less room for human error.",
  'n5':"When you are happy, publish it. The whole team is told at once.",
  'n6':"Now the team receives it. Each person sees their own task, and why it fits them. One tap, and it is theirs.",
  'n7':"Another team member sees a different task. But he is already full. He says so in one tap, and gives the reason.",
- 'n8':"The team lead or HR sees the reason straight away, and offers the task to the next best person.",
- 'nu':"Work that nobody takes stays visible. HR can share it out, or see where a new hire may be needed.",
+ 'n8':"The project lead sees the reason straight away, and offers the task to the next best person.",
+ 'nu':"Work that nobody takes stays visible. The project lead can share it out, or see where a new hire may be needed.",
  'n9':"If someone is stuck, they can ask a colleague for a hand.",
  'n10':"When it is done, they add a link or a file. It is saved with the task, as proof.",
- 'nr':"The team lead or HR checks the proof, and signs it off.",
+ 'nr':"The project lead checks the proof, and signs it off.",
  'n11':"Every task builds a record: progress, title and trail. Her work is never lost, and it counts the next time work is suggested.",
  'c12':"Game Plan. The right person, for the right task."}
 def dur(p):
