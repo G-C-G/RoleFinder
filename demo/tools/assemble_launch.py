@@ -13,7 +13,7 @@ allids=list(offs.keys())
 ch=[c for c in ch if c>=25]
 m=[]
 for c in ch:
-    if not m or c-m[-1]>12:m.append(c)
+    if not m or c-m[-1]>int(os.environ.get("DD","12")):m.append(c)
 assert len(m)>=len(allids),(len(m),len(allids))
 VA={k:m[i]/25 for i,k in enumerate(allids)};V={k:VA[k] for k in ids};vend=nfr/25-0.05
 print('beats',{k:round(v,1) for k,v in VA.items()})
