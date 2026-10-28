@@ -2,7 +2,8 @@ const {chromium}=require('/opt/node22/lib/node_modules/playwright');
 const fs=require('fs');
 let base=fs.readFileSync('t2.js','utf8').match(/const mock=`([\s\S]*?)`;/)[1];
 const seed=require('./seed_fake.js');
-const NARR={};JSON.parse(fs.readFileSync('nl/script.json','utf8')).forEach(s=>NARR[s.id]=s);
+const SHORT=!!process.env.SHORT;const NLD=SHORT?'nl60':'nl';const NARR={};JSON.parse(fs.readFileSync(NLD+'/script.json','utf8')).forEach(s=>NARR[s.id]=s);
+const SUBS={n1:'A team lead or HR adds it from a template.',n2:'Remove what you do not need. Add the rest.',n3:'Best fit per task, with the reason.',n4:'The computer helps. HR decides.',n5:'The whole team is told at once.',n6:'Their own task, and why it fits.',n7:'One tap says so, with the reason.',n8:'Offered to the next best person.',nu:'Share it out, or hire for it.',n10:'A link or file, saved with the task.',n11:'Progress, title and trail.'};
 const OUT=process.argv[2]||'launch_video';const SHOTS=!!process.env.SHOTS;const STOP=process.env.STOP||'';
 fs.rmSync(OUT,{recursive:true,force:true});fs.mkdirSync(OUT,{recursive:true});
 const KEYRE=/Accept all|ublish|Send offers|take it|At my limit|Offer to next best|Send help|Save as done|Add this task|Create event|Tap again/;
@@ -24,9 +25,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    for(let k=0;k<3;k++){await sleep(220);const ok=await F[w].evaluate(ver).catch(()=>false);if(ok)break;try{await loc.evaluate(e=>e.click());}catch(e){break;}}
    await sleep(after==null?300:after);}
  async function smooth(w,sel,off){await F[w].locator(sel).first().evaluate((e,o)=>{window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-(o==null?70:o),behavior:'smooth'});},off);}
- async function pointAt(w,sel,text){try{const loc=F[w].locator(sel).first();await loc.waitFor({timeout:3000});const bx=await loc.boundingBox();if(!bx)return;const x=Math.max(bx.x-6,1362),y=bx.y+Math.min(bx.height/2,30);await p.evaluate(a=>window.point(a[0],a[1],a[2]),[text,x,y]);}catch(e){console.log('pointAt failed',sel);}}
+ async function pointAt(w,sel,text){try{const loc=F[w].locator(sel).first();await loc.waitFor({timeout:3000});const bx=await loc.boundingBox();if(!bx)return;const x=Math.min(bx.x+bx.width,1555),y=bx.y+Math.min(bx.height/2,30);await p.evaluate(a=>window.point(a[0],a[1],a[2]),[text,x,y]);}catch(e){console.log('pointAt failed',sel);}}
  const H=(o,id,fn)=>beat(o,id,fn);
- async function beat(o,id,fn){offs[id]=Date.now()-T0;const o2=Object.assign({},o);delete o2.pre;await p.evaluate(o=>window.beat(o),o2);if(o.pre)await o.pre();await sleep(250);await Promise.all([fn(),sleep(NARR[id].dur*1000+900)]);}
+ async function beat(o,id,fn){if(SHORT&&(id==='n9'||id==='nr')){if(o.pre)await o.pre();return;}offs[id]=Date.now()-T0;const o2=Object.assign({},o);delete o2.pre;if(SHORT&&SUBS[id])o2.sub=SUBS[id];await p.evaluate(o=>window.beat(o),o2);if(o.pre)await o.pre();await sleep(250);await Promise.all([fn(),sleep(NARR[id].dur*1000+900)]);}
  async function card(id,h,s,k){offs[id]=Date.now()-T0;await p.evaluate(a=>window.cardOn(a[0],a[1],a[2]),[h,s,k]);log('whoosh');await sleep(NARR[id].dur*1000+900);}
  const done=()=>STOP&&false;
  async function notify(txt){log('chime');await p.evaluate(t=>window.banner(t),txt);await sleep(2600);await p.evaluate(()=>window.banner(''));}
@@ -167,7 +168,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
  await card('c12','The right person, for the right task.','Gold Coast Games · The Human Layer','');
  await sleep(800);
- fs.writeFileSync('nl/offsets.json',JSON.stringify(offs));fs.writeFileSync('nl/sfx.json',JSON.stringify(sfx));
+ fs.writeFileSync(NLD+'/offsets.json',JSON.stringify(offs));fs.writeFileSync(NLD+'/sfx.json',JSON.stringify(sfx));
  console.log('offsets',JSON.stringify(offs),'errors',errs);
  await ctx.close();await b.close();
 })();

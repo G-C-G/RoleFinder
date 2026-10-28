@@ -3,8 +3,8 @@ F=__import__('imageio_ffmpeg').get_ffmpeg_exe()
 voice=sys.argv[1];out=sys.argv[2]           # voice dir (nl_f / nl_m), output mp4
 SR=44100
 NL=os.environ.get('NL','nl');TARGET=float(os.environ.get('TARGET','0'));segs=json.load(open(f'{NL}/script.json'));ids=[s['id'] for s in segs];dur={s['id']:s['dur'] for s in segs}
-offs=json.load(open('nl/offsets.json'));sfx=json.load(open('nl/sfx.json'))
-vid=sorted(glob.glob('launch_video/*.webm'),key=os.path.getmtime)[-1]
+offs=json.load(open(f'{NL}/offsets.json'));sfx=json.load(open(f'{NL}/sfx.json'))
+vid=sorted(glob.glob(os.environ.get('VDIR','launch_video')+'/*.webm'),key=os.path.getmtime)[-1]
 raw=subprocess.run([F,'-loglevel','error','-i',vid,'-vf','crop=10:10:2:1066,format=gray','-f','rawvideo','-pix_fmt','gray','-r','25','-'],capture_output=True).stdout
 fr=np.frombuffer(raw,dtype=np.uint8).reshape(-1,100).mean(axis=1);nfr=len(fr)
 b=(fr>27).astype(int);ch=[i for i in range(1,len(b)) if b[i]!=b[i-1]]
