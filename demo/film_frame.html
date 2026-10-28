@@ -73,6 +73,7 @@ window.__draw=function(s){
  for(var i=0;i<C.hw.length;i++){var p=ease((s.ht-i*0.1)/0.8);C.hw[i].style.opacity=p*o;C.hw[i].style.transform='translateY('+(24*(1-p))+'px)';}
  if(C.sub!==s.sub){C.sub=s.sub;$('sub').textContent=s.sub;}
  var sp=ease((s.ht-0.4)/0.8);$('sub').style.opacity=sp*o;$('sub').style.transform='translateY('+(24*(1-sp))+'px)';
+ $('stack').style.transform='scale('+(s.z||1)+')';
  $('pfA').style.opacity=s.a;$('pfB').style.opacity=s.b;
  if(s.note){if(C.note!==s.note.id){C.note=s.note.id;prepNote(s.note.text,s.note.tx,s.note.ty);}
   var t=s.note.t;$('nt').style.opacity=Math.min(1,t/0.6);$('pth').style.strokeDashoffset=1-ease((t-0.35)/0.9);

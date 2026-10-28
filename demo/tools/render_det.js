@@ -77,7 +77,7 @@ const KEYRE=/Accept all|ublish|Send offers|take it|At my limit|Offer to next bes
      // crossfade between the two phones at the start of a scene
      let a=S.phone==='A'?1:0,bb=S.phone==='B'?1:0;
      if(S.prev&&S.prev!==S.phone&&T<0.5){const x=ease(T/0.5);a=S.phone==='A'?x:1-x;bb=1-a;}
-     const st={chip:S.chip,chipP:S.chipP,head:S.head,sub:S.sub,ht:T,out:(T>L-0.2&&!S.card)?Math.max(0,(L-T)/0.2):1,a,b:bb,
+     const st={z:S.card?1:1+0.016*eio(T/L),chip:S.chip,chipP:S.chipP,head:S.head,sub:S.sub,ht:T,out:(T>L-0.2&&!S.card)?Math.max(0,(L-T)/0.2):1,a,b:bb,
        note:S.note?{id:S.note.id,text:S.note.text,tx:S.note.tx,ty:S.note.ty,t:T-S.note.t0}:null,
        ban:S.ban&&T>=S.ban.t0&&T<=S.ban.t1?{text:S.ban.text,p:T<S.ban.t1-0.4?Math.min(1,(T-S.ban.t0)/0.6):Math.max(0,(S.ban.t1-T)/0.4)}:null,
        cur:S.cur&&!S.card?{x:S.cur.x,y:S.cur.y,rip:S.rip==null?null:T-S.rip}:null,
