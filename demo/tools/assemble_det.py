@@ -22,7 +22,7 @@ def rd(p):
     return d
 vo=np.zeros(N,dtype=np.float32)
 for k in ids:
-    p=f'{voice}/{k}.wav';wv=rd(p);place(vo,wv/ max(0.2,np.abs(wv).max())*0.9,FS[k]+(0.35 if k not in('c0','c12') else 0.3))
+    p=f'{voice}/{k}.wav';wv=rd(p);i0=int(np.argmax(np.abs(wv)>0.02*np.abs(wv).max()));wv=wv[max(0,i0-int(0.03*SR)):];place(vo,wv/ max(0.2,np.abs(wv).max())*0.9,FS[k]+(0.12 if k not in('c0','c12') else 0.2))
 # map a recorder time (ms) to film time
 # ---- sound design ----
 from scipy import signal
@@ -94,5 +94,5 @@ L=vo+fx*0.8+mu[:,0];R=vo+fx*0.8+mu[:,1]
 pk=max(np.abs(L).max(),np.abs(R).max());st=np.stack([L,R],1)/pk*0.89
 pcm=(np.clip(st,-1,1)*32767).astype(np.int16)
 w=wave.open('mix.wav','wb');w.setnchannels(2);w.setsampwidth(2);w.setframerate(SR);w.writeframes(pcm.tobytes());w.close()
-subprocess.run([F,'-y','-loglevel','error','-i','video_only.mp4','-i','mix.wav','-af','loudnorm=I=-16:TP=-1.5:LRA=9','-c:v','copy','-c:a','aac','-b:a','192k','-shortest','-movflags','+faststart',out],check=True)
+subprocess.run([F,'-y','-loglevel','error','-i','video_only.mp4','-i','mix.wav','-af','loudnorm=I=-16:TP=-1.5:LRA=9','-c:v','copy','-c:a','aac','-ar','48000','-b:a','192k','-shortest','-movflags','+faststart',out],check=True)
 print('built',out,'length',round(total,1))
