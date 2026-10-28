@@ -77,11 +77,11 @@ const KEYRE=/Accept all|ublish|Send offers|take it|At my limit|Offer to next bes
      // crossfade between the two phones at the start of a scene
      let a=S.phone==='A'?1:0,bb=S.phone==='B'?1:0;
      if(S.prev&&S.prev!==S.phone&&T<0.5){const x=ease(T/0.5);a=S.phone==='A'?x:1-x;bb=1-a;}
-     const st={z:S.card?1:1+0.016*eio(T/L),chip:S.chip,chipP:S.chipP,head:S.head,sub:S.sub,ht:T,out:(T>L-0.2&&!S.card)?Math.max(0,(L-T)/0.2):1,a,b:bb,
+     const st={z:S.card?1:1+0.016*eio(T/L),chip:S.chip,chipP:S.chipP,head:S.head,sub:S.sub,ht:T+(S.htShift||0),out:(T>L-0.2&&!S.card)?Math.max(0,(L-T)/0.2):1,a,b:bb,
        note:S.note?{id:S.note.id,text:S.note.text,tx:S.note.tx,ty:S.note.ty,t:T-S.note.t0}:null,
        ban:S.ban&&T>=S.ban.t0&&T<=S.ban.t1?{text:S.ban.text,p:T<S.ban.t1-0.4?Math.min(1,(T-S.ban.t0)/0.6):Math.max(0,(S.ban.t1-T)/0.4)}:null,
        cur:S.cur&&!S.card?{x:S.cur.x,y:S.cur.y,rip:S.rip==null?null:T-S.rip}:null,
-       card:S.card?Object.assign({},S.card,{t:T,fade:fadeIn?Math.min(1,T/fadeIn):1}):null};
+       card:S.card?Object.assign({},S.card,{t:T,z:1+0.028*eio(T/L),fade:Math.min(fadeIn?Math.min(1,T/fadeIn):1,S.cardFadeOut?Math.max(0,(L-T)/S.cardFadeOut):1)}):null};
      await p.evaluate(s=>window.__draw(s),st);
      const jpg=await p.screenshot({type:'jpeg',quality:95});
      if(SNAP.includes(id+':'+f))fs.writeFileSync('snap_'+id+'_'+f+'.jpg',jpg);
@@ -105,10 +105,10 @@ const KEYRE=/Accept all|ublish|Send offers|take it|At my limit|Offer to next bes
  const MISSING=[];
 
  // ===== opening card =====
- await run('c0',S=>{S.card={id:'c0',h:'Who should do this job?',s:'Game Plan helps teams decide with more than a hunch.',k:'GOLD COAST GAMES  ·  GAME PLAN',big:true};S.sfx(0,'whoosh');});
+ await run('c0',S=>{S.cardFadeOut=0.3;S.head='Add the project or event.';S.sub='A project lead adds it from a template.';S.htShift=-(LEN.c0-0.3);S.card={id:'c0',h:'Who should do this job?',s:'Game Plan helps teams decide with more than a hunch.',k:'GOLD COAST GAMES  ·  GAME PLAN',big:true};S.sfx(0,'whoosh');});
 
  // ===== n1 add the project or event =====
- await run('n1',S=>{HEAD(S,'Add the project or event.','A project lead adds it from a template.');
+ await run('n1',S=>{HEAD(S,'Add the project or event.','A project lead adds it from a template.');S.htShift=0.3;
    S.moveTo(0.3,0.9,()=>box('A','summary','Add an event or project'));
    S.click(0.95,'A',async()=>{await F.A.evaluate(()=>{var e=window.__q('summary','Add an event or project');if(e)e.click();var d=document.querySelector('details.addev');if(d)d.open=true;window.__gcg.S.panel.newev=true;});},false);
    S.moveTo(1.3,1.8,()=>box('A','input[placeholder="Event name"]'));
