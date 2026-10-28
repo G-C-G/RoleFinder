@@ -24,9 +24,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    for(let k=0;k<3;k++){await sleep(220);const ok=await F[w].evaluate(ver).catch(()=>false);if(ok)break;try{await loc.evaluate(e=>e.click());}catch(e){break;}}
    await sleep(after==null?300:after);}
  async function smooth(w,sel,off){await F[w].locator(sel).first().evaluate((e,o)=>{window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-(o==null?70:o),behavior:'smooth'});},off);}
- async function pointAt(w,sel,text){try{const loc=F[w].locator(sel).first();await loc.waitFor({timeout:3000});const bx=await loc.boundingBox();if(!bx)return;const x=Math.min(bx.x+bx.width,1150),y=bx.y+Math.min(bx.height/2,30);await p.evaluate(a=>window.point(a[0],a[1],a[2]),[text,x,y]);}catch(e){console.log('pointAt failed',sel);}}
+ async function pointAt(w,sel,text){try{const loc=F[w].locator(sel).first();await loc.waitFor({timeout:3000});const bx=await loc.boundingBox();if(!bx)return;const x=Math.min(bx.x+bx.width,1300),y=bx.y+Math.min(bx.height/2,30);await p.evaluate(a=>window.point(a[0],a[1],a[2]),[text,x,y]);}catch(e){console.log('pointAt failed',sel);}}
  const H=(o,id,fn)=>beat(o,id,fn);
- async function beat(o,id,fn){offs[id]=Date.now()-T0;await p.evaluate(o=>window.beat(o),o);await Promise.all([fn(),sleep(NARR[id].dur*1000+900)]);}
+ async function beat(o,id,fn){offs[id]=Date.now()-T0;const o2=Object.assign({},o);delete o2.pre;await p.evaluate(o=>window.beat(o),o2);if(o.pre)await o.pre();await sleep(250);await Promise.all([fn(),sleep(NARR[id].dur*1000+900)]);}
  async function card(id,h,s,k){offs[id]=Date.now()-T0;await p.evaluate(a=>window.cardOn(a[0],a[1],a[2]),[h,s,k]);log('whoosh');await sleep(NARR[id].dur*1000+900);}
  const done=()=>STOP&&false;
  async function notify(txt){log('chime');await p.evaluate(t=>window.banner(t),txt);await sleep(2600);await p.evaluate(()=>window.banner(''));}
@@ -84,15 +84,15 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
  await sync('A','B');
  await F.B.evaluate(()=>{const G=window.__gcg;G.S.extraMode=false;G.S.screen='profile';G.showView('home');});await sleep(400);
- await p.evaluate(()=>window.show('B'));
- await beat({group:'p',head:'One clear thing.',sub:'Why it fits her. One tap to take it.',idx:5,label:'OFFER',ox:'50%',oy:'30%',z:1.12,name:'EFUA'},'n6',async()=>{
+
+ await beat({group:'p',head:'One clear thing.',sub:'Why it fits her. One tap to take it.',idx:5,pre:async()=>{await p.evaluate(()=>window.show('B'));},label:'OFFER',ox:'50%',oy:'30%',z:1.12,name:'EFUA'},'n6',async()=>{
    await notify('Efua, you have a new task: Confirm venue access');
    await smooth('B','text=SUGGESTED FIRST',90);await sleep(1400);await shot('6');
    await tapV('B','button:text-is("I\'ll take it")',700,()=>![...document.querySelectorAll('button')].some(b=>/^I.ll take it$/.test(b.innerText.trim())&&b.offsetParent));await shot('6b');});
 
  // Yaw is already carrying a lot
- await fB.evaluate(()=>{window.__as('u3',false,'Yaw');const G=window.__gcg;G.S.extraMode=false;G.S.screen='profile';G.showView('home');});await sleep(600);
- await beat({group:'p',head:'Full already?',sub:'He says so, and gives the reason.',idx:6,label:'LIMIT',ox:'50%',oy:'35%',z:1.1,note:'At my limit: his reason, in one tap.',ny:760,nl:420,nd:6500,name:'YAW'},'n7',async()=>{
+
+ await beat({group:'p',head:'Full already?',sub:'He says so, and gives the reason.',idx:6,pre:async()=>{await fB.evaluate(()=>{window.__as('u3',false,'Yaw');const G=window.__gcg;G.S.extraMode=false;G.S.screen='profile';G.showView('home');});await sleep(600);},label:'LIMIT',ox:'50%',oy:'35%',z:1.1,note:'At my limit: his reason, in one tap.',ny:760,nl:420,nd:6500,name:'YAW'},'n7',async()=>{
    await notify('Yaw, you have a new task: Deposit received');
    await smooth('B','text=SUGGESTED FIRST',90);await sleep(1100);await shot('7a');
    await tapV('B','button:has-text("Can\'t do it")',500,()=>!!document.querySelector('.addchip'));await sleep(500);await shot('7b');
@@ -100,8 +100,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await tapV('B','button.addchip:text-is("At my limit")',900,()=>!document.querySelector('.addchip'));await p.evaluate(()=>window.unpoint());await shot('7c');});
 
  await sync('B','A');
- await p.evaluate(()=>window.show('A'));await fA.evaluate(()=>{window.__gcg.showView('today');});await sleep(500);
- await beat({group:'h',head:'Team lead or HR sees why.',sub:'And offers it to the next best person.',idx:7,label:'REASSIGN',ox:'50%',oy:'30%',z:1.12,note:'The reason travels with the task.',ny:760,nl:420,nd:1500,name:'TEAM LEAD / HR'},'n8',async()=>{
+
+ await beat({group:'h',head:'Team lead or HR sees why.',sub:'And offers it to the next best person.',idx:7,pre:async()=>{await p.evaluate(()=>window.show('A'));await fA.evaluate(()=>{window.__gcg.showView('today');});await sleep(500);},label:'REASSIGN',ox:'50%',oy:'30%',z:1.12,note:'The reason travels with the task.',ny:760,nl:420,nd:1500,name:'TEAM LEAD / HR'},'n8',async()=>{
    await shot('8a');
    await smooth('A','button:has-text("Offer to next best")',200);await sleep(1300);await shot('8b');
    await pointAt('A','text=/AT MY LIMIT/i','the reason arrives with it');
@@ -115,10 +115,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await smooth('A','.gapbox',150);await sleep(1800);
    await pointAt('A','text=No one fits','no one fits? think about a hire');await shot('nu');});
  await sync('A','B');
- await fB.evaluate(()=>{window.__as('u4',false,'Efua');const G=window.__gcg;G.S.extraMode=false;G.S.screen='profile';G.showView('home');});await sleep(500);
- await p.evaluate(()=>window.show('B'));
+
+
  if(process.env.EXPLORE){await sleep(1500);await shot('x9');console.log('BTN',await F.B.evaluate(()=>[...document.querySelectorAll('button,summary')].filter(e=>e.offsetParent).map(e=>e.innerText.trim().slice(0,40)).join(' | ')));await ctx.close();await b.close();return;}
- await beat({group:'p',head:'Stuck?',sub:'Ask a colleague for a hand.',idx:9,label:'HELP',name:'EFUA'},'n9',async()=>{
+ await beat({group:'p',head:'Stuck?',sub:'Ask a colleague for a hand.',idx:9,pre:async()=>{await fB.evaluate(()=>{window.__as('u4',false,'Efua');const G=window.__gcg;G.S.extraMode=false;G.S.screen='profile';G.showView('home');});await sleep(500);await p.evaluate(()=>window.show('B'));},label:'HELP',name:'EFUA'},'n9',async()=>{
    await smooth('B','.hero-move',90);await sleep(500);await shot('9a');
    await tapV('B','.hero-move button:text-is("Open")',700,()=>/I need help/.test(document.body.innerText));await smooth('B','button:has-text("I need help")',300);await sleep(400);
    await tapV('B','button:has-text("I need help")',400,()=>!!document.querySelector('select[data-k^="helpto"]'));await shot('9b');
@@ -149,15 +149,15 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await tapV('B','button:text-is("Mark finished")',900,()=>/Done\. Well done/.test(document.body.innerText));await p.evaluate(()=>window.unpoint());await shot('10c');});
 
  await sync('B','A');
- await p.evaluate(()=>window.show('A'));await fA.evaluate(()=>{const G=window.__gcg;G.S.stepOpen={pid:'pfake1',sid:'s1'};G.showView('today');});await sleep(700);
- await beat({group:'h',head:'Checked and signed off.',sub:'The proof sits right there with the task.',idx:10,label:'REVIEW',name:'TEAM LEAD / HR',z:1.08},'nr',async()=>{
+
+ await beat({group:'h',head:'Checked and signed off.',sub:'The proof sits right there with the task.',idx:10,pre:async()=>{await p.evaluate(()=>window.show('A'));await fA.evaluate(()=>{const G=window.__gcg;G.S.stepOpen={pid:'pfake1',sid:'s1'};G.showView('today');});await sleep(700);},label:'REVIEW',name:'TEAM LEAD / HR',z:1.08},'nr',async()=>{
    await smooth('A','h3:has-text("Proof and documents")',200);await sleep(900);
    await pointAt('A','text=Onboarding guide (Drive)','proof, one place');await sleep(2000);
    await smooth('A','h3:has-text("Review")',200);await sleep(900);
    await tapV('A','button:text-is("Done")',900,()=>/Marked as done|Reopen and tell them/.test(document.body.innerText));await p.evaluate(()=>window.unpoint());await shot('nr');});
 
- await sync('A','B');await p.evaluate(()=>window.show('B'));
- await beat({group:'p',head:'Her work is on record.',sub:'Progress, title and trail.',idx:11,label:'RECORD',name:'EFUA'},'n11',async()=>{
+ await sync('A','B');
+ await beat({group:'p',head:'Her work is on record.',sub:'Progress, title and trail.',idx:11,pre:async()=>{await p.evaluate(()=>window.show('B'));},label:'RECORD',name:'EFUA'},'n11',async()=>{
    await F.B.evaluate(()=>{window.__gcg.showView('home');});await sleep(600);
    await F.B.evaluate(()=>window.scrollTo({top:0}));{const bk=F.B.locator('button:text-is("Back to Home")').first();if(await bk.count()){await F.B.evaluate(()=>window.scrollTo({top:0}));await tapQ('B','button:text-is("Back to Home")',900);}}
    console.log('HOME',await F.B.evaluate(()=>document.body.innerText.replace(/\n+/g,' | ').slice(0,500)));await smooth('B','text=Your progress',90);await sleep(1300);await shot('11a');
