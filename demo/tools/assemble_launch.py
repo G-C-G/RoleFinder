@@ -33,9 +33,9 @@ print('gap',round(gap,2),'film',round(film,2));print({k:(round(a,1),round(e-a,1)
 fc=[];labs=[]
 for i,(k,a,e,sp,L) in enumerate(spans):
     fc.append(f"[0:v]trim={a:.3f}:{e:.3f},setpts=(PTS-STARTPTS)/{sp:.4f},fps=25[v{i}]");labs.append(f"[v{i}]")
-fc.append(''.join(labs)+f"concat=n={len(spans)}:v=1:a=0,tpad=stop_mode=clone:stop_duration=6,fade=t=in:st=0:d=0.5,fade=t=out:st={total-0.9:.2f}:d=0.8[v]")
+fc.append(''.join(labs)+f"concat=n={len(spans)}:v=1:a=0,unsharp=5:5:0.6:3:3:0.0,tpad=stop_mode=clone:stop_duration=6,fade=t=in:st=0:d=0.5,fade=t=out:st={total-0.9:.2f}:d=0.8[v]")
 open('fc.txt','w').write(';'.join(fc))
-subprocess.run([F,'-y','-loglevel','error','-i',vid,'-filter_complex_script','fc.txt','-map','[v]','-t',f'{total:.2f}','-r','25','-c:v','libx264','-preset','medium','-crf','18','-pix_fmt','yuv420p','video_only.mp4'],check=True)
+subprocess.run([F,'-y','-loglevel','error','-i',vid,'-filter_complex_script','fc.txt','-map','[v]','-t',f'{total:.2f}','-r','25','-c:v','libx264','-preset','slow','-crf',os.environ.get('CRF','20'),'-pix_fmt','yuv420p','video_only.mp4'],check=True)
 # ---- audio ----
 N=int(total*SR)
 def place(buf,x,t,g=1.0):

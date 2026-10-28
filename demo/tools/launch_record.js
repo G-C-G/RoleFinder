@@ -14,6 +14,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  await p.addInitScript(base);await p.addInitScript(seed);
  await p.goto('file:///home/user/RoleFinder/demo/launch_frame.html');await sleep(1800);
  const fA=await (await p.$('#fA')).contentFrame(),fB=await (await p.$('#fB')).contentFrame();
+ await fA.addStyleTag({content:'body{font-weight:500}'});await fB.addStyleTag({content:'body{font-weight:500}'});
  await fA.waitForFunction(()=>window.__gcg&&window.__seedFake);await fB.waitForFunction(()=>window.__gcg&&window.__seedFake);
  const F={A:fA,B:fB},offs={},sfx=[];
  const log=(k)=>sfx.push([Date.now()-T0,k]);
@@ -29,7 +30,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  const H=(o,id,fn)=>beat(o,id,fn);
  let pend=[];
  async function beat(o,id,fn){if(SHORT&&(id==='n9'||id==='nr')){if(o.pre)pend.push(o.pre);return;}offs[id]=Date.now()-T0;const o2=Object.assign({},o);delete o2.pre;if(SHORT&&SUBS[id])o2.sub=SUBS[id];await p.evaluate(o=>window.beat(o),o2);if(pend.length){while(pend.length){await (pend.shift())();}await fB.evaluate(()=>{window.__notify();window.__gcg.showView('home');});await sleep(600);}if(o.pre)await o.pre();await sleep(250);await Promise.all([fn(),sleep(NARR[id].dur*1000+900)]);}
- async function card(id,h,s,k){offs[id]=Date.now()-T0;await p.evaluate(a=>window.cardOn(a[0],a[1],a[2]),[h,s,k]);log('whoosh');await sleep(NARR[id].dur*1000+900);}
+ async function card(id,h,s,k,big){offs[id]=Date.now()-T0;await p.evaluate(a=>window.cardOn(a[0],a[1],a[2],a[3]),[h,s,k,big]);log('whoosh');await sleep(NARR[id].dur*1000+900);}
  const done=()=>STOP&&false;
  async function notify(txt){log('chime');await p.evaluate(t=>window.banner(t),txt);await sleep(2600);await p.evaluate(()=>window.banner(''));}
 
@@ -38,7 +39,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  await sync('A','B');
  await fB.evaluate(()=>{window.__as('u4',false,'Efua');window.__gcg.showView('home');});await sleep(600);
 
- await card('c0','Who should do this job?','Game Plan helps teams decide with data, not guesswork.','GOLD COAST GAMES  ·  GAME PLAN');
+ await card('c0','Who should do this job?','Game Plan helps teams decide with more than a hunch.','GOLD COAST GAMES  ·  GAME PLAN',true);
  await p.evaluate(()=>window.cardOn(''));
 
  await beat({group:'h',head:'Add the project or event.',sub:'A project lead creates it from a template.',idx:0,label:'ADD',who:'PROJECT LEAD'},'n1',async()=>{
