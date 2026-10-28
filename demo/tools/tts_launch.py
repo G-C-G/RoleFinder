@@ -6,7 +6,7 @@ TEXT={
  'c0':"Who should do this job?",
  'n1':"Add the job. The template fills in every task.",
  'n2':"Trim what you do not need. Add what you do.",
- 'n3':"The system suggests the best person for each task, and tells you why.",
+ 'n3':"The system picks the best fit for each task, and says why. Less time, less room for error.",
  'n4':"You decide. Accept a suggestion, or change it.",
  'n5':"Send, and everyone is told at once.",
  'n6':"She sees one clear thing, and why it fits her. One tap to take it.",
@@ -14,7 +14,8 @@ TEXT={
  'n8':"The team lead or HR sees why, and offers the task to the next best person.",
  'nu':"What nobody takes stays in view. Share it out, or hire.",
  'n9':"Stuck? She asks a colleague for a hand.",
- 'n10':"Done, with a note. It stays on record.",
+ 'n10':"Done? Add the link or the file. It stays with the task.",
+ 'nr':"The team lead checks the proof, and signs it off.",
  'n11':"Her progress, her title, her trail. Her work is never lost.",
  'c12':"The right person, for the right task."}
 def dur(p):

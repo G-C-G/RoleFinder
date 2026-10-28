@@ -2,9 +2,9 @@ import asyncio,edge_tts,json,subprocess,re,os,ssl
 import edge_tts.communicate as _c
 _c._SSL_CTX=ssl.create_default_context(cafile='/root/.ccr/ca-bundle.crt')
 F=__import__('imageio_ffmpeg').get_ffmpeg_exe()
-TEXT={'c0':"Who should do this job?",'n1':"Add the job. Every task fills in.",'n2':"Trim it. Add to it.",'n3':"The system suggests, and says why.",'n4':"You decide.",'n5':"Send.",
- 'n6':"She sees one clear thing. One tap.",'n7':"He is full. One tap says so.",'n8':"The team lead or HR sees why, and reassigns.",'nu':"Nothing untaken goes unseen. Share it, or hire.",
- 'n9':"Stuck? Ask for a hand.",'n10':"Done, with proof.",'n11':"Progress, title, trail. All on record.",'c12':"The right person, for the right task."}
+TEXT={'c0':"Who should do this job?",'n1':"Add the job. Every task fills in.",'n2':"Trim it. Add to it.",'n3':"The system picks the best fit, and says why.",'n4':"You decide.",'n5':"Send.",
+ 'n6':"She sees one clear thing. One tap.",'n7':"He is full. One tap says so.",'n8':"The team lead or HR sees why, and reassigns.",'nu':"Nothing untaken goes unseen.",
+ 'n9':"Stuck? Ask for a hand.",'n10':"Done? Add the link. It stays with the task.",'n11':"Less time allocating. Less room for error.",'c12':"The right person, for the right task."}
 def dur(p):
     d=subprocess.run([F,'-hide_banner','-i',p],capture_output=True,text=True).stderr
     m=re.search(r'Duration: (\d+):(\d+):([\d.]+)',d);return int(m[1])*3600+int(m[2])*60+float(m[3])

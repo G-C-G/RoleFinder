@@ -24,7 +24,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    for(let k=0;k<3;k++){await sleep(220);const ok=await F[w].evaluate(ver).catch(()=>false);if(ok)break;try{await loc.evaluate(e=>e.click());}catch(e){break;}}
    await sleep(after==null?300:after);}
  async function smooth(w,sel,off){await F[w].locator(sel).first().evaluate((e,o)=>{window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-(o==null?70:o),behavior:'smooth'});},off);}
- async function pointAt(w,sel,text){try{const loc=F[w].locator(sel).first();await loc.waitFor({timeout:3000});const bx=await loc.boundingBox();if(!bx)return;const x=Math.min(bx.x+bx.width,1425),y=bx.y+Math.min(bx.height/2,30);await p.evaluate(a=>window.point(a[0],a[1],a[2]),[text,x,y]);}catch(e){console.log('pointAt failed',sel);}}
+ async function pointAt(w,sel,text){try{const loc=F[w].locator(sel).first();await loc.waitFor({timeout:3000});const bx=await loc.boundingBox();if(!bx)return;const x=Math.min(bx.x+bx.width,1150),y=bx.y+Math.min(bx.height/2,30);await p.evaluate(a=>window.point(a[0],a[1],a[2]),[text,x,y]);}catch(e){console.log('pointAt failed',sel);}}
  const H=(o,id,fn)=>beat(o,id,fn);
  async function beat(o,id,fn){offs[id]=Date.now()-T0;await p.evaluate(o=>window.beat(o),o);await Promise.all([fn(),sleep(NARR[id].dur*1000+900)]);}
  async function card(id,h,s,k){offs[id]=Date.now()-T0;await p.evaluate(a=>window.cardOn(a[0],a[1],a[2]),[h,s,k]);log('whoosh');await sleep(NARR[id].dur*1000+900);}
@@ -126,17 +126,41 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await tapQ('B','input[placeholder^="What do you need help with"]',100);await F.B.locator('input[placeholder^="What do you need help with"]').pressSequentially('Client wants the AV plan by noon',{delay:26});await shot('9c');
    await tapQ('B','button:has-text("Send help request")',700);await shot('9d');});
 
- if(process.env.EXPLORE2){console.log('BTN',await F.B.evaluate(()=>[...document.querySelectorAll('button,summary')].filter(e=>e.offsetParent).map(e=>e.innerText.trim().slice(0,30)+'@'+Math.round(e.getBoundingClientRect().top)).join(' | ')));console.log(await F.B.evaluate(()=>scrollY));await ctx.close();await b.close();return;}
- await beat({group:'p',head:'Done, with proof.',sub:'A note, how it went. It stays on record.',idx:10,label:'PROOF',ox:'50%',oy:'40%',z:1.1,note:'A note and a date: proof, on record.',ny:760,nl:420,nd:4000,name:'EFUA'},'n10',async()=>{
-   await smooth('B','button:text-is("Done")',380);await sleep(700);await tapV('B','button:text-is("Done")',500,()=>/When did you finish/.test(document.body.innerText));await shot('10a');await smooth('B','text=When did you finish',200);await sleep(600);
-   await tapQ('B','.seg3 .sb[data-c="yes"]:has-text("Today")',200);
-   await tapQ('B','input[placeholder^="Anything worth knowing"]',100);await F.B.locator('input[placeholder^="Anything worth knowing"]').pressSequentially('Venue confirmed. AV plan signed off by the client.',{delay:24});await shot('10b');
-   await pointAt('B','input[placeholder^="Anything worth knowing"]','a note, kept as proof');
-   await tapQ('B','button:has-text("Save as done")',900);await sleep(500);await smooth('B','text=Confirm venue access',140);await sleep(1200);await shot('10c');});
+ await sync('B','A');
+ await fA.evaluate(()=>{const d=new Date();const iso=n=>{const x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);};
+   const st=(id,title,owner,due,sec)=>({addedAt:'',addedBy:'',brief:null,claimedAt:'',claimedBy:'',days:0,done:null,doneAt:'',due:iso(due),grab:false,hours:2,how:'Write down the steps and who owns each.',id:id,note:'',offDay:false,owner:owner,par:false,parent:'',review:null,section:sec,spent:0,startOn:iso(due-1),status:'',statusAt:'',title:title});
+   window.__store['projects/pfake1']={about:'Roll the bill-pay agent out to the first three clients.',created:new Date().toISOString(),files:[],flyer:'',items:{},name:'Agent pilot rollout',noWeekends:false,packed:'',secGoals:{},start:iso(-2),steps:[st('s1','Write the client onboarding guide','u4',0,'Onboarding'),st('s2','Set up the pilot dashboard','u3',2,'Onboarding'),st('s3','Collect first feedback','u4',4,'Feedback')],target:iso(20),thumb:'',updated:new Date().toISOString()};window.__notify();});
+ await sleep(1800);await sync('A','B');
+ await fB.evaluate(()=>{window.__notify();window.__gcg.showView('home');});await sleep(700);
+ await beat({group:'p',head:'Done, with proof.',sub:'Add a link or a file. It stays with the task.',idx:10,label:'PROOF',name:'EFUA',z:1.08},'n10',async()=>{
+   await F.B.evaluate(()=>window.scrollTo({top:0}));
+   const oi=await F.B.evaluate(()=>{const bs=[...document.querySelectorAll('button')].filter(b=>b.innerText.trim()==='Open');for(let i=0;i<bs.length;i++){let e=bs[i].parentElement;for(let k=0;k<5&&e;k++){if((e.innerText||'').indexOf('Write the client onboarding guide')>=0)return i;e=e.parentElement;}}return -1;});
+   if(oi<0)console.log('no project Open button');
+   const ob=F.B.locator('button:text-is("Open")').nth(Math.max(0,oi));await ob.scrollIntoViewIfNeeded();await sleep(500);
+   {const bx=await ob.boundingBox();await p.evaluate(([x,y])=>window.cur(x,y),[bx.x+30,bx.y+bx.height/2]);await sleep(420);await p.evaluate(()=>window.ripple());await ob.click();}await sleep(900);
+   await F.B.evaluate(()=>window.scrollTo({top:0}));await sleep(500);
+   await smooth('B','h3:has-text("Proof and documents")',200);await sleep(800);
+   await tapQ('B','input[placeholder^="Name, e.g."]',100);await F.B.locator('input[placeholder^="Name, e.g."]').pressSequentially('Onboarding guide (Drive)',{delay:26});
+   await tapQ('B','input[placeholder^="Link (optional)"]',100);await F.B.locator('input[placeholder^="Link (optional)"]').pressSequentially('drive.google.com/onboarding-guide',{delay:22});
+   await tapQ('B','button:text-is("Add link")',900);await shot('10b');
+   await smooth('B','h3:has-text("Proof and documents")',200);await sleep(700);
+   await pointAt('B','text=Onboarding guide (Drive)','saved with the task');await sleep(1800);
+   await smooth('B','button:text-is("Mark finished")',300);await sleep(500);
+   await tapV('B','button:text-is("Mark finished")',900,()=>/Done\. Well done/.test(document.body.innerText));await p.evaluate(()=>window.unpoint());await shot('10c');});
 
+ await sync('B','A');
+ await p.evaluate(()=>window.show('A'));await fA.evaluate(()=>{const G=window.__gcg;G.S.stepOpen={pid:'pfake1',sid:'s1'};G.showView('today');});await sleep(700);
+ await beat({group:'h',head:'Checked and signed off.',sub:'The proof sits right there with the task.',idx:10,label:'REVIEW',name:'TEAM LEAD / HR',z:1.08},'nr',async()=>{
+   await smooth('A','h3:has-text("Proof and documents")',200);await sleep(900);
+   await pointAt('A','text=Onboarding guide (Drive)','proof, one place');await sleep(2000);
+   await smooth('A','h3:has-text("Review")',200);await sleep(900);
+   await tapV('A','button:text-is("Done")',900,()=>/Marked as done|Reopen and tell them/.test(document.body.innerText));await p.evaluate(()=>window.unpoint());await shot('nr');});
+
+ await sync('A','B');await p.evaluate(()=>window.show('B'));
  await beat({group:'p',head:'Her work is on record.',sub:'Progress, title and trail.',idx:11,label:'RECORD',name:'EFUA'},'n11',async()=>{
    await F.B.evaluate(()=>{window.__gcg.showView('home');});await sleep(600);
-   await F.B.evaluate(()=>window.scrollTo({top:0}));await smooth('B','text=Your progress',90);await sleep(1300);await shot('11a');
+   await F.B.evaluate(()=>window.scrollTo({top:0}));{const bk=F.B.locator('button:text-is("Back to Home")').first();if(await bk.count()){await F.B.evaluate(()=>window.scrollTo({top:0}));await tapQ('B','button:text-is("Back to Home")',900);}}
+   console.log('HOME',await F.B.evaluate(()=>document.body.innerText.replace(/\n+/g,' | ').slice(0,500)));await smooth('B','text=Your progress',90);await sleep(1300);await shot('11a');
    await tapV('B','.bottomnav .navb:nth-child(5)',1200,()=>/PLAYER CARD/i.test(document.body.innerText));
    await smooth('B','h3:has-text("My title")',80);await sleep(1400);await shot('11b');
    await smooth('B','h3:has-text("Your GCG trail")',80);await sleep(1300);await shot('11c');});
